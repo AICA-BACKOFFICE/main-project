@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  레이아웃 위젯(사이드바·본문 아래 공용). 이름은 PostLayout.WIDGET_ITEMS 와 같다: toc · author · recent · related · share
+  모델: post, toc(제목 목록), recentPosts, relatedPosts
+-->
+<th:block th:fragment="widgets(items)">
+  <th:block th:each="w : ${items}">
+
+    <section class="f-widget f-w-toc" th:if="${w == 'toc'}">
+      <h4>목차</h4>
+      <div class="f-widget-empty" th:if="${#lists.isEmpty(toc)}">본문에 제목 블록을 넣으면 자동으로 목차가 만들어집니다.</div>
+      <ol th:unless="${#lists.isEmpty(toc)}">
+        <li th:each="t : ${toc}" th:classappend="'lv' + ${t['level']}"><a th:href="'#h-' + ${t['index']}" th:text="${t['text']}">제목</a></li>
+      </ol>
+    </section>
+
+    <section class="f-widget f-w-author" th:if="${w == 'author'}">
+      <div class="f-avatar" th:text="${#strings.substring(post.authorName ?: '관리자', 0, 1)}">관</div>
+      <div>
+        <b th:text="${post.authorName ?: '관리자'}">작성자</b>
+        <div class="f-widget-sub">AICA 운영진</div>
+      </div>
+    </section>
+
+    <section class="f-widget f-w-recent" th:if="${w == 'recent'}">
+      <h4>최근 글</h4>
+      <div class="f-widget-empty" th:if="${#lists.isEmpty(recentPosts)}">게시된 다른 글이 없습니다.</div>
+      <ul th:unless="${#lists.isEmpty(recentPosts)}">
+        <li th:each="p : ${recentPosts}">
+          <a href="#" onclick="return false;" th:text="${p.title}">제목</a>
+          <span th:text="${p.publishedAt != null} ? ${#temporals.format(p.publishedAt, 'yyyy.MM.dd')} : ''">날짜</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="f-widget f-w-related" th:if="${w == 'related'}">
+      <h4 th:text="${post.categoryName != null} ? '같은 카테고리의 글' : '관련 글'">관련 글</h4>
+      <div class="f-widget-empty" th:if="${#lists.isEmpty(relatedPosts)}">아직 함께 보여 줄 글이 없습니다.</div>
+      <div class="f-related-grid" th:unless="${#lists.isEmpty(relatedPosts)}">
+        <a class="f-related-card" href="#" onclick="return false;" th:each="p : ${relatedPosts}">
+          <img th:if="${p.thumbnailUrl != null}" th:src="${p.thumbnailUrl}" alt="">
+          <span class="f-related-noimg" th:if="${p.thumbnailUrl == null}"></span>
+          <b th:text="${p.title}">제목</b>
+        </a>
+      </div>
+    </section>
+
+    <section class="f-widget f-w-share" th:if="${w == 'share'}">
+      <h4>공유</h4>
+      <div class="f-share">
+        <button type="button" onclick="return false;">링크 복사</button>
+        <button type="button" onclick="return false;">카카오톡</button>
+        <button type="button" onclick="return false;">페이스북</button>
+        <button type="button" onclick="return false;">X</button>
+      </div>
+    </section>
+
+  </th:block>
+</th:block>
+</body>
+</html>

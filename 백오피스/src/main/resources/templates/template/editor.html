@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="(${form.id == null} ? '새 템플릿' : '템플릿 수정') + ' | ' + ${siteName}">템플릿</title>
+  <meta name="_csrf" th:content="${_csrf != null} ? ${_csrf.token} : ''">
+  <meta name="_csrf_header" th:content="${_csrf != null} ? ${_csrf.headerName} : 'X-CSRF-TOKEN'">
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&amp;family=Nanum+Myeongjo:wght@400;700&amp;family=Gowun+Dodum&amp;family=Gowun+Batang:wght@400;700&amp;family=Nanum+Pen+Script&amp;family=Do+Hyeon&amp;display=swap">
+  <link rel="stylesheet" th:href="@{/css/editor.css}">
+  <link rel="stylesheet" th:href="@{/css/blocks.css}">
+</head>
+<body class="ed-body">
+
+<form id="templateForm" th:object="${form}" method="post"
+      th:action="${form.id == null} ? @{/admin/templates} : @{/admin/templates/{id}(id=${form.id})}">
+  <input type="hidden" th:field="*{id}">
+  <input type="hidden" th:field="*{blocksJson}" id="blocksJson">
+  <input type="hidden" th:field="*{layoutJson}" id="layoutJson">
+
+  <header class="ed-bar">
+    <div class="ed-bar-left">
+      <a class="ed-back" th:href="@{/admin/templates}" title="템플릿 관리로">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> 템플릿 관리
+      </a>
+      <span class="ed-bar-title" th:text="${form.id == null} ? '새 템플릿' : '템플릿 수정'">새 템플릿</span>
+    </div>
+    <div class="ed-bar-right">
+      <span class="ed-stats" id="edStats"></span>
+      <button class="ed-tool" type="submit" th:formaction="@{/admin/templates/preview}" formtarget="_blank" formnovalidate title="이 구성으로 글이 어떻게 보일지 새 탭에서 확인">
+        <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기
+      </button>
+      <span class="ed-bar-sep"></span>
+      <a class="ed-btn" th:href="@{/admin/templates}">취소</a>
+      <button class="ed-btn primary" type="submit" id="btnSave">템플릿 저장</button>
+    </div>
+  </header>
+
+  <div class="ed-banner" data-status="DRAFT">
+    <b>템플릿</b>
+    <span>여기서 만든 <b>레이아웃(화면 구성)</b>과 <b>본문 구성</b>은 글쓰기 → 템플릿에서 불러와 바로 사용합니다. 글쓰기 화면에서는 레이아웃을 따로 바꾸지 않습니다.</span>
+  </div>
+
+  <div class="ed-grid tpl-grid">
+    <main class="ed-col">
+      <div class="alert error" th:if="${error}" th:text="${error}"></div>
+
+      <div class="tpl-fields">
+        <div>
+          <label class="ed-field-label" for="name">템플릿 이름</label>
+          <input class="ed-input" th:field="*{name}" id="name" maxlength="100" placeholder="예: 공지사항 기본형 · 행사 후기(2단) · 인터뷰 매거진형" required autocomplete="off">
+        </div>
+        <div>
+          <label class="ed-field-label" for="categoryId">기본 카테고리</label>
+          <select class="ed-select" th:field="*{categoryId}" id="categoryId">
+            <option value="">지정 안 함</option>
+            <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
+          </select>
+        </div>
+      </div>
+      <label class="ed-field-label" for="titleHint">제목 예시 <span class="ed-help">불러올 때 제목이 비어 있으면 이 문구가 들어갑니다</span></label>
+      <input class="ed-input" th:field="*{titleHint}" id="titleHint" maxlength="200" placeholder="예: [공지] ○○ 안내" autocomplete="off">
+
+      <div class="lo-sec-title" style="margin-top:22px">1. 레이아웃 <span class="ed-help">글이 프론트에서 어떤 틀로 보일지 고릅니다</span></div>
+      <th:block th:replace="~{template/_layout-panel :: panel}"></th:block>
+
+      <div class="lo-sec-title" style="margin-top:26px">2. 본문 구성 <span class="ed-help">자주 쓰는 뼈대를 미리 넣어 두세요. 아래 버튼으로 빠르게 추가하거나 직접 작성할 수 있습니다</span></div>
+      <div class="tpl-quick" id="tplQuick">
+        <span class="tpl-quick-label">빠른 추가</span>
+        <button type="button" class="be-btn" data-add="heading">소제목</button>
+        <button type="button" class="be-btn" data-add="paragraph">문단</button>
+        <button type="button" class="be-btn" data-add="image">사진 자리</button>
+        <button type="button" class="be-btn" data-add="quote">인용구</button>
+        <button type="button" class="be-btn" data-add="list">목록</button>
+        <button type="button" class="be-btn" data-add="table">표</button>
+        <button type="button" class="be-btn" data-add="divider">구분선</button>
+        <span class="tpl-quick-sep"></span>
+        <span class="tpl-quick-label">뼈대 세트</span>
+        <button type="button" class="be-btn" data-skeleton="notice">공지문</button>
+        <button type="button" class="be-btn" data-skeleton="review">행사 후기</button>
+        <button type="button" class="be-btn" data-skeleton="interview">인터뷰</button>
+        <button type="button" class="be-btn" data-skeleton="faq">FAQ 답변</button>
+      </div>
+      <div class="ed-box">
+        <div id="toolbar" class="ed-rt"></div>
+        <div id="toolbar2" class="ed-rt ed-rt-more" hidden></div>
+        <div id="tools" class="ed-rt-tools"></div>
+        <div id="editor"></div>
+      </div>
+      <div class="ed-foot">
+        <span>본문 구성은 블록 단위로 저장됩니다. 글쓰기에서 불러온 뒤 내용만 채우면 됩니다.</span>
+      </div>
+    </main>
+  </div>
+</form>
+
+<div id="templateConfig" hidden
+     th:data-upload-url="@{/admin/images}"
+     th:data-recent-url="@{/admin/images/recent}"
+     th:data-categories-url="@{/admin/images/categories}"></div>
+
+<script th:src="@{/js/admin.js}"></script>
+<script th:src="@{/js/editor/core.js}"></script>
+<script th:src="@{/js/editor/blocks.js}"></script>
+<script th:src="@{/js/editor/render.js}"></script>
+<script th:src="@{/js/editor/input.js}"></script>
+<script th:src="@{/js/editor/dialogs.js}"></script>
+<script th:src="@{/js/editor/toolbar.js}"></script>
+<script th:src="@{/js/editor/image-editor.js}"></script>
+<script th:src="@{/js/editor/index.js}"></script>
+<script th:src="@{/js/template/layout-panel.js}"></script>
+<script th:src="@{/js/template/template-editor.js}"></script>
+<script>TemplateEditorPage.init(document.getElementById('templateConfig').dataset);</script>
+</body>
+</html>

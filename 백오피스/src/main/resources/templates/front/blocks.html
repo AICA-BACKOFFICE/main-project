@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  블록 렌더 컴포넌트. 미리보기(front/post.html)와 향후 프론트 서버 렌더링에서 공용으로 사용한다.
+  블록 형식은 BlockContent.java / block-editor.js 와 동일. html 필드는 서버에서 정화된 인라인 HTML 이므로 th:utext 로 출력한다.
+-->
+<th:block th:fragment="render(blocks)">
+  <div class="f-empty" th:if="${#lists.isEmpty(blocks)}">본문이 없습니다.</div>
+
+  <th:block th:each="b : ${blocks}">
+    <!-- 텍스트 -->
+    <div class="blk blk-paragraph" th:if="${b['type'] == 'paragraph'}">
+      <p th:style="'text-align:' + ${b['align'] ?: 'left'}" th:utext="${b['html']}"></p>
+    </div>
+
+    <!-- 제목 -->
+    <div class="blk blk-heading" th:if="${b['type'] == 'heading'}" th:id="'h-' + ${bStat.index}">
+      <h1 th:if="${b['level'] == 1}" th:utext="${b['html']}"></h1>
+      <h2 th:if="${b['level'] == 2 or b['level'] == null}" th:utext="${b['html']}"></h2>
+      <h3 th:if="${b['level'] == 3}" th:utext="${b['html']}"></h3>
+    </div>
+
+    <!-- 이미지 (주소가 비어 있는 '사진 자리'는 표시하지 않음) -->
+    <div class="blk blk-image" th:if="${b['type'] == 'image' and !#strings.isEmpty(b['url'])}" th:classappend="'w-' + ${b['width'] ?: 'full'} + ' a-' + ${b['align'] ?: 'center'}">
+      <figure>
+        <a th:if="${!#strings.isEmpty(b['link'])}" th:href="${b['link']}" target="_blank" rel="noopener noreferrer"><img th:src="${b['url']}" th:alt="${b['alt']}" loading="lazy"></a>
+        <img th:unless="${!#strings.isEmpty(b['link'])}" th:src="${b['url']}" th:alt="${b['alt']}" loading="lazy">
+        <figcaption th:if="${!#strings.isEmpty(b['caption'])}" th:text="${b['caption']}"></figcaption>
+      </figure>
+    </div>
+
+    <!-- 인용 -->
+    <div class="blk blk-quote" th:if="${b['type'] == 'quote'}">
+      <blockquote th:utext="${b['html']}"></blockquote>
+    </div>
+
+    <!-- 목록 -->
+    <div class="blk blk-list" th:if="${b['type'] == 'list'}">
+      <ul th:if="${b['style'] != 'number'}">
+        <li th:each="item : ${b['items']}" th:utext="${item}"></li>
+      </ul>
+      <ol th:if="${b['style'] == 'number'}">
+        <li th:each="item : ${b['items']}" th:utext="${item}"></li>
+      </ol>
+    </div>
+
+    <!-- 표 (첫 행 머리글) -->
+    <div class="blk blk-table" th:if="${b['type'] == 'table'}">
+      <table>
+        <tr th:each="row, rs : ${b['rows']}">
+          <th th:if="${rs.first}" th:each="cell : ${row}" th:utext="${cell}"></th>
+          <td th:unless="${rs.first}" th:each="cell : ${row}" th:utext="${cell}"></td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 코드 -->
+    <div class="blk blk-code" th:if="${b['type'] == 'code'}">
+      <pre><code th:text="${b['code']}"></code></pre>
+      <span class="lang" th:if="${!#strings.isEmpty(b['lang'])}" th:text="${b['lang']}"></span>
+    </div>
+
+    <!-- 구분선 -->
+    <div class="blk blk-divider" th:if="${b['type'] == 'divider'}"><hr></div>
+  </th:block>
+</th:block>
+</body>
+</html>

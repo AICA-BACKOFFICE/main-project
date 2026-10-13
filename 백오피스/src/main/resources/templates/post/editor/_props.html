@@ -1,0 +1,61 @@
+<!-- 글쓰기 화면 — 우측 "콘텐츠 속성" 패널 (post/editor.html 의 form 안에서 th:replace 로 포함) -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+    <aside class="ed-props" th:fragment="props">
+      <h3>콘텐츠 속성</h3>
+      <p class="ed-props-desc">공개 상태와 분류, 대표 이미지를 설정합니다.</p>
+
+      <label class="ed-props-label" for="statusSelect">공개 상태</label>
+      <select class="ed-select" id="statusSelect">
+        <option value="DRAFT">임시저장 · 공개되지 않음</option>
+        <option value="PUBLISHED">공개 · 프론트에 게시</option>
+        <option value="HIDDEN">미게시 · 저장만, 프론트 미노출</option>
+        <option value="PENDING">답변대기 · FAQ 질문 등</option>
+      </select>
+
+      <label class="ed-props-label" for="categoryId">카테고리</label>
+      <select class="ed-select" th:field="*{categoryId}" id="categoryId">
+        <option value="">미분류</option>
+        <option th:each="c : ${categoryTree}" th:value="${c.id}" th:text="${c.name}" th:attr="data-slug=${c.slug}"></option>
+      </select>
+      <p class="ed-help sf-only" style="margin-top:8px">후기 분야 · 기수는 양식에서 고르면 세부 카테고리가 자동으로 정해져요.</p>
+      <div class="ed-generic">
+      <label class="ed-props-label" for="subCategoryId">세부 카테고리 <span class="ed-help">후기 → 생활·수업·프로젝트·취업·진로 / 기수별 → 3~5기·6기·7기</span></label>
+      <select class="ed-select" th:field="*{subCategoryId}" id="subCategoryId">
+        <option value="">세부 카테고리</option>
+        <th:block th:each="c : ${categoryTree}">
+          <option th:each="s : ${c.children}" th:value="${s.id}" th:text="${s.name}" th:attr="data-parent=${c.id}"></option>
+        </th:block>
+      </select>
+
+      <label class="ed-props-label">대표 이미지</label>
+      <div class="ed-check-row">
+        <label><input type="radio" th:field="*{thumbnailMode}" value="AUTO"> 본문 첫 이미지</label>
+        <label><input type="radio" th:field="*{thumbnailMode}" value="MANUAL"> 직접 지정</label>
+      </div>
+      <div id="thumbManual" class="ed-thumb">
+        <div id="thumbPreview">
+          <img th:if="${form.thumbnailUrl != null and form.thumbnailUrl != ''}" th:src="${form.thumbnailUrl}" alt="">
+        </div>
+        <div class="row">
+          <label class="ed-btn sm" style="cursor:pointer">이미지 업로드 <input type="file" id="thumbFile" accept="image/*" hidden></label>
+          <button class="ed-btn sm" type="button" id="thumbClear">지우기</button>
+          <span class="ed-help">권장 1200×630</span>
+        </div>
+      </div>
+
+      <label class="ed-props-label" for="summary">요약</label>
+      <textarea class="ed-ta" th:field="*{summary}" id="summary" rows="4" maxlength="500" placeholder="비우면 본문 앞부분으로 자동 생성됩니다"></textarea>
+      </div>
+
+      <hr class="ed-props-hr">
+      <p class="ed-props-note">입력 내용은 브라우저에 자동 백업됩니다. <b>임시저장</b>·<b>저장</b>을 누르면 서버에 저장되고 버전 이력에도 남습니다.</p>
+      <div class="ed-props-actions" th:if="${form.id != null and me.role.canManageContent()}">
+        <button class="ed-tool danger" type="submit" form="deleteForm">
+          <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg> 휴지통으로 이동
+        </button>
+      </div>
+    </aside>
+</body>
+</html>

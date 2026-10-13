@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout('휴지통', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <h2 class="page-title">휴지통</h2>
+
+  <div class="card">
+    <form class="card-head" th:action="@{/admin/posts/trash}" method="get">
+      <div class="left">
+        <input class="input" type="search" name="keyword" th:value="${search.keyword}" placeholder="제목·요약 검색" style="width:200px">
+        <button class="btn ghost sm" type="submit">검색</button>
+        <a class="btn ghost sm" th:if="${search.keyword != null and !search.keyword.isBlank()}" th:href="@{/admin/posts/trash}">초기화</a>
+        <span class="count">(표시 <span th:text="${#lists.size(result.items)}">0</span>건 / 총 <span th:text="${result.total}">0</span> 건)</span>
+      </div>
+      <a class="btn ghost sm" th:href="@{/admin/posts}">← 선배들의 이야기 게시물 관리</a>
+    </form>
+
+    <div class="trash-note">
+      휴지통으로 옮긴 글은 <b>미게시</b>로 바뀌어 프론트(사이트)에서 내려갑니다. <b>복원</b>하면 옮기기 전 상태로 선배들의 이야기 게시물 관리에 돌아오고, 게시중이던 글은 사이트에도 다시 올라갑니다. <b>완전 삭제</b>는 되돌릴 수 없습니다.
+    </div>
+
+    <table class="list">
+      <thead>
+      <tr>
+        <th style="width:70px">ID</th>
+        <th>게시물</th>
+        <th style="width:120px">카테고리</th>
+        <th style="width:90px">상태</th>
+        <th style="width:110px">작성자</th>
+        <th style="width:140px">삭제일</th>
+        <th style="width:200px" class="right">액션</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:if="${result.empty}">
+        <td colspan="7">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg>
+            <div>휴지통이 비어 있습니다.</div>
+          </div>
+        </td>
+      </tr>
+      <tr th:each="p : ${result.items}">
+        <td class="num" th:text="${p.id}">1</td>
+        <td>
+          <div class="title-cell">
+            <img class="thumb" th:if="${p.thumbnailUrl != null}" th:src="${p.thumbnailUrl}" alt="">
+            <span class="thumb empty" th:if="${p.thumbnailUrl == null}">no img</span>
+            <div>
+              <span class="t muted-t" th:text="${p.title}">제목</span>
+              <div class="s" th:text="${p.summary}"></div>
+            </div>
+          </div>
+        </td>
+        <td th:text="${p.categoryPath ?: '-'}">카테고리</td>
+        <td>
+          <span class="badge" th:classappend="${p.status.css}" th:text="${p.status.label}">미게시</span>
+          <div class="muted" style="font-size:11px;margin-top:3px" th:if="${p.statusBeforeTrash != null and p.statusBeforeTrash != p.status}"
+               th:text="'삭제 전 ' + ${p.statusBeforeTrash.label}">삭제 전 게시중</div>
+        </td>
+        <td class="nowrap" th:text="${p.authorName}">작성자</td>
+        <td class="muted nowrap" th:text="${#temporals.format(p.deletedAt, 'yyyy-MM-dd HH:mm')}">-</td>
+        <td class="right">
+          <div class="actions">
+            <form th:action="@{/admin/posts/{id}/restore(id=${p.id})}" method="post">
+              <button class="btn ghost xs accent" type="submit" title="게시물 관리로 복원">복원</button>
+            </form>
+            <form th:action="@{/admin/posts/{id}/purge(id=${p.id})}" method="post" data-confirm="이 게시물을 완전히 삭제할까요? 조회 기록까지 함께 지워지며 되돌릴 수 없습니다.">
+              <button class="btn danger xs" type="submit">삭제</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+
+    <nav class="pager" th:if="${result.totalPages > 1}">
+      <a th:if="${result.hasPrev}" th:href="@{/admin/posts/trash(page=${result.page - 1}, size=${search.size}, keyword=${search.keyword})}">‹</a>
+      <span class="dis" th:unless="${result.hasPrev}">‹</span>
+      <th:block th:each="n : ${result.pageNumbers}">
+        <span class="cur" th:if="${n == result.page}" th:text="${n}">1</span>
+        <a th:unless="${n == result.page}" th:text="${n}"
+           th:href="@{/admin/posts/trash(page=${n}, size=${search.size}, keyword=${search.keyword})}">2</a>
+      </th:block>
+      <a th:if="${result.hasNext}" th:href="@{/admin/posts/trash(page=${result.page + 1}, size=${search.size}, keyword=${search.keyword})}">›</a>
+      <span class="dis" th:unless="${result.hasNext}">›</span>
+    </nav>
+  </div>
+</main>
+<th:block th:fragment="scripts"></th:block>
+</body>
+</html>

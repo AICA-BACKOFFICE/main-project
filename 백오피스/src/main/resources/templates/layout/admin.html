@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:fragment="layout(pageTitle, content, scripts)">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${pageTitle} + ' | ' + ${siteName}">관리자</title>
+  <meta name="_csrf" th:content="${_csrf != null} ? ${_csrf.token} : ''">
+  <meta name="_csrf_header" th:content="${_csrf != null} ? ${_csrf.headerName} : 'X-CSRF-TOKEN'">
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <link rel="stylesheet" th:if="${menu == 'dashboard' or menu == 'stats'}" th:href="@{/css/dashboard.css}">
+  <link rel="stylesheet" th:if="${menu == 'life-photos'}" th:href="@{/css/page/life-photos.css}">
+</head>
+<body>
+
+<!-- ===== 상단바 ===== -->
+<header class="gnb">
+  <div class="gnb-inner">
+    <a class="gnb-logo" th:href="@{/admin}" title="관리자 홈">
+      <img th:src="@{/img/aica-logo.png}" alt="AICA">
+    </a>
+    <nav class="gnb-menu">
+      <a th:href="@{/admin/posts}" th:classappend="${menu == 'posts'} ? 'on'">게시물</a>
+      <a th:href="@{/admin/media}" th:classappend="${menu == 'media'} ? 'on'">미디어</a>
+      <a th:href="@{/admin/faq}" th:classappend="${menu == 'faq'} ? 'on'">FAQ</a>
+      <a th:href="@{/admin/stats}" th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'stats'} ? 'on'">통계</a>
+    </nav>
+    <div class="gnb-notice" th:if="${me != null and me.mustChangePw}">
+      <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM19 12a7 7 0 0 0-3-5.7M19 12a7 7 0 0 1-3 5.7"/></svg>
+      <a th:href="@{/account/password}">[안내] 임시 비밀번호를 사용 중입니다. 비밀번호를 변경해 주세요.</a>
+    </div>
+    <div class="gnb-right" th:if="${me != null}">
+      <a class="btn-write" th:href="@{/admin/posts/new}">글쓰기</a>
+      <a class="gnb-icon" th:href="@{/admin/posts(status='PENDING')}" title="답변대기 게시물">
+        <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      </a>
+      <details class="gnb-user">
+        <summary><span class="avatar" th:text="${#strings.substring(me.name, 0, 1)}">홍</span></summary>
+        <div class="gnb-drop">
+          <div class="who"><b th:text="${me.name}">홍길동</b><span class="muted" th:text="${me.role.label}">관리자</span></div>
+          <a th:href="@{/account/password}">비밀번호 변경</a>
+          <a th:if="${me.superAdmin}" th:href="@{/admin/users}">관리자 계정</a>
+          <form th:action="@{/logout}" method="post"><button type="submit">로그아웃</button></form>
+        </div>
+      </details>
+    </div>
+  </div>
+</header>
+
+<!-- ===== 운영진 공지 띠 (최고관리자가 올림 · 운영진 전체 표시 · 개인별 닫기) ===== -->
+<div class="notice-band" th:if="${liveNotices != null and !#lists.isEmpty(liveNotices)}">
+  <details class="notice-item" th:each="n, st : ${liveNotices}" th:classappend="'nl-' + ${n.levelCss}" th:open="${st.index == 0 and n.body != null and n.level == 'URGENT'}">
+    <summary>
+      <span class="nl-tag" th:text="${n.levelLabel}">안내</span>
+      <span class="nl-title" th:text="${n.title}">공지 제목</span>
+      <span class="nl-meta" th:text="${n.creatorName != null} ? ${n.creatorName} + ' · ' + ${#temporals.format(n.createdAt, 'MM-dd')} : ${#temporals.format(n.createdAt, 'MM-dd')}">작성자</span>
+      <span class="nl-more" th:if="${n.body != null}">자세히</span>
+      <form th:unless="${n.pinned}" th:action="@{/admin/notices/{id}/dismiss(id=${n.id})}" method="post" class="nl-close">
+        <input type="hidden" name="back" th:value="${currentPath}">
+        <button type="submit" title="이 공지 닫기 (나에게만)">✕</button>
+      </form>
+      <span th:if="${n.pinned}" class="nl-pin" title="고정 공지는 닫을 수 없습니다">고정</span>
+    </summary>
+    <div class="nl-body" th:if="${n.body != null}" th:text="${n.body}">본문</div>
+  </details>
+</div>
+
+<!-- ===== 본문 ===== -->
+<div class="wrap">
+  <div class="toast" th:if="${toast}" th:text="${toast}"></div>
+  <div class="toast error" th:if="${toastError}" th:text="${toastError}"></div>
+
+  <!-- 좌측 프로필 · 메뉴 -->
+  <aside class="lnb">
+    <div class="profile">
+      <a class="cover" th:href="@{/admin}">
+        <span class="cover-title" th:text="${siteName}">AICA 관리자 페이지</span>
+        <span class="cover-env" th:text="${envLabel}">local</span>
+      </a>
+      <a class="profile-body home-link" th:href="${frontBaseUrl}" target="_blank" rel="noopener" title="AICA 홈페이지 새 탭으로 열기">
+        <div class="blog-name">AICA 홈페이지 이동
+          <svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>
+        </div>
+        <div class="blog-url" th:text="${#strings.replace(#strings.replace(frontBaseUrl, 'https://', ''), 'http://', '')}">www.aica-gj.kr/main.php</div>
+      </a>
+    </div>
+
+    <details class="write-box">
+      <summary>쓰기 <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary>
+      <div class="write-drop">
+        <a th:href="@{/admin/posts/new}">게시물 작성</a>
+        <a th:href="@{/admin/media}">미디어 업로드</a>
+      </div>
+    </details>
+
+    <nav class="lnb-menu">
+      <a class="lnb-home" th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'dashboard'} ? 'on'" th:href="@{/admin}">
+        <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>
+        관리자 홈
+      </a>
+
+      <!--/* 카테고리 페이지 관리: 공유용 사이트의 페이지를 실제 화면 그대로 편집(전용 편집 화면 templates/page/editor.html 로 열림) */-->
+      <div class="lnb-group" th:if="${me != null and me.role.canManageContent() and categoryPages != null and !#lists.isEmpty(categoryPages)}">
+        <div class="lnb-title">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 13h8M8 16h5"/></svg>
+          카테고리 페이지 관리
+        </div>
+        <a th:each="p : ${categoryPages}" th:classappend="${menu == 'page-' + p.id} ? 'on'"
+           th:href="@{/admin/pages/{id}/edit(id=${p.id})}" th:text="${p.title}">인사교 알아보기</a>
+      </div>
+
+      <div class="lnb-group">
+        <div class="lnb-title">
+          <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg>
+          게시물 관리
+        </div>
+        <a th:classappend="${menu == 'posts'} ? 'on'" th:href="@{/admin/posts}">선배들의 이야기 게시물 관리</a>
+        <a th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'life-photos'} ? 'on'" th:href="@{/admin/pages/life-photos}">인사교 라이프 게시물 관리</a>
+        <a th:classappend="${menu == 'faq'} ? 'on'" th:href="@{/admin/faq}">지원 전 Check FAQ 관리</a>
+      </div>
+
+      <div class="lnb-group">
+        <div class="lnb-title">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>
+          콘텐츠
+        </div>
+        <a th:classappend="${menu == 'media'} ? 'on'" th:href="@{/admin/media}">미디어 관리</a>
+      </div>
+
+      <div class="lnb-group" th:if="${me != null and me.role.canManageContent()}">
+        <div class="lnb-title">
+          <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
+          통계
+        </div>
+        <a th:classappend="${menu == 'stats'} ? 'on'" th:href="@{/admin/stats}">방문 통계</a>
+        <a th:classappend="${menu == 'notices'} ? 'on'" th:href="@{/admin/notices}">운영진 공지</a>
+      </div>
+
+      <div class="lnb-group">
+        <div class="lnb-title">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          관리
+        </div>
+        <a th:if="${me != null and me.superAdmin}" th:classappend="${menu == 'users'} ? 'on'" th:href="@{/admin/users}">관리자 계정</a>
+        <a th:classappend="${menu == 'password'} ? 'on'" th:href="@{/account/password}">비밀번호 변경</a>
+        <a th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'trash'} ? 'on'" th:href="@{/admin/posts/trash}">휴지통</a>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- 우측 콘텐츠 -->
+  <main th:replace="${content}">페이지 본문</main>
+</div>
+
+<footer class="foot">Copyright © 2026 AICA</footer>
+
+<script th:src="@{/js/admin.js}"></script>
+<th:block th:replace="${scripts}"></th:block>
+</body>
+</html>

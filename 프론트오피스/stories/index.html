@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="ko" data-menu="stories" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>선배들의 이야기 — 인공지능사관학교</title>
+  <meta name="description" content="먼저 다녀온 선배들의 후기 · 인터뷰 · 프로젝트 · 기수별 기록을 모아 봅니다.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="선배들의 이야기 — 인공지능사관학교">
+  <meta property="og:description" content="먼저 다녀온 선배들의 후기 · 인터뷰 · 프로젝트 · 기수별 기록을 모아 봅니다.">
+  <link rel="icon" type="image/png" href="../common/assets/brand/symbol-blue.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
+  <link rel="stylesheet" href="../common/css/tokens.css">
+  <link rel="stylesheet" href="../common/css/base.css">
+  <link rel="stylesheet" href="../common/css/site.css">
+  <link rel="stylesheet" href="css/stories.css">
+  <link rel="stylesheet" href="css/stories-sections.css">
+  <script src="js/stories-data.js" defer></script>
+  <script src="js/stories-render.js" defer></script>
+  <script src="js/stories-sections.js" defer></script>
+  <script src="../common/js/menu.js" defer></script>
+  <script src="../common/js/site.js" defer></script>
+  <script src="js/stories.js" defer></script>
+</head>
+<body>
+<header class="site-header" id="siteHeader"></header>
+<!-- 본문: 디자이너 시안 '선배들의이야기_최신'(2026-10-08). 2뎁스는 헤더 밑 공통 하위 메뉴 바, 주소 #reviews(기본) · #interviews · #projects · #cohorts → 탭 라디오 t1~t4(js/stories.js)
+     구조: 히어로 캐러셀(#hx) → .st-main 안 탭 4개(#p-rev · #p-iv · #p-pr · #p-coh, 인터뷰 상세 .ivd #iv-… · 프로젝트 상세 .pjd #pj-…) → 글 창 .ov(#r-…) · 기수 기록 창 .cmodal(JS가 누른 카드 내용을 옮김)
+     쓰기 버튼 · 쓰기 창은 관리자 전용이라 공개 화면에서 뺌(2026-10-08 사용자 결정. 옛 주소 #write-…는 js/stories.js가 그 탭으로)
+     반복 단위(첫 항목에만 data-field 표시, 나머지는 같은 구조): 후기 카드 .idc · 후기 리스트 행 .rvr · 글 창 .ov · 인터뷰 카드 .iv · 인터뷰 상세 .ivd · 프로젝트 .pp · 기수 카드 a.st
+     칸 이름: title · summary · body · category · cohort · tag · thumbnail · author · date(common 게시판과 같음) + track(이름 옆 분야, 예: 데이터 분석 · AI 모델링) · duration(영상 길이) · question · answer · team · type · term(프로젝트 정보)
+     cohort 칸은 대부분 '7<i>기</i>'처럼 숫자 뒤 '기'가 <i>로 붙어 있음 — 템플릿에서는 숫자만 넣고 <i>기</i>는 마크업에 둠(기수 카드 .cg만 '7기' 글자 그대로) -->
+<main id="main" class="stories-page" tabindex="-1">
+<section class="hx" id="hx" aria-roledescription="carousel" aria-label="선배들의 대표 이야기">
+  <h1 class="sr">선배들의 이야기</h1>
+  <div class="hx-in">
+    <div class="hx-head"><div class="hx-ssul">먼저 다녀온 선배들의 <b>SSUL</b></div></div>
+    <div class="hx-row"></div>
+    <div class="hx-prog"><div class="hx-segs" role="group" aria-label="대표 이야기 고르기"></div><span class="hx-cue" aria-hidden="true">아래로 이어지는 이야기<i></i></span></div>
+  </div>
+</section>
+
+<input class="tr tb" autocomplete="off" type="radio" name="tab" id="t1" tabindex="-1" aria-hidden="true">
+<input class="tr tb" autocomplete="off" type="radio" name="tab" id="t2" tabindex="-1" aria-hidden="true">
+<input class="tr tb" autocomplete="off" type="radio" name="tab" id="t3" tabindex="-1" aria-hidden="true">
+<input class="tr tb" autocomplete="off" type="radio" name="tab" id="t4" tabindex="-1" aria-hidden="true">
+<span class="tgt2" id="go-iv"></span>
+<span class="tgt2" id="go-pr"></span>
+<span class="tgt2" id="go-coh"></span>
+<div class="st-main">
+  <section class="wrap pane rev" id="p-rev">
+    <input class="tr" autocomplete="off" type="radio" name="rc" id="rc_all" checked>
+    <input class="tr" autocomplete="off" type="radio" name="rc" id="rc_life">
+    <input class="tr" autocomplete="off" type="radio" name="rc" id="rc_class">
+    <input class="tr" autocomplete="off" type="radio" name="rc" id="rc_proj">
+    <input class="tr" autocomplete="off" type="radio" name="rc" id="rc_career">
+    <input class="tr" autocomplete="off" type="radio" name="fco" id="fco_all" checked>
+    <input class="tr" autocomplete="off" type="radio" name="fco" id="fco_0">
+    <input class="tr" autocomplete="off" type="radio" name="fco" id="fco_1">
+    <input class="tr" autocomplete="off" type="radio" name="fco" id="fco_2">
+    <input class="tr" autocomplete="off" type="radio" name="fco" id="fco_3">
+    <input class="tr" autocomplete="off" type="radio" name="fco" id="fco_4">
+    <input class="tr" autocomplete="off" type="radio" name="vm" id="vm-card" checked>
+    <input class="tr" autocomplete="off" type="radio" name="vm" id="vm-list">
+    <div class="sh sh-row">
+      <div><h2>후기</h2><p>겪어 본 사람이 직접 써요</p></div>
+    </div>
+    <div class="lmq lq" aria-label="후기 미리보기" role="group">
+      <div class="lq-rail">
+        <div class="lq-t"></div>
+      </div>
+    </div>
+    <span class="tgt" id="tg-0"></span>
+    <span class="tgt" id="tg-1"></span>
+    <span class="tgt" id="tg-2"></span>
+    <span class="tgt" id="tg-3"></span>
+    <span class="tgt" id="tg-4"></span>
+    <span class="tgt" id="tg-5"></span>
+    <span class="tgt" id="tg-6"></span>
+    <div class="filters">
+      <div class="chips">
+        <label for="rc_all">전체</label>
+        <label for="rc_life">생활</label>
+        <label for="rc_class">수업</label>
+        <label for="rc_proj">프로젝트</label>
+        <label for="rc_career">취업·진로</label>
+      </div>
+      <div class="drawers">
+        <details class="dw dw-fco" name="dwg"><summary>
+            <b>기수</b>
+            <u></u>
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5L8 10.5L12 6.5"/></svg>
+          </summary>
+          <div class="dwin"><label for="fco_all">전체</label><label for="fco_0">7기</label><label for="fco_1">6기</label><label for="fco_2">5기</label><label for="fco_3">4기</label><label for="fco_4">3기</label></div>
+        </details>
+        <details class="dw dw-ftg" name="dwg"><summary>
+            <b>태그</b>
+            <u></u>
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5L8 10.5L12 6.5"/></svg>
+          </summary>
+          <div class="dwin"><a href="#p-rev">전체</a><a href="#tg-0">#비전공자</a><a href="#tg-1">#타지출신</a><a href="#tg-2">#직장인출신</a><a href="#tg-3">#졸업생</a><a href="#tg-4">#적응</a><a href="#tg-5">#팀활동</a><a href="#tg-6">#취업연계</a></div>
+        </details>
+        <div class="vtoggle">
+          <label for="vm-card" title="카드 보기">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.6"/><rect x="9" y="1" width="6" height="6" rx="1.6"/><rect x="1" y="9" width="6" height="6" rx="1.6"/><rect x="9" y="9" width="6" height="6" rx="1.6"/></svg>
+            <span class="sr">카드 보기</span>
+          </label>
+          <label for="vm-list" title="리스트 보기">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><rect x="1" y="2" width="14" height="2.4" rx="1.2"/><rect x="1" y="6.8" width="14" height="2.4" rx="1.2"/><rect x="1" y="11.6" width="14" height="2.4" rx="1.2"/></svg>
+            <span class="sr">리스트 보기</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="idgrid"></div>
+    <div class="rvlist"></div>
+    <div class="pager"></div>
+    <p class="footnote">후기는 작성자가 다닌 기수 기준이에요. 지원금·일정 같은 제도는 기수마다 달라지니 최신 모집 공고를 함께 확인하세요.</p>
+  </section>
+  <section class="wrap pane" id="p-iv">
+    <div class="ivlist">
+      <div class="sh sh-row">
+        <div><h2>인터뷰</h2><p>한 사람의 여덟 달을 통째로 들어요</p></div>
+      </div>
+      <section class="ivband" aria-label="인터뷰 목록">
+        <div class="lsp-wave" aria-hidden="true">
+          <i style="height:35%"></i>
+          <i style="height:82%"></i>
+          <i style="height:42%"></i>
+          <i style="height:36%"></i>
+          <i style="height:49%"></i>
+          <i style="height:74%"></i>
+          <i style="height:73%"></i>
+          <i style="height:64%"></i>
+          <i style="height:57%"></i>
+          <i style="height:36%"></i>
+          <i style="height:64%"></i>
+          <i style="height:42%"></i>
+          <i style="height:90%"></i>
+          <i style="height:40%"></i>
+          <i style="height:57%"></i>
+          <i style="height:37%"></i>
+          <i style="height:63%"></i>
+          <i style="height:64%"></i>
+          <i style="height:75%"></i>
+          <i style="height:69%"></i>
+          <i style="height:46%"></i>
+          <i style="height:42%"></i>
+          <i style="height:45%"></i>
+          <i style="height:85%"></i>
+          <i style="height:37%"></i>
+          <i style="height:77%"></i>
+          <i style="height:39%"></i>
+          <i style="height:44%"></i>
+          <i style="height:51%"></i>
+          <i style="height:78%"></i>
+          <i style="height:12%"></i>
+          <i style="height:8%"></i>
+          <i style="height:9%"></i>
+          <i style="height:12%"></i>
+          <i style="height:9%"></i>
+          <i style="height:9%"></i>
+          <i style="height:12%"></i>
+          <i style="height:10%"></i>
+          <i style="height:8%"></i>
+          <i style="height:12%"></i>
+          <i style="height:10%"></i>
+          <i style="height:7%"></i>
+          <i style="height:11%"></i>
+          <i style="height:11%"></i>
+          <i style="height:6%"></i>
+          <i style="height:11%"></i>
+          <i style="height:11%"></i>
+          <i style="height:7%"></i>
+          <i style="height:11%"></i>
+          <i style="height:12%"></i>
+          <i style="height:37%"></i>
+          <i style="height:52%"></i>
+          <i style="height:53%"></i>
+          <i style="height:81%"></i>
+          <i style="height:68%"></i>
+          <i style="height:59%"></i>
+          <i style="height:42%"></i>
+          <i style="height:44%"></i>
+          <i style="height:75%"></i>
+          <i style="height:47%"></i>
+          <i style="height:86%"></i>
+          <i style="height:36%"></i>
+          <i style="height:42%"></i>
+          <i style="height:41%"></i>
+          <i style="height:75%"></i>
+          <i style="height:63%"></i>
+          <i style="height:74%"></i>
+          <i style="height:58%"></i>
+          <i style="height:38%"></i>
+          <i style="height:56%"></i>
+          <i style="height:52%"></i>
+          <i style="height:88%"></i>
+          <i style="height:41%"></i>
+          <i style="height:65%"></i>
+          <i style="height:35%"></i>
+          <i style="height:60%"></i>
+          <i style="height:53%"></i>
+          <i style="height:83%"></i>
+          <i style="height:64%"></i>
+          <i style="height:55%"></i>
+          <i style="height:35%"></i>
+          <i style="height:49%"></i>
+          <i style="height:79%"></i>
+          <i style="height:12%"></i>
+          <i style="height:10%"></i>
+          <i style="height:7%"></i>
+          <i style="height:12%"></i>
+          <i style="height:11%"></i>
+          <i style="height:6%"></i>
+          <i style="height:11%"></i>
+          <i style="height:11%"></i>
+          <i style="height:7%"></i>
+          <i style="height:11%"></i>
+          <i style="height:12%"></i>
+          <i style="height:7%"></i>
+          <i style="height:10%"></i>
+          <i style="height:12%"></i>
+          <i style="height:8%"></i>
+          <i style="height:9%"></i>
+          <i style="height:12%"></i>
+          <i style="height:9%"></i>
+          <i style="height:9%"></i>
+          <i style="height:12%"></i>
+          <i style="height:50%"></i>
+          <i style="height:41%"></i>
+          <i style="height:54%"></i>
+          <i style="height:81%"></i>
+          <i style="height:52%"></i>
+          <i style="height:77%"></i>
+          <i style="height:36%"></i>
+          <i style="height:45%"></i>
+          <i style="height:42%"></i>
+          <i style="height:84%"></i>
+          <i style="height:59%"></i>
+          <i style="height:69%"></i>
+          <i style="height:46%"></i>
+          <i style="height:43%"></i>
+          <i style="height:66%"></i>
+          <i style="height:58%"></i>
+          <i style="height:86%"></i>
+          <i style="height:43%"></i>
+          <i style="height:50%"></i>
+          <i style="height:36%"></i>
+          <i style="height:73%"></i>
+          <i style="height:51%"></i>
+          <i style="height:83%"></i>
+          <i style="height:56%"></i>
+          <i style="height:45%"></i>
+          <i style="height:47%"></i>
+          <i style="height:58%"></i>
+          <i style="height:83%"></i>
+          <i style="height:53%"></i>
+          <i style="height:71%"></i>
+          <i style="height:36%"></i>
+          <i style="height:53%"></i>
+          <i style="height:42%"></i>
+          <i style="height:11%"></i>
+          <i style="height:12%"></i>
+          <i style="height:7%"></i>
+          <i style="height:10%"></i>
+        </div>
+        <span class="lsp-rec" aria-hidden="true">REC 00:42:17</span>
+        <div class="ivcar">
+          <button class="ivnav l" type="button" aria-label="이전 인터뷰">←</button>
+          <div class="ivgrid"></div>
+          <button class="ivnav r" type="button" aria-label="다음 인터뷰">→</button>
+          <div class="ivdots" aria-label="인터뷰 넘김 위치" role="group"></div>
+        </div>
+      </section>
+      <section class="iva" id="iv-all" aria-labelledby="iva-t">
+        <div class="iva-hd">
+          <h3 id="iva-t">전체 인터뷰</h3>
+          <div class="iva-tools">
+            <div class="iva-chips" data-f="coh" role="group" aria-label="기수"></div>
+            <div class="iva-seg" role="group" aria-label="보기 방식">
+              <button type="button" data-v="grid" aria-pressed="true" title="카드 보기"><svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.6"/><rect x="9" y="1" width="6" height="6" rx="1.6"/><rect x="1" y="9" width="6" height="6" rx="1.6"/><rect x="9" y="9" width="6" height="6" rx="1.6"/></svg><span class="sr">카드 보기</span></button>
+              <button type="button" data-v="list" aria-pressed="false" title="리스트 보기"><svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><rect x="1" y="2" width="14" height="2.4" rx="1.2"/><rect x="1" y="6.8" width="14" height="2.4" rx="1.2"/><rect x="1" y="11.6" width="14" height="2.4" rx="1.2"/></svg><span class="sr">리스트 보기</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="iva-out" data-view="grid"></div>
+        <p class="iva-empty" hidden>고른 조건에 맞는 인터뷰가 없어요.</p>
+        <button class="iva-more" type="button" hidden></button>
+      </section>
+      <p class="footnote">글과 영상을 한 목록에 섞어 두었어요 · 사진과 영상은 초상권·재게시 동의가 확인된 자료만 올립니다. 지금 보이는 글과 이름은 시안용 더미입니다.</p>
+    </div>
+  </section>
+  <section class="wrap pane proj" id="p-pr">
+    <div class="pjlist">
+    <div class="sh sh-row">
+      <div><h2>우수 프로젝트 소개</h2><p>도약과정에서 나온 기수별 대표 프로젝트예요</p></div>
+    </div>
+    <div class="pr">
+      <div class="stage"></div>
+      <div class="strip"></div>
+    </div>
+    </div>
+  </section>
+  <section class="wrap pane" id="p-coh">
+    <div class="sh sh-row">
+      <div><h2>기수별 모아보기</h2><p>입교식부터 수료식까지, 기수마다 무슨 일이 있었는지 모아 뒀어요 · 개인 경험담은 후기 탭에서 기수로 걸러 보세요</p></div>
+    </div>
+    <div class="arch">
+      <nav class="crail" aria-label="기수 고르기">
+      <div class="crg"><h3>기수</h3><ul data-group="coh"></ul></div>
+    </nav>      <div>
+        <div class="g2">
+          <div class="diff"><span class="lb">7기 변경점</span><h3>6기와 무엇이 달라졌나</h3>
+            <table>
+              <tr><th scope="row">수업 방식</th><td class="old">준비·성장 일부 온라인 병행</td><td class="new">AI 준비과정(VOD) 외 전 과정 오프라인</td></tr>
+              <tr><th scope="row">프로젝트</th><td class="old">520시간</td><td class="new">720시간 — 기업연계·실증·창업 중 택 1</td></tr>
+              <tr><th scope="row">해커톤</th><td class="old">전 직군 통합 2박 3일</td><td class="new">폐지</td></tr>
+              <tr><th scope="row">트랙 구성</th><td class="old">7개 트랙</td><td class="new">직군별 심화 + 산업 도메인 2층 구조</td></tr>
+              <tr><th scope="row">전형</th><td class="old">서류 → 인터뷰 → Pre-Training → 퀴즈</td><td class="new">서류 → 코딩테스트 → 면접·인적성</td></tr>
+              <tr><th scope="row">지원금</th><td class="old">생활지원금</td><td class="new">생활지원금 + 프로젝트 지원금 200만원 신설</td></tr>
+              <tr><th scope="row">지원 대상</th><td class="old">4학년·졸업예정·졸업유예자 중심</td><td class="new">졸업생·스타트업 재직자까지 확대</td></tr>
+            </table>
+          </div>
+        </div>
+        <nav class="cpager" aria-label="기수 기록 페이지"></nav>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="cmodal" role="dialog" aria-modal="true" aria-labelledby="cm-title">
+  <div class="bg"></div>
+  <div class="sheet">
+    <button class="x" type="button" aria-label="닫기">&times;</button>
+    <div class="media"></div>
+    <div class="body"><div class="meta"></div><h3 id="cm-title"></h3><p class="lead"></p><div class="extra"></div><div class="acts"></div></div>
+  </div>
+</div>
+</main>
+<footer class="site-footer" id="siteFooter" data-note="본 사이트는 카테고리·콘텐츠 구성안을 확인하기 위한 시안이며, 표시된 수치·일정·혜택은 모두 더미 데이터입니다."></footer>
+</body>
+</html>

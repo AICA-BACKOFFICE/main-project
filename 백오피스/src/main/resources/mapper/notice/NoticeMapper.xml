@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.backoffice.notice.NoticeMapper">
+
+  <sql id="cols">
+    n.id, n.title, n.body, n.level, n.pinned, n.active, n.starts_at, n.ends_at, n.created_by, n.created_at, n.updated_at,
+    u.name AS creator_name,
+    (SELECT COUNT(*) FROM notice_dismissals d WHERE d.notice_id = n.id) AS dismiss_count
+  </sql>
+
+  <select id="findAll" resultType="Notice">
+    SELECT <include refid="cols"/>
+      FROM notices n LEFT JOIN admin_users u ON u.id = n.created_by
+     ORDER BY n.active DESC, n.id DESC
+  </select>
+
+  <select id="findVisibleFor" resultType="Notice">
+    SELECT <include refid="cols"/>
+      FROM notices n LEFT JOIN admin_users u ON u.id = n.created_by
+     WHERE n.active = TRUE
+       AND (n.starts_at IS NULL OR n.starts_at &lt;= CURRENT_TIMESTAMP)
+       AND (n.ends_at IS NULL OR n.ends_at &gt; CURRENT_TIMESTAMP)
+       AND (n.pinned = TRUE OR NOT EXISTS (SELECT 1 FROM notice_dismissals d WHERE d.notice_id = n.id AND d.admin_id = #{adminId}))
+     ORDER BY CASE n.level WHEN 'URGENT' THEN 0 WHEN 'WARN' THEN 1 ELSE 2 END, n.pinned DESC, n.id DESC
+  </select>
+
+  <select id="findById" resultType="Notice">
+    SELECT <include refid="cols"/>
+      FROM notices n LEFT JOIN admin_users u ON u.id = n.created_by
+     WHERE n.id = #{id}
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO notices (title, body, level, pinned, active, starts_at, ends_at, created_by)
+    VALUES (#{title}, #{body}, #{level}, #{pinned}, #{active}, #{startsAt}, #{endsAt}, #{createdBy})
+  </insert>
+
+  <update id="update">
+    UPDATE notices
+       SET title = #{title}, body = #{body}, level = #{level}, pinned = #{pinned}, active = #{active},
+           starts_at = #{startsAt}, ends_at = #{endsAt}, updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id}
+  </update>
+
+  <update id="setActive">
+    UPDATE notices SET active = #{active}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
+  </update>
+
+  <delete id="delete">
+    DELETE FROM notices WHERE id = #{id}
+  </delete>
+
+  <delete id="deleteDismissal">
+    DELETE FROM notice_dismissals WHERE notice_id = #{noticeId} AND admin_id = #{adminId}
+  </delete>
+
+  <insert id="insertDismissal">
+    INSERT INTO notice_dismissals (notice_id, admin_id) VALUES (#{noticeId}, #{adminId})
+  </insert>
+
+  <delete id="clearDismissals">
+    DELETE FROM notice_dismissals WHERE notice_id = #{noticeId}
+  </delete>
+</mapper>

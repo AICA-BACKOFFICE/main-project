@@ -1,0 +1,30 @@
+/* =========================================================
+   기본 요소: 홈 · 카테고리 페이지(선배들의 이야기 · 인사교 라이프 · 지원 전 체크) · 앞으로 만들 페이지의 바탕
+   (알아보기는 전달받은 자기 base.css를 씁니다)
+   불러오는 순서: tokens.css → base.css → site.css → 페이지 CSS
+   ========================================================= */
+html{
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  scroll-padding-top:calc(env(safe-area-inset-top,0px) + var(--hdr) + var(--sub) + 8px);
+  scroll-behavior:smooth;
+  font-synthesis-weight:none;
+  -webkit-text-size-adjust:100%;
+}
+*,*::before,*::after{box-sizing:border-box}
+/* 본문은 고정 헤더(+ 하위 메뉴 바) 아래에서 시작. 본문이 짧거나 비어도 푸터는 화면 맨 아래 */
+body{margin:0;min-height:100svh;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);font-family:var(--ff-sans);font-size:17px;line-height:1.75;letter-spacing:-.01em;word-break:keep-all;-webkit-font-smoothing:antialiased}
+main{flex:1 0 auto;padding-top:calc(var(--hdr) + var(--sub));overflow-x:clip}
+img{max-width:100%;display:block}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:2px}
+main[tabindex="-1"]:focus{outline:none}   /* 본문으로 바로가기의 도착점(본문 전체)에는 테두리를 그리지 않음 */
+:is(h1,h2,h3)[tabindex="-1"]:focus{outline:none}   /* #위치로 이동한 뒤 초점을 받은 섹션 제목(site.js goTo · 페이지 스크립트)도 같음: 누르는 곳이 아니라 테두리 없이 초점만 */
+
+@media (max-width:860px){
+  body{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+}

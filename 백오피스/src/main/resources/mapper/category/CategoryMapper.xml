@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.backoffice.category.CategoryMapper">
+
+  <sql id="columnsWithCount">
+    c.id, c.name, c.slug, c.description, c.sort_order, c.active, c.created_at, c.updated_at, c.parent_id,
+    (SELECT COUNT(*) FROM posts p WHERE (p.category_id = c.id OR p.sub_category_id = c.id) AND p.deleted_at IS NULL) AS post_count
+  </sql>
+
+  <select id="findAll" resultType="Category">
+    SELECT <include refid="columnsWithCount"/>
+      FROM categories c
+     ORDER BY c.parent_id NULLS FIRST, c.sort_order, c.id
+  </select>
+
+  <select id="findActive" resultType="Category">
+    SELECT <include refid="columnsWithCount"/>
+      FROM categories c
+     WHERE c.active = TRUE
+     ORDER BY c.sort_order, c.id
+  </select>
+
+  <select id="findActiveChildren" resultType="Category">
+    SELECT <include refid="columnsWithCount"/>
+      FROM categories c
+     WHERE c.active = TRUE AND c.parent_id = #{parentId}
+     ORDER BY c.sort_order, c.id
+  </select>
+
+  <select id="findById" resultType="Category">
+    SELECT <include refid="columnsWithCount"/> FROM categories c WHERE c.id = #{id}
+  </select>
+
+  <select id="findBySlug" resultType="Category">
+    SELECT <include refid="columnsWithCount"/> FROM categories c WHERE c.slug = #{slug}
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO categories (name, slug, description, sort_order, active)
+    VALUES (#{name}, #{slug}, #{description}, #{sortOrder}, #{active})
+  </insert>
+
+  <update id="update">
+    UPDATE categories
+       SET name = #{name},
+           slug = #{slug},
+           description = #{description},
+           sort_order = #{sortOrder},
+           active = #{active},
+           updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id}
+  </update>
+
+  <delete id="delete">
+    DELETE FROM categories WHERE id = #{id}
+  </delete>
+
+  <update id="updateSortOrder">
+    UPDATE categories SET sort_order = #{sortOrder}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
+  </update>
+
+  <select id="countPosts" resultType="long">
+    SELECT COUNT(*) FROM posts WHERE category_id = #{id} AND deleted_at IS NULL
+  </select>
+</mapper>

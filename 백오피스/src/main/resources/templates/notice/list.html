@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout('운영진 공지', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <h2 class="page-title">운영진 공지 <span class="sub">최고관리자가 올리면 로그인한 운영진 전체의 화면 상단에 띠로 표시됩니다. 각자 닫을 수 있고, 고정 공지는 닫을 수 없습니다.</span></h2>
+
+  <div class="card" th:if="${me != null and me.superAdmin}">
+    <div class="card-head"><div class="left"><strong th:text="${form.id == null} ? '새 공지' : '공지 수정'">새 공지</strong></div>
+      <a class="btn ghost sm" th:if="${form.id != null}" th:href="@{/admin/notices}">새 공지 작성으로</a></div>
+    <form class="card-body notice-form" th:object="${form}" method="post"
+          th:action="${form.id == null} ? @{/admin/notices} : @{/admin/notices/{id}(id=${form.id})}">
+      <div class="alert error" th:if="${error}" th:text="${error}"></div>
+      <div class="row">
+        <label>제목 <input class="input wide" th:field="*{title}" maxlength="200" required placeholder="예: 10/15(수) 22:00~23:00 서버 점검 — 글 저장이 잠시 안 됩니다"></label>
+      </div>
+      <div class="row">
+        <label>내용 (선택) <textarea class="textarea wide" th:field="*{body}" rows="3" maxlength="2000" placeholder="자세한 안내가 필요하면 적어 주세요. 띠를 클릭하면 펼쳐 보입니다."></textarea></label>
+      </div>
+      <div class="row inline">
+        <label>중요도
+          <select class="select" th:field="*{level}">
+            <option value="INFO">안내 (파랑)</option>
+            <option value="WARN">주의 (노랑)</option>
+            <option value="URGENT">긴급 (빨강)</option>
+          </select>
+        </label>
+        <label>표시 시작 <input class="input" type="datetime-local" th:field="*{startsAt}"></label>
+        <label>표시 종료 <input class="input" type="datetime-local" th:field="*{endsAt}"></label>
+        <label class="chk"><input type="checkbox" th:field="*{pinned}"> 고정 (닫기 불가)</label>
+        <label class="chk"><input type="checkbox" th:field="*{active}"> 바로 표시</label>
+        <button class="btn primary" type="submit" th:text="${form.id == null} ? '공지 올리기' : '수정 저장'">공지 올리기</button>
+      </div>
+      <div class="muted" style="font-size:12px">시작·종료를 비우면 끌 때까지 계속 표시됩니다. 수정하면 이미 닫은 사람에게도 다시 보입니다.</div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="left"><strong>공지 목록</strong><span class="count">(총 <span th:text="${#lists.size(notices)}">0</span>건)</span></div></div>
+    <table class="list">
+      <thead><tr>
+        <th style="width:70px">상태</th><th style="width:70px">중요도</th><th>제목</th><th style="width:150px">표시 기간</th><th style="width:100px">작성자</th><th style="width:80px" class="right">닫은 사람</th>
+        <th style="width:190px" class="right" th:if="${me != null and me.superAdmin}">액션</th>
+      </tr></thead>
+      <tbody>
+      <tr th:if="${#lists.isEmpty(notices)}"><td colspan="7"><div class="empty-state">등록된 공지가 없습니다.</div></td></tr>
+      <tr th:each="n : ${notices}">
+        <td><span class="badge" th:classappend="${n.live} ? 'on' : 'off'" th:text="${n.live} ? '표시 중' : (${n.active} ? '기간 외' : '내림')">표시 중</span></td>
+        <td><span class="badge" th:classappend="'nl-' + ${n.levelCss}" th:text="${n.levelLabel}">안내</span></td>
+        <td>
+          <b th:text="${n.title}">제목</b> <span class="tag" th:if="${n.pinned}" style="font-size:10px">고정</span>
+          <div class="muted" style="font-size:12px;white-space:pre-wrap" th:if="${n.body != null}" th:text="${n.body}"></div>
+        </td>
+        <td class="muted nowrap" style="font-size:12px">
+          <span th:text="${n.startsAt != null} ? ${#temporals.format(n.startsAt, 'MM-dd HH:mm')} : '즉시'">즉시</span> ~
+          <span th:text="${n.endsAt != null} ? ${#temporals.format(n.endsAt, 'MM-dd HH:mm')} : '끌 때까지'">끌 때까지</span>
+        </td>
+        <td class="nowrap" th:text="${n.creatorName ?: '-'}">작성자</td>
+        <td class="right" th:text="${n.dismissCount}">0</td>
+        <td class="right" th:if="${me != null and me.superAdmin}">
+          <div class="actions">
+            <a class="btn ghost xs" th:href="@{/admin/notices(edit=${n.id})}">수정</a>
+            <form th:action="@{/admin/notices/{id}/toggle(id=${n.id})}" method="post">
+              <input type="hidden" name="active" th:value="${!n.active}">
+              <button class="btn ghost xs accent" type="submit" th:text="${n.active} ? '내리기' : '표시'">내리기</button>
+            </form>
+            <form th:action="@{/admin/notices/{id}/delete(id=${n.id})}" method="post" data-confirm="이 공지를 삭제할까요?">
+              <button class="btn danger xs" type="submit">삭제</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+<th:block th:fragment="scripts"></th:block>
+</body>
+</html>

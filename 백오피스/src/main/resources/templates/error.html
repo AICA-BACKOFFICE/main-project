@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <title>오류</title>
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-box" style="text-align:center">
+    <div style="font-size:40px;font-weight:800;color:#9ca3af" th:text="${status} ?: '오류'">404</div>
+    <h1 style="font-size:16px;margin-top:8px"
+        th:text="${message != null and !#strings.isEmpty(message)} ? ${message}
+                 : (${status} == 404 ? '페이지를 찾을 수 없습니다.'
+                 : (${status} == 403 ? '접근 권한이 없습니다.'
+                 : (${status} == 401 ? '로그인이 필요합니다.' : '요청을 처리하지 못했습니다.')))">오류</h1>
+    <p class="help" style="margin:14px 0 22px">문제가 계속되면 관리자에게 문의하세요.</p>
+    <a class="btn ghost" th:href="@{/admin}" style="width:auto;display:inline-flex">대시보드로</a>
+    <a class="btn ghost" href="javascript:history.back()" style="width:auto;display:inline-flex;margin-left:6px">이전 페이지</a>
+  </div>
+</div>
+</body>
+</html>

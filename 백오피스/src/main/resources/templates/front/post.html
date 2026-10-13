@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${post.title} + ' | 미리보기'">미리보기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&amp;family=Nanum+Myeongjo:wght@400;700&amp;family=Gowun+Dodum&amp;family=Gowun+Batang:wght@400;700&amp;family=Nanum+Pen+Script&amp;family=Do+Hyeon&amp;display=swap">
+  <link rel="stylesheet" th:href="@{/css/front.css}">
+</head>
+<body>
+
+<!-- 미리보기 안내 바 (프론트 실제 화면에는 없음) -->
+<div class="preview-bar">
+  <div>
+    <span class="tag" th:classappend="${previewMode == 'saved'} ? 'saved'"
+          th:text="${previewMode == 'saved'} ? '저장된 내용 미리보기' : (${previewMode == 'template'} ? '템플릿 미리보기 (예시 데이터)' : '저장 전 미리보기')">미리보기</span>
+    프론트 게시물 화면과 같은 구성으로 표시합니다. 상태:
+    <b th:text="${post.status != null} ? ${post.status.label} : '-'">임시저장</b>
+    <a th:if="${post.id != null}" th:href="@{/admin/posts/{id}/edit(id=${post.id})}">편집으로 돌아가기</a>
+    <a th:href="${frontBaseUrl}" target="_blank" rel="noopener">AICA 홈페이지 열기</a>
+  </div>
+  <button type="button" onclick="window.close()">닫기</button>
+</div>
+
+<header class="f-header">
+  <div class="inner">
+    <div class="logo">AICA <b>BLOG</b></div>
+    <nav>
+      <a href="#" onclick="return false;">홈</a>
+      <a href="#" onclick="return false;">카테고리</a>
+      <a href="#" onclick="return false;">소개</a>
+    </nav>
+  </div>
+</header>
+
+<!-- 레이아웃: PostLayout(프리셋·정렬·폭·요소 순서)에 따라 구성. 모델 layout 이 없으면 기본값 -->
+<div class="f-page" th:with="lo=${layout}" th:classappend="${lo.cssClass}">
+  <div class="f-layout">
+
+    <aside class="f-side" th:if="${lo.hasSidebar}">
+      <th:block th:replace="~{front/widgets :: widgets(${lo.sidebar})}"></th:block>
+    </aside>
+
+    <article class="article">
+      <header class="f-head">
+        <th:block th:each="item : ${lo.header}">
+          <span class="cat" th:if="${item == 'category' and post.categoryName != null}" th:text="${post.categoryName}">카테고리</span>
+          <h1 class="title" th:if="${item == 'title'}" th:text="${post.title}">제목</h1>
+          <div class="meta" th:if="${item == 'meta'}">
+            <span th:text="${post.authorName ?: '관리자'}">작성자</span>
+            <span>·</span>
+            <span th:text="${post.publishedAt != null} ? ${#temporals.format(post.publishedAt, 'yyyy.MM.dd')} : '(발행 전)'">2026.09.22</span>
+            <span>·</span>
+            <span>조회 <span th:text="${post.viewCount}">0</span></span>
+          </div>
+          <!-- 대표 이미지: 본문 첫 이미지를 자동으로 쓴 경우(AUTO)는 본문에 이미 있으므로 다시 보여주지 않는다 -->
+          <div class="hero" th:if="${item == 'thumbnail' and post.thumbnailMode == 'MANUAL' and !#strings.isEmpty(post.thumbnailUrl)}">
+            <img th:src="${post.thumbnailUrl}" alt="">
+          </div>
+          <div class="summary" th:if="${item == 'summary' and !#strings.isEmpty(post.summary)}" th:text="${post.summary}">요약</div>
+        </th:block>
+      </header>
+
+      <th:block th:replace="~{front/blocks :: render(${blocks})}"></th:block>
+
+      <div class="f-foot-widgets" th:if="${!#lists.isEmpty(lo.footer)}">
+        <th:block th:replace="~{front/widgets :: widgets(${lo.footer})}"></th:block>
+      </div>
+    </article>
+
+  </div>
+</div>
+
+<footer class="f-footer">© 2026 AICA. 미리보기 화면입니다.</footer>
+</body>
+</html>

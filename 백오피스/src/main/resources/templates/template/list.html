@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout('템플릿 관리', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <h2 class="page-title">템플릿 관리 <span class="sub">레이아웃(화면 구성)과 본문 뼈대를 템플릿으로 만들어 두면 글쓰기에서 불러와 바로 씁니다.</span></h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="left">
+        <span class="count">(총 <span th:text="${#lists.size(cards)}">0</span> 개 / 최대 <span th:text="${max}">100</span>)</span>
+      </div>
+      <a class="btn primary" th:href="@{/admin/templates/new}" th:if="${me != null and me.role.canManageContent()}">＋ 새 템플릿</a>
+    </div>
+
+    <div class="tpl-list-body">
+      <div class="empty-state" th:if="${#lists.isEmpty(cards)}">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/></svg>
+        <div>아직 템플릿이 없습니다. <b>새 템플릿</b>에서 레이아웃을 고르고 본문 뼈대를 넣어 보세요.</div>
+      </div>
+
+      <div class="tpl-cards" th:unless="${#lists.isEmpty(cards)}">
+        <div class="tpl-card2" th:each="c : ${cards}">
+          <div class="tpl-card2-head">
+            <span class="tpl-mini" th:classappend="'p-' + ${c.preset}"><i class="a"></i><i class="b"></i><i class="c"></i></span>
+            <div class="tpl-card2-title">
+              <a th:href="@{/admin/templates/{id}/edit(id=${c.t.id})}" th:text="${c.t.name}">템플릿 이름</a>
+              <div class="tpl-card2-sub">
+                <span class="badge on" th:text="${c.presetLabel}">기본 1단</span>
+                <span th:if="${c.t.categoryName != null}" th:text="${c.t.categoryName}">카테고리</span>
+                <span>블록 <b th:text="${c.blockCount}">0</b></span>
+                <span th:if="${c.widgetCount > 0}">위젯 <b th:text="${c.widgetCount}">0</b></span>
+              </div>
+            </div>
+          </div>
+          <div class="tpl-card2-prev" th:text="${c.preview ?: (c.t.titleHint ?: '')}">미리보기 텍스트</div>
+          <div class="tpl-card2-foot">
+            <span class="muted" th:text="${#temporals.format(c.t.updatedAt, 'yyyy-MM-dd HH:mm')} + (${c.t.creatorName != null} ? ' · ' + ${c.t.creatorName} : '')">수정일</span>
+            <div class="actions">
+              <a class="btn ghost xs" th:href="@{/admin/templates/{id}/preview(id=${c.t.id})}" target="_blank" rel="noopener">미리보기</a>
+              <a class="btn ghost xs accent" th:href="@{/admin/templates/{id}/edit(id=${c.t.id})}" th:if="${me != null and me.role.canManageContent()}">수정</a>
+              <form th:action="@{/admin/templates/{id}/delete(id=${c.t.id})}" method="post" th:if="${me != null and me.role.canManageContent()}"
+                    th:data-confirm="|템플릿 '${c.t.name}'을(를) 삭제할까요? 이미 이 템플릿으로 쓴 글에는 영향이 없습니다.|">
+                <button class="btn danger xs" type="submit">삭제</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<th:block th:fragment="scripts"></th:block>
+</body>
+</html>

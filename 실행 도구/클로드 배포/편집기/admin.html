@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script id="bo-config" type="application/json">__BO_CONFIG__</script>
+  <!-- 서버를 다시 켜기 전부터 열려 있던 예전 관리 화면도 새 보안 토큰을 받아 저장을 이어가도록 남겨 둡니다. -->
+  <meta name="bo-token" content="__BO_TOKEN__">
+  <title>__BO_TITLE__</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2315171c'/%3E%3Cpath d='M18 44 32 18l14 26' fill='none' stroke='%235b7cff' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/__bo/admin.css">
+  <script src="/__bo/icons.js" defer></script>
+  <script src="/__bo/admin.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="logo" aria-hidden="true">ai</span>
+      <div class="title">
+        <strong id="site-name">인사교 백오피스</strong>
+        <span id="page-file">index.html</span>
+      </div>
+      <div class="page-picker" id="page-picker" hidden>
+        <button type="button" class="page-picker-button" id="page-button" aria-haspopup="listbox" aria-expanded="false" aria-controls="page-menu" title="편집할 페이지 바꾸기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
+          <span class="page-picker-label" id="page-label"></span>
+          <i class="page-picker-dot" id="page-dot" title="반영 전 편집이 있어요" hidden></i>
+          <svg class="page-picker-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="page-menu" id="page-menu" role="listbox" aria-label="편집할 페이지" hidden></div>
+      </div>
+    </div>
+    <div class="topbar-center">
+      <div class="segmented" role="group" aria-label="화면 모드">
+        <button type="button" data-mode="edit" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>편집</button>
+        <button type="button" data-mode="preview" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"/><circle cx="12" cy="12" r="3"/></svg>미리보기</button>
+      </div>
+      <div class="segmented" role="group" aria-label="화면 크기">
+        <button type="button" data-device="pc" aria-pressed="true" title="PC"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><span>PC</span></button>
+        <button type="button" data-device="tablet" aria-pressed="false" title="태블릿 (834px)"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M11 18h2"/></svg><span>태블릿</span></button>
+        <button type="button" data-device="mobile" aria-pressed="false" title="모바일 (390px)"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg><span>모바일</span></button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="history-buttons">
+        <button type="button" class="icon-button" id="undo" title="실행 취소 (Ctrl+Z)" disabled><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+        <button type="button" class="icon-button" id="redo" title="다시 실행 (Ctrl+Shift+Z)" disabled><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+      </div>
+      <span class="status" id="status" data-state="clean"><i></i><span>불러오는 중…</span></span>
+      <button type="button" class="ghost-button" id="open-history" title="버전 기록"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg><span class="collapse">버전 기록</span></button>
+      <button type="button" class="ghost-button front-button" id="open-front" title="프론트오피스(실제 사이트)를 새 탭에서 엽니다"><i class="front-dot" id="front-dot" data-state="unknown" aria-hidden="true"></i><span class="collapse">프론트오피스</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></button>
+      <button type="button" class="primary-button" id="publish"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>사이트에 반영</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <main class="stage" id="stage">
+      <div class="frame-wrap" id="frame-wrap" data-device="pc">
+        <div class="frame-loading" id="frame-loading"><span></span>페이지를 불러오는 중…</div>
+      </div>
+    </main>
+    <aside class="panel" id="panel" aria-label="속성">
+      <div class="panel-scroll" id="panel-body"></div>
+    </aside>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <dialog class="dialog" id="publish-dialog">
+    <form method="dialog">
+      <h2>사이트에 반영할까요?</h2>
+      <p>지금 편집한 내용으로 <code data-page-path>dist/index.html</code> 파일을 덮어씁니다. 기존 파일은 자동으로 백업되어 ‘버전 기록’에서 다시 불러올 수 있어요.</p>
+      <p>반영하면 <b>프론트오피스(<span data-front-url></span>)</b>에 바로 적용되고, 열려 있는 프론트오피스 화면은 자동으로 새로고침돼요.</p>
+      <p class="dialog-note" data-deploy-note>공개 주소(chatgpt.site)에 올리려면 반영 후 평소처럼 dist 폴더를 배포해 주세요.</p>
+      <div class="dialog-actions">
+        <button class="ghost-button" value="cancel">취소</button>
+        <button class="primary-button" value="confirm" id="publish-confirm">반영하기</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog dialog-wide" id="history-dialog">
+    <div class="dialog-head">
+      <h2>버전 기록</h2>
+      <button type="button" class="icon-button" data-close title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <p class="dialog-lead">‘불러오기’를 누르면 그 버전이 편집 화면에 열립니다. 확인 후 ‘사이트에 반영’을 눌러야 실제로 적용돼요. 불러온 뒤에도 실행 취소로 되돌릴 수 있어요.</p>
+    <div class="history-section">
+      <h3>이번 편집에서 한 일</h3>
+      <ol class="history-steps" id="history-steps"></ol>
+    </div>
+    <div class="history-section">
+      <h3>사이트 반영 기록 (자동 백업)</h3>
+      <div class="backup-actions">
+        <button type="button" class="ghost-button" id="revert-published"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>현재 사이트 상태로 되돌리기</button>
+      </div>
+      <ul class="backup-list" id="backup-list"></ul>
+    </div>
+  </dialog>
+
+  <dialog class="dialog dialog-wide" id="library-dialog">
+    <div class="dialog-head">
+      <h2 id="library-title">이미지 바꾸기</h2>
+      <button type="button" class="icon-button" data-close title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="library-tabs segmented" role="tablist">
+      <button type="button" data-lib-tab="icons" aria-pressed="false">아이콘</button>
+      <button type="button" data-lib-tab="images" aria-pressed="true">사진 · 이미지</button>
+    </div>
+    <div class="library-pane" data-lib-pane="icons" hidden>
+      <div class="library-toolbar">
+        <input type="search" id="icon-search" placeholder="아이콘 찾기 (예: 사람, 책, 차트, 보안)" aria-label="아이콘 찾기">
+        <div class="icon-color">
+          <span>색</span>
+          <div class="icon-color-swatches" id="icon-color-swatches"></div>
+          <label class="icon-color-custom" title="직접 고르기"><input type="color" id="icon-color" value="#244cd2"></label>
+        </div>
+      </div>
+      <div class="icon-grid" id="icon-grid"></div>
+      <p class="hint small">선으로 그린 아이콘이에요. 고른 색으로 바뀌고, 다른 아이콘과 같은 크기 자리에 들어가요.</p>
+    </div>
+    <div class="library-pane" data-lib-pane="images">
+      <label class="dropzone" id="dropzone">
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif,image/svg+xml" id="file-input" hidden>
+        <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        <strong>내 컴퓨터에서 이미지 올리기</strong>
+        <span>클릭하거나 파일을 여기로 끌어다 놓으세요 · PNG, JPG, WEBP, GIF, SVG</span>
+      </label>
+      <div class="library-toolbar">
+        <h3>사이트에 있는 이미지</h3>
+        <input type="search" id="library-search" placeholder="파일 이름으로 찾기" aria-label="파일 이름으로 찾기">
+      </div>
+      <div class="library-grid" id="library-grid"></div>
+    </div>
+  </dialog>
+
+  <dialog class="dialog" id="restore-dialog">
+    <form method="dialog">
+      <h2>저장되지 않은 편집 내용이 있어요</h2>
+      <p>서버와 연결이 끊긴 동안 편집한 내용이 이 브라우저에 남아 있어요. 복구하면 편집 화면에 다시 열리고, 실행 취소로 되돌릴 수도 있어요.</p>
+      <p class="dialog-note" id="restore-meta"></p>
+      <div class="dialog-actions">
+        <button class="ghost-button" value="discard">버리기</button>
+        <button class="primary-button" value="restore">편집 내용 복구</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="conflict-dialog">
+    <form method="dialog">
+      <h2>사이트 파일이 바뀌었어요</h2>
+      <p>임시저장된 편집 내용이 있지만, 그 뒤에 <code data-page-path>dist/index.html</code> 파일이 다른 곳에서 수정되었어요. 어떤 내용으로 편집할까요?</p>
+      <div class="dialog-actions dialog-actions-stack">
+        <button class="ghost-button" value="draft">임시저장본 계속 편집 (반영하면 바뀐 사이트 파일을 덮어써요)</button>
+        <button class="primary-button" value="published">최신 사이트 파일로 새로 시작</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

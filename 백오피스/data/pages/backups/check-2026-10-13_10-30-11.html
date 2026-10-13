@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="ko" data-menu="check" data-theme="light">
+<head>
+<meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>지원 전 체크 — 인공지능사관학교</title>
+<meta name="description" content="지원하기 전에 모집 대상 · 모집 프로세스 · 지원 혜택 · 자주 묻는 질문을 한 페이지에서 확인하세요.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="지원 전 체크 — 인공지능사관학교">
+<meta property="og:description" content="지원하기 전에 모집 대상 · 모집 프로세스 · 지원 혜택 · 자주 묻는 질문을 한 페이지에서 확인하세요.">
+<link rel="icon" type="image/png" href="../common/assets/brand/symbol-blue.png">
+<link rel="stylesheet" href="../common/css/tokens.css">
+<link rel="stylesheet" href="../common/css/base.css">
+<link rel="stylesheet" href="../common/css/site.css">
+<link rel="stylesheet" href="css/check.css">
+<script src="../common/js/menu.js" defer></script>
+<script src="../common/js/site.js" defer></script>
+<script src="js/check.js" defer></script>
+</head>
+<body>
+<header class="site-header" id="siteHeader"></header>
+<!-- 본문: aica-prototype-v3(2026-10-08) '지원 전 체크'(#/check) 화면. 히어로 없음(시안 v3). 2뎁스는 헤더 밑 공통 하위 메뉴 바(시안의 본문 위 목차 .pg-nav는 뺌).
+     구조: 화면에 안 보이는 페이지 제목 h1(#overview, 주소 #overview = 맨 위) → 섹션 4개(.sec: 섹션 머리 .s-head → 내용) → 공통 '다음으로' 띠(.next-band). 위치 #eligibility · #schedule · #benefits · #faq(메뉴 주소)
+     버튼은 공통 .btn(site.css, 모양은 시안에 맞춰 check.css에서), 바깥 연결처(지원하기 · 모집 공고 · 카카오톡)는 data-site-link(주소는 menu.js SITE_LINKS)
+     반복 단위(모든 항목에 data-field): 기본 대상 칸(label · value · note) · 스스로 체크 항목(text) · 단계 .pf-col(image · title · body) · 혜택 카드 .ben-card(icon · title · summary · note) · 질문 .faq-item(question · answer, 분류는 data-cat)
+     .rv는 스크롤 등장, 움직임은 js/check.js(단계는 화면에 보이는 동안 3.2초마다 다음 단계를 켬) -->
+<main id="main" class="check-page" tabindex="-1">
+  <h1 class="sr" id="overview">지원 전 Check</h1>
+
+  <section id="eligibility" class="sec" aria-labelledby="h-eligibility"><div class="wrap">
+    <div class="s-head rv">
+      <div class="s-row">
+        <p class="s-word" aria-hidden="true">Who</p>
+        <h2 id="h-eligibility">모집 대상</h2>
+      </div>
+      <p class="s-desc">모집 대상과 지원 전에 확인할 점을 정리했어요.</p>
+    </div>
+    <h3 class="s-sub rv">기본 대상</h3>
+    <div class="chk-crit rv">
+      <div>
+        <p class="chk-crit-label" data-field="label">나이</p>
+        <p class="chk-crit-main" data-field="value"><mark>만 18~39세</mark> 이하</p>
+        <p class="chk-crit-sub" data-field="note">전국 청년 미취업자</p>
+      </div>
+      <div>
+        <p class="chk-crit-label" data-field="label">학력</p>
+        <p class="chk-crit-main" data-field="value"><mark>4학년</mark></p>
+        <p class="chk-crit-sub" data-field="note">졸업 예정자 및 졸업 유예자</p>
+      </div>
+      <div>
+        <p class="chk-crit-label" data-field="label">전공</p>
+        <p class="chk-crit-main" data-field="value"><mark>전공과 학력</mark> 무관</p>
+        <p class="chk-crit-sub" data-field="note">비전공자도 지원할 수 있어요</p>
+      </div>
+    </div>
+    <p class="chk-crit-note rv">세부 기준(미취업의 범위, 졸업 유예 확인 서류 등)은 <a class="text-link" href="#notice" data-site-link="notice">공식 모집 공고</a>를 따라요.</p>
+    <aside class="chk-notice rv" aria-label="다른 정부지원사업 참여 중이라면">
+      <span class="chk-notice-ico" aria-hidden="true">!</span>
+      <div>
+        <h4>다른 정부지원사업에 참여 중이라면</h4>
+        <p>내일배움카드, 실업급여, 국민취업지원제도 등에 참여 중이라면, 해당 기관에 교육 참여와 중복해도 되는지 먼저 문의해 주세요. 참여 기간별로 기준이 달라서 개별 확인이 꼭 필요해요.</p>
+      </div>
+    </aside>
+    <h3 class="s-sub rv">스스로 체크</h3>
+    <div class="chk-self rv">
+      <ul class="chk-list">
+        <li><label><input type="checkbox" class="chk-box"><span class="chk-mark" aria-hidden="true"></span><span class="chk-text" data-field="text">만 18~39세 이하예요</span></label></li>
+        <li><label><input type="checkbox" class="chk-box"><span class="chk-mark" aria-hidden="true"></span><span class="chk-text" data-field="text">지금 미취업 상태예요</span></label></li>
+        <li><label><input type="checkbox" class="chk-box"><span class="chk-mark" aria-hidden="true"></span><span class="chk-text" data-field="text">4학년이거나, 졸업 예정자 또는 졸업 유예자예요</span></label></li>
+        <li><label><input type="checkbox" class="chk-box"><span class="chk-mark" aria-hidden="true"></span><span class="chk-text" data-field="text">6개월 동안 평일 매일 광주 교육장으로 출석할 수 있어요</span></label></li>
+        <li><label><input type="checkbox" class="chk-box"><span class="chk-mark" aria-hidden="true"></span><span class="chk-text" data-field="text">다른 정부지원사업에 참여 중이 아니에요 (참여 중이라면 해당 기관에 먼저 문의했어요)</span></label></li>
+      </ul>
+      <div class="chk-progress">
+        <p aria-live="polite" aria-atomic="true"><b id="chkNow">0</b> / 5 확인했어요</p>
+        <div class="chk-bar" role="progressbar" aria-label="스스로 체크 진행" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><i id="chkBar"></i></div>
+        <a class="btn is-sm chk-go" id="chkGo" href="#schedule" hidden>모집 프로세스 보러 가기 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </div></section>
+
+  <section id="schedule" class="sec" aria-labelledby="h-schedule"><div class="wrap">
+    <div class="s-head rv">
+      <div class="s-row">
+        <p class="s-word" aria-hidden="true">Flow</p>
+        <h2 id="h-schedule">모집 프로세스</h2>
+      </div>
+      <p class="s-desc">서류부터 최종 발표까지, 4단계로 진행돼요.</p>
+    </div>
+    <!-- 단계: 그림 + 점 + 카드. 켜진 단계(.is-on)만 그림 색 · 파란 카드. js/check.js가 보이는 동안 차례로 켜고, 올리거나 누르거나 초점이 가면 그 단계에 멈춤 -->
+    <ol class="pf rv" id="procFlow" aria-label="모집 프로세스 4단계">
+      <li class="pf-col is-on" data-step="0">
+        <div class="pf-illus"><img src="assets/process-doc.webp" alt="" loading="lazy" data-field="image"></div>
+        <span class="pf-dot" aria-hidden="true"></span>
+        <article class="pf-card" tabindex="0" aria-label="STEP 01 서류 전형">
+          <p class="pf-step">STEP 01</p>
+          <h3 data-field="title">서류 전형</h3>
+          <div class="pf-body" data-field="body"><p>지원자님의 지원 자격, 지원 동기 등을 확인하는 과정이에요.</p></div>
+        </article>
+      </li>
+      <li class="pf-col" data-step="1">
+        <div class="pf-illus"><img src="assets/process-test.webp" alt="" loading="lazy" data-field="image"></div>
+        <span class="pf-dot" aria-hidden="true"></span>
+        <article class="pf-card" tabindex="0" aria-label="STEP 02 테스트 전형">
+          <p class="pf-step">STEP 02</p>
+          <h3 data-field="title">테스트 전형</h3>
+          <div class="pf-body" data-field="body">
+            <p>서류 지원이 확인되면 기본적인 AI 지식과 역량을 검증하기 위한 코딩 테스트를 진행해요.</p>
+            <p class="pf-note"><b>코딩 테스트 면제</b>지원 시 AI 관련 역량을 검증할 수 있는 포트폴리오를 제출하면 코딩 테스트가 면제돼요.</p>
+          </div>
+        </article>
+      </li>
+      <li class="pf-col" data-step="2">
+        <div class="pf-illus"><img src="assets/process-interview.webp" alt="" loading="lazy" data-field="image"></div>
+        <span class="pf-dot" aria-hidden="true"></span>
+        <article class="pf-card" tabindex="0" aria-label="STEP 03 면접 전형 및 인적성 검사">
+          <p class="pf-step">STEP 03</p>
+          <h3 data-field="title">면접 전형 및 인적성 검사</h3>
+          <div class="pf-body" data-field="body">
+            <dl>
+              <div><dt>면접 전형</dt><dd>앞선 테스트 전형에 참여한 방식에 따라 면접 유형이 나뉘어 진행돼요.</dd></div>
+              <div><dt>인적성 검사</dt><dd>온라인으로 응시하며, 지원자의 인성과 적성을 검사해요.</dd></div>
+            </dl>
+          </div>
+        </article>
+      </li>
+      <li class="pf-col" data-step="3">
+        <div class="pf-illus"><img src="assets/process-pass.webp" alt="" loading="lazy" data-field="image"></div>
+        <span class="pf-dot" aria-hidden="true"></span>
+        <article class="pf-card" tabindex="0" aria-label="STEP 04 최종 발표">
+          <p class="pf-step">STEP 04</p>
+          <h3 data-field="title">최종 발표</h3>
+          <div class="pf-body" data-field="body"><p>각 전형별 결과를 종합해 최종 합격자를 선발하고, 문자나 유선으로 개별 안내해요.</p></div>
+        </article>
+      </li>
+    </ol>
+  </div></section>
+
+  <section id="benefits" class="sec" aria-labelledby="h-benefits"><div class="wrap">
+    <div class="s-head rv">
+      <div class="s-row">
+        <p class="s-word" aria-hidden="true">Benefit</p>
+        <h2 id="h-benefits">지원 혜택</h2>
+      </div>
+      <p class="s-desc">교육생을 위한 여덟 가지 지원 혜택이에요.</p>
+    </div>
+    <div class="ben-grid rv">
+      <article class="ben-card">
+        <span class="ben-ico" aria-hidden="true" data-field="icon"><svg viewBox="0 0 64 64"><rect x="8" y="14" width="40" height="26" rx="3"/><circle cx="28" cy="27" r="6"/><path d="M14 22h.01M42 32h.01"/><path class="accent" d="M16 46h36a3 3 0 0 0 3-3V26"/></svg></span>
+        <p class="ben-no">BENEFIT 01</p>
+        <h3 data-field="title">교육지원금</h3>
+        <p class="ben-desc" data-field="summary">교육지원금 <b>최대 50만원</b> 지원</p>
+        <p class="ben-sub" data-field="note"><small>광주 시외 거주자가 광주 시내로 거주지를 이동한 경우 주거지원비 <b>최대 35만원</b> 추가 지원</small></p>
+      </article>
+      <article class="ben-card">
+        <span class="ben-ico" aria-hidden="true" data-field="icon"><svg viewBox="0 0 64 64"><ellipse cx="26" cy="15" rx="15" ry="6"/><path d="M11 15v11c0 3.3 6.7 6 15 6s15-2.7 15-6V15M11 26v11c0 3.3 6.7 6 15 6"/><circle class="accent" cx="44" cy="43" r="11"/><path class="accent" d="M44 37v12M39.5 41h9M39.5 46h9"/></svg></span>
+        <p class="ben-no">BENEFIT 02</p>
+        <h3 data-field="title">프로젝트 지원금</h3>
+        <p class="ben-desc" data-field="summary">프로젝트 기간 동안 쾌적하게 진행할 수 있도록 <b>지원금</b>을 제공해요.</p>
+      </article>
+      <article class="ben-card">
+        <span class="ben-ico" aria-hidden="true" data-field="icon"><svg viewBox="0 0 64 64"><rect x="30" y="10" width="27" height="19" rx="2"/><rect x="8" y="30" width="32" height="21" rx="2"/><path d="M4 55h40M43.5 29v6"/><path class="accent" d="M17 41l5 5 9-9"/></svg></span>
+        <p class="ben-no">BENEFIT 03</p>
+        <h3 data-field="title">개별 노트북 지원</h3>
+        <p class="ben-desc" data-field="summary">교육 기간 동안 사용할 수 있는 <b>개별 노트북과 모니터</b>를 대여해요.</p>
+      </article>
+      <article class="ben-card">
+        <span class="ben-ico" aria-hidden="true" data-field="icon"><svg viewBox="0 0 64 64"><path d="M6 13h21c3 0 5 2 5 5v35c0-3-2-5-5-5H6z"/><path d="M58 13H37c-3 0-5 2-5 5v35c0-3 2-5 5-5h21z"/><path d="M12 23h14M12 31h14M12 39h9"/><path class="accent" d="M38 23h14M38 31h14M38 39h9"/></svg></span>
+        <p class="ben-no">BENEFIT 04</p>
+        <h3 data-field="title">교재 및 실습 자료 제공</h3>
+        <p class="ben-desc" data-field="summary">수업을 위한 교재와 실습 자료를 <b>무료</b>로 제공해요.</p>
+      </article>
+      <article class="ben-card">
+        <span class="ben-ico" aria-hidden="true" data-field="icon"><svg viewBox="0 0 64 64"><circle cx="20" cy="26" r="7.5"/><path d="M6 53c0-8.5 6-14 14-14s14 5.5 14 14"/><circle class="accent" cx="43" cy="30" r="6"/><path class="accent" d="M35 53c0-6.5 3.5-11 8-11s8 4.5 8 11"/><path class="accent" d="M31 12l4-4 4 4"/></svg></span>
+        <p class="ben-no">BENEFIT 05</p>
+        <h3 data-field="title">프로젝트 전문 지원</h3>
+        <p class="ben-desc" data-field="summary">완성도 높은 결과물을 낼 수 있도록 <b>현직 멘토</b>를 매칭해요.</p>
+      </article>
+      <article class="ben-card">
+        <span class="ben-ico" aria-hidden="true" data-field="icon"><svg viewBox="0 0 64 64"><rect x="7" y="22" width="50" height="31" rx="3"/><path d="M23 22v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M7 37h50"/><rect class="accent" x="28" y="32" width="8" height="9" rx="1.5"/></svg></span>
+        <p class="ben-no">BENEFIT 06</p>
+        <h3 data-field="title">인턴십 기회 제공</h3>
+        <p class="ben-desc" data-field="summary">우수 교육생으로 수료하면 <b>이스트소프트 인턴십</b> 기회를 제공해요.</p>
+      </article>
+      <article class="ben-card">
+        <span class="ben-ico" aria-hidden="true" data-field="icon"><svg viewBox="0 0 64 64"><path d="M8 54h48"/><rect x="13" y="39" width="9" height="15"/><rect x="28" y="29" width="9" height="25"/><rect x="43" y="19" width="9" height="35"/><path class="accent" d="M11 27l13-10 10 8 18-14M43 11h9v9"/></svg></span>
+        <p class="ben-no">BENEFIT 07</p>
+        <h3 data-field="title">취·창업 지원</h3>
+        <p class="ben-desc" data-field="summary">교육생의 취업과 창업을 <b>전문가와 함께</b> 지원해요.</p>
+      </article>
+      <article class="ben-card">
+        <span class="ben-ico" aria-hidden="true" data-field="icon"><svg viewBox="0 0 64 64"><rect x="7" y="11" width="42" height="32" rx="3"/><path d="M15 21h26M15 29h17"/><circle class="accent" cx="46" cy="43" r="8.5"/><path class="accent" d="M41.5 50l-2 10 6.5-3.5 6.5 3.5-2-10"/></svg></span>
+        <p class="ben-no">BENEFIT 08</p>
+        <h3 data-field="title">자격증 취득 지원</h3>
+        <p class="ben-desc" data-field="summary"><b>AI·IT·SW 자격증</b>을 취득할 수 있도록 지원해요.</p>
+      </article>
+    </div>
+    <div class="ben-foot rv">
+      <p>지원 금액과 조건은 모집 회차에 따라 달라질 수 있어요. 최신 기준은 <a class="text-link" href="#notice" data-site-link="notice">공식 모집 공고</a>를 확인해 주세요.</p>
+      <a class="text-link" href="../stories/index.html#reviews">지원 혜택, 선배들은 어떻게 느꼈을까요? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <small>후기에 나온 금액은 당시 기준이라 지금과 다를 수 있어요.</small>
+    </div>
+  </div></section>
+
+  <section id="faq" class="sec" aria-labelledby="h-faq"><div class="wrap">
+    <div class="s-head rv">
+      <div class="s-row">
+        <p class="s-word" aria-hidden="true">FAQ</p>
+        <h2 id="h-faq">자주 묻는 질문</h2>
+      </div>
+      <p class="s-desc">카톡으로 묻기엔 사소한 질문들을 모았어요.</p>
+    </div>
+    <div class="faq rv">
+      <div class="faq-tools">
+        <!-- 분류 칩: 이름 + 그 분류의 질문 수(.faq-cnt). 분류는 data-cat, 주소 ?cat=분류로 열면 그 칩이 눌린 채(공통 site.js) -->
+        <div class="faq-tabs" role="group" aria-label="질문 분류">
+          <button type="button" class="faq-tab" data-cat="all" aria-pressed="true">전체<em class="faq-cnt" data-field="count">14</em></button>
+          <button type="button" class="faq-tab" data-cat="준비사항" aria-pressed="false">준비사항<em class="faq-cnt" data-field="count">3</em></button>
+          <button type="button" class="faq-tab" data-cat="수업" aria-pressed="false">수업<em class="faq-cnt" data-field="count">3</em></button>
+          <button type="button" class="faq-tab" data-cat="생활" aria-pressed="false">생활<em class="faq-cnt" data-field="count">4</em></button>
+          <button type="button" class="faq-tab" data-cat="지원금" aria-pressed="false">지원금<em class="faq-cnt" data-field="count">2</em></button>
+          <button type="button" class="faq-tab" data-cat="프로젝트" aria-pressed="false">프로젝트<em class="faq-cnt" data-field="count">2</em></button>
+        </div>
+        <div class="faq-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+          <input type="search" id="faqQ" placeholder="궁금한 내용을 검색해 보세요" aria-label="자주 묻는 질문 검색" autocomplete="off">
+          <button type="button" id="faqClear" aria-label="검색어 지우기" hidden>×</button>
+        </div>
+      </div>
+      <p class="faq-count" id="faqCount" aria-live="polite"></p>
+      <ul class="faq-list" id="faqList">
+        <li class="faq-item is-open" data-cat="준비사항">
+          <h3><button type="button" class="faq-q" id="fq-0" aria-expanded="true" aria-controls="fa-0">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="비전공자인데 수업을 따라갈 수 있을까요?">비전공자인데 수업을 따라갈 수 있을까요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-0" role="region" aria-labelledby="fq-0"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">전공은 지원 자격에 해당하지 않아서 비전공자도 지원할 수 있어요. 수업은 AI 기초 역량부터 단계적으로 진행해요. 비전공자로 시작한 선배들의 이야기는 <a class="text-link" href="http://127.0.0.1:4191/stories/index.html">선배 후기</a>에서 볼 수 있어요.</div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="준비사항">
+          <h3><button type="button" class="faq-q" id="fq-1" aria-expanded="false" aria-controls="fa-1">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="코딩 테스트를 꼭 봐야 하나요?">코딩 테스트를 꼭 봐야 하나요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-1" role="region" aria-labelledby="fq-1"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">AI 관련 역량을 검증할 수 있는 포트폴리오를 제출하면 코딩 테스트가 면제돼요. 포트폴리오가 없다면 서류 지원이 확인된 뒤 기본적인 AI 지식과 역량을 확인하는 코딩 테스트를 진행해요. 자세한 순서는 <a class="text-link" href="#schedule">모집 프로세스</a>에서 확인해 주세요.</div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="준비사항">
+          <h3><button type="button" class="faq-q" id="fq-2" aria-expanded="false" aria-controls="fa-2">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="지원 전에 미리 공부해 둘 게 있나요?">지원 전에 미리 공부해 둘 게 있나요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-2" role="region" aria-labelledby="fq-2"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">[사전 학습 권장 사항 안내] <span class="tbd">확인 필요</span></div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="수업">
+          <h3><button type="button" class="faq-q" id="fq-3" aria-expanded="false" aria-controls="fa-3">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="수업은 온라인인가요, 오프라인인가요?">수업은 온라인인가요, 오프라인인가요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-3" role="region" aria-labelledby="fq-3"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">7기부터는 모든 수업이 오프라인으로 진행돼요. 교육 시간과 운영 방식은 <a class="text-link" href="../about/index.html#education-hours">인사교 알아보기</a>에서 볼 수 있어요.</div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="수업">
+          <h3><button type="button" class="faq-q" id="fq-4" aria-expanded="false" aria-controls="fa-4">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="수업은 정시에 끝나나요?">수업은 정시에 끝나나요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-4" role="region" aria-labelledby="fq-4"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">하루 일과는 <a class="text-link" href="../about/index.html#daily-routine">인사교의 하루</a>에서 볼 수 있어요. 실제 종료 시간은 [확인 필요] <span class="tbd">시간 확인</span></div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="수업">
+          <h3><button type="button" class="faq-q" id="fq-5" aria-expanded="false" aria-controls="fa-5">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="수업은 어떤 방식으로 진행되나요?">수업은 어떤 방식으로 진행되나요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-5" role="region" aria-labelledby="fq-5"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">팀 기반 실무 프로젝트(PBL)를 중심으로, 토론식 수업과 팀별 실습, 발표 활동 등 다양한 방식으로 진행해요.</div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="생활">
+          <h3><button type="button" class="faq-q" id="fq-6" aria-expanded="false" aria-controls="fa-6">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="점심은 어디서 먹나요?">점심은 어디서 먹나요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-6" role="region" aria-labelledby="fq-6"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">학교 근처 식당을 이용하는 선배들이 많아요. 혼밥, 같이 먹기, 카페로 나눠 정리한 <a class="text-link" href="../life/index.html#tips">근처 식당</a> 정보를 참고해 주세요. 식비 지원 여부는 [확인 필요] <span class="tbd">확인 필요</span></div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="생활">
+          <h3><button type="button" class="faq-q" id="fq-7" aria-expanded="false" aria-controls="fa-7">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="타지인데 방은 어디서 구하나요?">타지인데 방은 어디서 구하나요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-7" role="region" aria-labelledby="fq-7"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">교육생 절반은 다른 지역에서 와요. 지역별 분위기는 <a class="text-link" href="../life/index.html#tips">생활 꿀팁의 주거</a>에서, 월세 지원 조건은 <a class="text-link" href="#benefits">지원 혜택</a>에서 확인해 주세요.</div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="생활">
+          <h3><button type="button" class="faq-q" id="fq-13" aria-expanded="false" aria-controls="fa-13">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="타지인데 방은 어디서 구하나요?">타지인데 방은 어디서 구하나요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-13" role="region" aria-labelledby="fq-13"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">교육생 절반은 다른 지역에서 와요. 지역별 분위기는 <a class="text-link" href="../life/index.html#tips">생활 꿀팁의 주거</a>에서, 월세 지원 조건은 <a class="text-link" href="#benefits">지원 혜택</a>에서 확인해 주세요.</div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="생활">
+          <h3><button type="button" class="faq-q" id="fq-8" aria-expanded="false" aria-controls="fa-8">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="내향적인 편인데 적응할 수 있을까요?">내향적인 편인데 적응할 수 있을까요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-8" role="region" aria-labelledby="fq-8"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">팀으로 함께 만드는 수업이 많아요. 처음엔 낯설었지만 적응했다는 선배들의 이야기는 <a class="text-link" href="../stories/index.html#reviews">선배 후기</a>에서 볼 수 있어요.</div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="지원금">
+          <h3><button type="button" class="faq-q" id="fq-9" aria-expanded="false" aria-controls="fa-9">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="지원금은 얼마나 받을 수 있나요?">지원금은 얼마나 받을 수 있나요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-9" role="region" aria-labelledby="fq-9"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">교육지원금, 프로젝트 지원금 등 지원 내용은 <a class="text-link" href="#benefits">지원 혜택</a>에서 확인해 주세요. 금액과 조건은 모집 회차에 따라 달라질 수 있어요.</div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="지원금">
+          <h3><button type="button" class="faq-q" id="fq-10" aria-expanded="false" aria-controls="fa-10">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="지원금은 따로 신청해야 하나요?">지원금은 따로 신청해야 하나요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-10" role="region" aria-labelledby="fq-10"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">[지급 조건·신청 방법 안내] <span class="tbd">확인 필요</span></div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="프로젝트">
+          <h3><button type="button" class="faq-q" id="fq-11" aria-expanded="false" aria-controls="fa-11">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="프로젝트 팀은 어떻게 구성되나요?">프로젝트 팀은 어떻게 구성되나요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-11" role="region" aria-labelledby="fq-11"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">[팀 구성 방식 안내] <span class="tbd">확인 필요</span> 프로젝트마다 현직 멘토를 매칭해요.</div>
+          </div></div>
+        </li>
+        <li class="faq-item" data-cat="프로젝트">
+          <h3><button type="button" class="faq-q" id="fq-12" aria-expanded="false" aria-controls="fa-12">
+            <span class="faq-qa" aria-hidden="true">Q</span>
+            <span class="faq-qt" data-field="question" data-text="팀원과 갈등이 생기면 어떻게 하나요?">팀원과 갈등이 생기면 어떻게 하나요?</span>
+            <span class="faq-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+          </button></h3>
+          <div class="faq-a" id="fa-12" role="region" aria-labelledby="fq-12"><div>
+            <span class="faq-qa" aria-hidden="true">A</span>
+            <div class="faq-at" data-field="answer">[갈등 조정 방식 안내] <span class="tbd">확인 필요</span></div>
+          </div></div>
+        </li>
+      </ul>
+      <!-- 결과 없음: 고른 분류에는 없고 다른 분류에 있으면 '전체 분류에서 n개' + 전체에서 보기(js/check.js가 이름 · 숫자만 채움) -->
+      <div class="faq-empty" id="faqEmpty" hidden>
+        <p><span id="faqEmptyIn" hidden><b id="faqEmptyCat"></b> 분류에는 </span><b id="faqEmptyQ"></b>에 맞는 질문이 없어요.</p>
+        <p id="faqEmptyAsk">카카오톡으로 물어보시면 알려드려요.</p>
+        <p id="faqEmptyAll" hidden>전체 분류에서는 <b id="faqAllN"></b>개를 찾았어요.</p>
+        <button type="button" class="btn is-line is-sm faq-all" id="faqAllBtn" hidden>전체에서 보기</button>
+      </div>
+      <div class="faq-cta">
+        <div>
+          <h3>더 궁금한 게 있다면</h3>
+          <p>카카오톡 채널로 편하게 물어보세요.</p>
+        </div>
+        <a class="btn is-kakao faq-kakao" href="#kakao" data-site-link="kakao"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.5 3 2 6.4 2 10.7c0 2.7 1.8 5.1 4.5 6.5L5.5 21l4.3-2.4c.7.1 1.5.2 2.2.2 5.5 0 10-3.4 10-7.7S17.5 3 12 3z" fill="currentColor" stroke="none"/></svg>카카오톡으로 문의하기</a>
+      </div>
+    </div>
+  </div></section>
+
+  <!-- 페이지 끝 '다음으로' 띠(공통 컴포넌트 common/css/site.css .next-band). 지원하기 주소는 menu.js SITE_LINKS.apply — 비어 있으면 누를 때 안내 -->
+  <nav class="next-band" aria-label="다음으로 볼 페이지">
+    <div class="wrap">
+      <a class="is-cta" href="#apply" data-site-link="apply"><small>다음으로</small><b>지원하기</b><span>확인을 마쳤다면 지원서를 작성해 보세요</span></a>
+      <a href="../stories/index.html#reviews"><small>함께 보면 좋은</small><b>선배 후기</b><span>먼저 다녀온 선배들의 교육&nbsp;·&nbsp;생활 이야기</span></a>
+      <a href="../life/index.html#facilities"><small>함께 보면 좋은</small><b>시설 둘러보기</b><span class="seps"><span><span>강의실</span><span>AI 카페</span><span>구내식당 등</span></span></span></a>
+    </div>
+  </nav>
+</main>
+<footer class="site-footer" id="siteFooter"></footer>
+</body>
+</html>

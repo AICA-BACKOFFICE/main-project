@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout('방문자·조회수', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <h2 class="page-title">방문자 · 조회수
+    <span class="sub" th:text="${#temporals.format(stats.from, 'yyyy-MM-dd')} + ' ~ ' + ${#temporals.format(stats.to, 'yyyy-MM-dd')}"></span>
+  </h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="left">
+        <div class="tabs">
+          <a th:href="@{/admin/stats(days=7)}" th:classappend="${range == 7} ? 'on'">7일</a>
+          <a th:href="@{/admin/stats(days=14)}" th:classappend="${range == 14} ? 'on'">14일</a>
+          <a th:href="@{/admin/stats(days=30)}" th:classappend="${range == 30} ? 'on'">30일</a>
+        </div>
+        <span class="count">프론트 오피스가 <span class="mono">POST /api/public/track/visit</span> · <span class="mono">/api/public/track/posts/{id}/view</span> 를 호출하면 집계됩니다.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpis" style="margin-top:16px">
+    <div class="kpi"><div class="k">오늘 방문자</div><div class="v" th:text="${#numbers.formatInteger(stats.todayVisitors, 1, 'COMMA')}">0</div></div>
+    <div class="kpi"><div class="k" th:text="${range} + '일 고유 방문자'">방문자</div><div class="v" th:text="${#numbers.formatInteger(stats.periodVisitors, 1, 'COMMA')}">0</div></div>
+    <div class="kpi"><div class="k" th:text="${range} + '일 페이지뷰'">페이지뷰</div><div class="v" th:text="${#numbers.formatInteger(stats.periodPageViews, 1, 'COMMA')}">0</div></div>
+    <div class="kpi"><div class="k" th:text="${range} + '일 게시물 조회'">조회</div><div class="v" th:text="${#numbers.formatInteger(stats.periodPostViews, 1, 'COMMA')}">0</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="left"><b>일별 추이</b></div>
+      <div class="legend"><span><i style="background:var(--green)"></i>고유 방문자</span><span><i style="background:var(--blue)"></i>게시물 조회</span></div>
+    </div>
+    <div class="card-body">
+      <div class="bars" style="height:220px">
+        <div class="col" th:each="d : ${stats.daily}">
+          <div style="display:flex;gap:2px;align-items:flex-end;height:180px;width:100%;justify-content:center">
+            <div class="bar" th:style="'height:' + ${stats.maxVisitors > 0 ? (d.visitors * 100 / stats.maxVisitors) : 0} + '%'">
+              <span class="tip" th:if="${d.visitors > 0}" th:text="${d.visitors}"></span>
+            </div>
+            <div class="bar views" th:style="'height:' + ${stats.maxPostViews > 0 ? (d.postViews * 100 / stats.maxPostViews) : 0} + '%'">
+              <span class="tip" th:if="${d.postViews > 0}" th:text="${d.postViews}"></span>
+            </div>
+          </div>
+          <div class="lbl" th:text="${#temporals.format(d.day, 'M/d')}">9/22</div>
+        </div>
+      </div>
+    </div>
+    <table class="list">
+      <thead><tr><th>날짜</th><th class="right">고유 방문자</th><th class="right">페이지뷰</th><th class="right">게시물 조회</th></tr></thead>
+      <tbody>
+      <tr th:each="d : ${stats.daily}">
+        <td th:text="${#temporals.format(d.day, 'yyyy-MM-dd (E)')}">-</td>
+        <td class="right" th:text="${d.visitors}">0</td>
+        <td class="right" th:text="${d.pageViews}">0</td>
+        <td class="right" th:text="${d.postViews}">0</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="left"><b>게시물별 누적 조회수 (상위 10)</b></div></div>
+    <table class="list">
+      <thead><tr><th style="width:60px">순위</th><th>게시물</th><th style="width:120px">카테고리</th><th style="width:90px">상태</th><th style="width:100px" class="right">누적 조회</th></tr></thead>
+      <tbody>
+      <tr th:if="${#lists.isEmpty(stats.topPosts)}"><td colspan="5" class="muted" style="text-align:center;padding:24px">게시물이 없습니다.</td></tr>
+      <tr th:each="p, it : ${stats.topPosts}">
+        <td class="num" th:text="${it.count}">1</td>
+        <td><a th:href="@{/admin/posts/{id}/edit(id=${p.id})}" th:text="${p.title}" style="font-weight:600">제목</a></td>
+        <td th:text="${p.categoryName ?: '-'}"></td>
+        <td><span class="badge" th:classappend="${p.status.css}" th:text="${p.status.label}"></span></td>
+        <td class="right" th:text="${#numbers.formatInteger(p.viewCount, 1, 'COMMA')}">0</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+<th:block th:fragment="scripts"></th:block>
+</body>
+</html>

@@ -1,0 +1,485 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>AICA 백오피스 기능별 파일 재분배 기획서</title><style>
+  @page { size: A4; margin: 22mm 18mm 20mm 18mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Noto Sans CJK KR", "Noto Sans KR", sans-serif; color: #1f2937; font-size: 10.5pt; line-height: 1.65; }
+  h1, h2, h3, h4 { margin: 0; line-height: 1.3; letter-spacing: -0.01em; }
+  h2 { font-size: 16pt; color: #1e3a8a; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 2px solid #2f7cf6; page-break-after: avoid; }
+  h2 .num { display: inline-block; min-width: 28px; color: #2f7cf6; }
+  h3 { font-size: 12pt; margin: 18px 0 8px; color: #111827; page-break-after: avoid; }
+  p { margin: 0 0 8px; }
+  .section { page-break-before: always; }
+  .section:first-of-type { page-break-before: auto; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: 9.5pt; page-break-inside: auto; }
+  th, td { border: 1px solid #d1d5db; padding: 6px 8px; vertical-align: top; text-align: left; }
+  th { background: #eaf1fb; color: #1e3a8a; font-weight: 700; }
+  tr { page-break-inside: avoid; }
+  td.c, th.c { text-align: center; }
+  .ok { color: #15803d; font-weight: 700; }
+  .no { color: #b91c1c; font-weight: 700; }
+  .part { color: #b45309; font-weight: 700; }
+  .box { border: 1px solid #bfdbfe; background: #f5f9ff; border-radius: 6px; padding: 10px 14px; margin: 8px 0 14px; }
+  .box b { color: #1e3a8a; }
+  .muted { color: #6b7280; }
+  .small { font-size: 9pt; }
+  .tag { display: inline-block; background: #dbeafe; color: #1d4ed8; border-radius: 10px; padding: 0 8px; font-size: 8.5pt; font-weight: 700; margin-right: 4px; }
+  .tag.y { background: #fef3c7; color: #b45309; }
+  .tag.g { background: #dcfce7; color: #15803d; }
+  pre { background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; font-size: 8.8pt; line-height: 1.5; font-family: "Noto Sans Mono CJK KR", "Noto Sans CJK KR", monospace; white-space: pre; margin: 6px 0 14px; page-break-inside: avoid; }
+  ul, ol { margin: 0 0 10px; padding-left: 20px; }
+  li { margin-bottom: 3px; }
+
+  /* 표지 */
+  .cover { height: 250mm; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; }
+  .cover .top { border-top: 6px solid #2f7cf6; padding-top: 18px; }
+  .cover .kicker { color: #2f7cf6; font-weight: 700; letter-spacing: .12em; font-size: 10pt; }
+  .cover h1 { font-size: 30pt; margin: 22px 0 10px; color: #111827; }
+  .cover .sub { font-size: 14pt; color: #4b5563; }
+  .cover .meta { border-top: 1px solid #e5e7eb; padding-top: 14px; }
+  .cover .meta table { width: auto; font-size: 10.5pt; margin: 0; }
+  .cover .meta td { border: 0; padding: 3px 24px 3px 0; }
+  .cover .meta td:first-child { color: #6b7280; }
+
+  /* 목차 */
+  .toc ol { list-style: none; padding: 0; margin-top: 8px; }
+  .toc li { display: flex; justify-content: space-between; border-bottom: 1px dotted #d1d5db; padding: 6px 0; font-size: 11pt; }
+  .toc li span:last-child { color: #6b7280; }
+
+  /* 화면 구성 도식 */
+  .wire { display: grid; grid-template-columns: 150px 1fr; border: 1px solid #94a3b8; border-radius: 6px; overflow: hidden; margin: 8px 0 14px; font-size: 9pt; page-break-inside: avoid; }
+  .wire .side { background: #fff; border-right: 1px solid #cbd5e1; padding: 10px; }
+  .wire .side b { display: block; margin-top: 8px; }
+  .wire .side b:first-child { margin-top: 0; }
+  .wire .side div { color: #4b5563; padding-left: 8px; }
+  .wire .main { background: #eaf1fb; }
+  .wire .bar { background: #2f7cf6; color: #fff; padding: 8px 12px; display: flex; justify-content: space-between; }
+  .wire .bar span { background: #fff; color: #6b7280; border-radius: 12px; padding: 0 10px; }
+  .wire .card { background: #fff; margin: 12px; border-radius: 6px; border: 1px solid #dbe3ee; }
+  .wire .card .h { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e5e7eb; }
+  .wire .card .h i { background: #2f7cf6; color: #fff; border-radius: 4px; padding: 0 8px; font-style: normal; }
+  .wire .card .r { display: grid; grid-template-columns: 40px 1fr 80px 60px 60px 110px; padding: 6px 12px; border-bottom: 1px solid #f1f5f9; color: #4b5563; }
+  .wire .card .r.th { background: #f3f4f6; font-weight: 700; color: #374151; }
+
+  /* 흐름도 */
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 6px 0 14px; font-size: 9.5pt; }
+  .flow .st { border: 1px solid #93c5fd; background: #eff6ff; border-radius: 6px; padding: 6px 10px; }
+  .flow .ar { color: #94a3b8; }
+
+  /* 일정 */
+  .gantt { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  .gantt th, .gantt td { border: 1px solid #d1d5db; padding: 5px 6px; }
+  .gantt td.b { background: #2f7cf6; }
+  .gantt td.b2 { background: #93c5fd; }
+  .gantt td.d { background: #dcfce7; }
+  .gantt td.w { width: 34px; text-align: center; }
+
+  /* ===== 스토리보드 ===== */
+  .sb { page-break-before: always; }
+  .sb h3.sbt { font-size: 13pt; margin: 0 0 4px; color: #111827; }
+  .sb .sbmeta { color: #6b7280; font-size: 9pt; margin-bottom: 10px; }
+  .sb .sbmeta code { background: #f3f4f6; padding: 0 5px; border-radius: 3px; }
+  .fr { border: 2px solid #64748b; border-radius: 8px; overflow: hidden; background: #eaf1fb; font-size: 8.5pt; color: #374151; position: relative; margin-bottom: 12px; page-break-inside: avoid; }
+  .fr .app { display: grid; grid-template-columns: 120px 1fr; min-height: 300px; }
+  .fr .sd { background: #fff; border-right: 1px solid #cbd5e1; padding: 8px 9px; font-size: 8pt; }
+  .fr .sd b { display: block; margin-top: 6px; color: #111827; }
+  .fr .sd b:first-child { margin-top: 0; }
+  .fr .sd div { padding-left: 7px; color: #6b7280; line-height: 1.7; }
+  .fr .sd div.on { color: #2f7cf6; font-weight: 700; }
+  .fr .tb { background: #2f7cf6; color: #fff; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; font-size: 8pt; }
+  .fr .tb .srch { background: #fff; color: #9ca3af; border-radius: 12px; padding: 1px 10px; width: 45%; }
+  .fr .ct { padding: 10px 12px; }
+  .fr .pt { font-weight: 700; color: #111827; margin-bottom: 8px; font-size: 9.5pt; }
+  .fr .cd { background: #fff; border: 1px solid #dbe3ee; border-radius: 6px; margin-bottom: 8px; }
+  .fr .cd .hd { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid #e5e7eb; gap: 6px; flex-wrap: wrap; }
+  .fr .cd .bd { padding: 8px 10px; }
+  .fr .sel { border: 1px solid #cbd5e1; border-radius: 4px; padding: 0 6px; background: #fff; color: #6b7280; display: inline-block; }
+  .fr .bt { display: inline-block; font-size: 7.5pt; white-space: nowrap; border: 1px solid #cbd5e1; border-radius: 4px; padding: 0 7px; background: #fff; color: #374151; }
+  .fr .bt.p { background: #2f7cf6; border-color: #2f7cf6; color: #fff; font-weight: 700; }
+  .fr .bt.d { color: #dc2626; border-color: #fecaca; }
+  .fr .bt.a { color: #2f7cf6; border-color: #bfdbfe; }
+  .fr .row { display: grid; padding: 5px 10px; border-bottom: 1px solid #f1f5f9; align-items: center; gap: 6px; }
+  .fr .row > * { min-width: 0; }
+  .fr .row .th { width: 24px; height: 18px; }
+  .fr .row.h { background: #f3f4f6; font-weight: 700; color: #374151; }
+  .fr .bg { display: inline-block; border-radius: 8px; padding: 0 6px; font-size: 7.5pt; font-weight: 700; }
+  .fr .bg.g { background: #dcfce7; color: #15803d; } .fr .bg.y { background: #fef3c7; color: #b45309; } .fr .bg.n { background: #f3f4f6; color: #4b5563; } .fr .bg.r { background: #fee2e2; color: #b91c1c; }
+  .fr .th { width: 34px; height: 22px; background: #cbd5e1; border-radius: 3px; display: inline-block; vertical-align: middle; }
+  .fr .inp { border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 8px; background: #fff; color: #9ca3af; margin: 3px 0; }
+  .fr .kpi { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 8px; }
+  .fr .kpi div { background: #fff; border: 1px solid #dbe3ee; border-radius: 6px; padding: 6px 8px; }
+  .fr .kpi b { display: block; font-size: 13pt; color: #111827; }
+  .fr .bars { display: flex; align-items: flex-end; gap: 4px; height: 60px; padding: 4px 0; }
+  .fr .bars i { flex: 1; background: #93c5fd; border-radius: 2px 2px 0 0; display: block; }
+  .fr .bars i.v { background: #2f7cf6; }
+  .fr .two { display: grid; grid-template-columns: 1fr 200px; gap: 8px; }
+  .fr .blk { border: 1px solid #e5e7eb; border-radius: 5px; padding: 5px 8px 5px 30px; margin-bottom: 5px; position: relative; background: #fff; }
+  .fr .blk::before { content: attr(data-t); position: absolute; left: 6px; top: 5px; font-size: 7pt; color: #9ca3af; }
+  .fr .tool { display: flex; gap: 3px; margin-bottom: 4px; flex-wrap: wrap; }
+  .fr .tool span { border: 1px solid #e5e7eb; border-radius: 3px; padding: 0 4px; font-size: 7.5pt; color: #4b5563; }
+  .fr .add { color: #6b7280; padding: 4px 0; font-size: 8pt; }
+  .fr .add span { border: 1px dashed #cbd5e1; border-radius: 4px; padding: 0 6px; margin-right: 3px; }
+  .m { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #dc2626; color: #fff; font-weight: 700; font-size: 8.5pt; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); z-index: 5; }
+  .sbtab { font-size: 9.2pt; }
+  .sbtab th:first-child, .sbtab td:first-child { width: 30px; text-align: center; }
+  .sbtab td:first-child b { display: inline-block; width: 18px; height: 18px; border-radius: 50%; background: #dc2626; color: #fff; font-size: 8pt; line-height: 18px; }
+  .sbtab th:nth-child(2) { width: 22%; }
+  .sbtab th:nth-child(3) { width: 40%; }
+  .fr.front { background: #fff; }
+  .fr.front .pbar { background: #111827; color: #fff; padding: 5px 10px; font-size: 8pt; display: flex; justify-content: space-between; }
+  .fr.front .pbar em { background: #34d399; color: #111; font-style: normal; border-radius: 8px; padding: 0 6px; font-weight: 700; }
+  .fr.front .fh { display: flex; justify-content: space-between; padding: 8px 40px; border-bottom: 1px solid #e5e7eb; font-weight: 800; }
+  .fr.front .art { max-width: 380px; margin: 0 auto; padding: 14px 10px 18px; line-height: 1.6; }
+  .fr.front .art .cat { color: #2eaa5e; font-weight: 700; font-size: 8pt; }
+  .fr.front .art h1 { font-size: 14pt; margin: 2px 0 4px; }
+  .fr.front .art .meta { color: #6b7280; font-size: 7.5pt; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-bottom: 8px; }
+  .fr.front .hero { height: 60px; background: #cbd5e1; border-radius: 6px; margin-bottom: 8px; }
+  .fr.front .sum { background: #f9fafb; border-left: 3px solid #2eaa5e; padding: 4px 8px; margin-bottom: 8px; color: #4b5563; }
+  .fr .login { display: flex; align-items: center; justify-content: center; min-height: 260px; }
+  .fr .login .bx { background: #fff; border-radius: 10px; padding: 18px 20px; width: 230px; box-shadow: 0 4px 14px rgba(0,0,0,.06); }
+  .fr .login .bx b { display: block; font-size: 11pt; color: #111827; }
+
+  .footer-note { margin-top: 20px; color: #6b7280; font-size: 9pt; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+</style><style>
+  code { font-family: "Noto Sans Mono CJK KR", "Noto Sans CJK KR", monospace; font-size: 9pt; background: #f3f4f6; padding: 0 4px; border-radius: 3px; }
+  .flow { display: flex; align-items: stretch; gap: 4px; margin: 10px 0 12px; page-break-inside: avoid; }
+  .flow .step { flex: 1; border: 1px solid #bfdbfe; background: #f5f9ff; border-radius: 6px; padding: 8px 10px; font-size: 9pt; display: flex; flex-direction: column; gap: 3px; }
+  .flow .step b { color: #1e3a8a; font-size: 9.5pt; }
+  .flow .step span { color: #4b5563; }
+  .flow .arrow { align-self: center; color: #2f7cf6; font-weight: 700; }
+  pre { font-size: 8.4pt; }
+</style><style>
+  @media screen {
+    body { background: #f3f4f6; }
+    .page { max-width: 900px; margin: 24px auto; background: #fff; padding: 36px 44px 48px; box-shadow: 0 2px 12px rgba(0,0,0,.06); border-radius: 8px; }
+    .cover { height: auto; min-height: 0; padding-bottom: 24px; border-bottom: 1px solid #e5e7eb; margin-bottom: 24px; }
+    .section { page-break-before: auto; margin-top: 40px; }
+    .toc li a { text-decoration: none; color: inherit; display: flex; justify-content: space-between; width: 100%; }
+    .toc li a:hover { color: #2f7cf6; }
+    .topnav { max-width: 900px; margin: 16px auto 0; font-size: 13px; color: #6b7280; display: flex; gap: 14px; }
+    .topnav a { color: #2f7cf6; text-decoration: none; }
+  }
+  @media print { .topnav { display: none; } .page { padding: 0; } }
+</style></head><body><div class="topnav"><a href="index.html">← 문서 목록</a><a href="structure-report.html">현재 구조·동작 보고서 →</a><span>인쇄·PDF 저장: Ctrl+P</span></div><div class="page"><div class="cover">
+  <div class="top">
+    <div class="kicker">AICA 블로그 CMS 백오피스</div>
+    <h1>기능별 파일 재분배 기획서</h1>
+    <div class="sub">패키지·템플릿·정적 자원을 기능 단위로 다시 묶는 리팩터링 계획 (To-Be)</div>
+  </div>
+  <div class="meta">
+    <table>
+      <tr><td>문서 버전</td><td>v1.0</td></tr>
+      <tr><td>작성일</td><td>2026-10-01</td></tr>
+      <tr><td>전제</td><td>「현재 파일 구조와 동작 방식 보고서」v1.0의 분석 결과</td></tr>
+      <tr><td>원칙</td><td>동작 변경 없음(순수 이동·분할) · 단계마다 빌드와 테스트 통과 · 되돌릴 수 있는 커밋 단위</td></tr>
+      <tr><td>예상 작업량</td><td>5단계 · 순작업 약 2~3일 (검증 포함)</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#s1"><span>1. 목표와 원칙</span><span>3</span></a></li>
+    <li><a href="#s2"><span>2. 목표 구조 한눈에 보기</span><span>4</span></a></li>
+    <li><a href="#s3"><span>3. Java 패키지 재배치</span><span>5</span></a></li>
+    <li><a href="#s4"><span>4. 템플릿·매퍼·마이그레이션 재배치</span><span>7</span></a></li>
+    <li><a href="#s5"><span>5. JS 분할 계획 (block-editor.js · editor.html)</span><span>8</span></a></li>
+    <li><a href="#s6"><span>6. CSS 재구성</span><span>9</span></a></li>
+    <li><a href="#s7"><span>7. 파일 이동표 (현재 → 변경 후)</span><span>10</span></a></li>
+    <li><a href="#s8"><span>8. 단계별 실행 계획과 검증</span><span>12</span></a></li>
+    <li><a href="#s9"><span>9. 위험 요소와 대응</span><span>13</span></a></li>
+    <li><a href="#s10"><span>10. 완료 기준 체크리스트</span><span>14</span></a></li>
+  </ol>
+</div>
+
+<div class="section">
+  <h2 id="s1"><span class="num">1</span>목표와 원칙</h2>
+  <h3>목표</h3>
+  <p>"어떤 기능을 고치려면 폴더 하나만 열면 된다"가 되도록 파일을 다시 묶습니다. 지금은 게시물 기능 하나가 <code>post/</code>, <code>templates/post/</code>, <code>mapper/PostMapper.xml</code>, <code>static/js/block-editor.js</code>, <code>static/css/editor.css</code>에 흩어져 있고, 에디터 JS 한 파일이 1,226줄입니다.</p>
+  <h3>원칙 (우선순위 순)</h3>
+  <ol>
+    <li><b>동작은 그대로</b> — 이 작업은 이동·이름 변경·분할만 합니다. 기능 개선은 별도 작업으로 뺍니다.</li>
+    <li><b>기능 우선, 계층은 그 안에서</b> — 최상위 폴더는 기능(post, editor, media, account …), 그 안에서 Controller/Service/Mapper/모델을 파일명으로 구분합니다.</li>
+    <li><b>Java·템플릿·SQL·JS·CSS가 같은 기능 이름을 공유</b> — <code>post/</code> 패키지 ↔ <code>templates/post/</code> ↔ <code>mapper/post/</code> ↔ <code>static/js/post/</code> ↔ <code>static/css/post.css</code>처럼 이름만 보고 짝을 찾을 수 있게 합니다.</li>
+    <li><b>큰 파일은 관심사별로 쪼갠다</b> — 한 파일 300줄 안팎을 기준으로, 넘으면 역할별로 분리합니다.</li>
+    <li><b>잔재는 지운다</b> — 1줄짜리 자리표시자, Stage0 검증물, 사용하지 않는 CSS 구역을 제거합니다.</li>
+    <li><b>단계마다 <code>mvnw clean verify</code> 통과</b> — 각 단계가 독립 커밋이 되도록 하고, 실패 시 그 단계만 되돌립니다.</li>
+  </ol>
+  <div class="box"><b>하지 않는 것</b> 모듈 분리(멀티 모듈 Maven), 프레임워크 교체, DB 스키마 변경, 프런트 빌드 도구 도입(번들러)은 이번 범위가 아닙니다. JS는 여전히 <code>&lt;script&gt;</code> 태그로 순서대로 로드합니다.</div>
+</div>
+
+<div class="section">
+  <h2 id="s2"><span class="num">2</span>목표 구조 한눈에 보기</h2>
+<pre>src/main/java/egovframework/backoffice/
+├─ BackofficeApplication.java
+├─ common/            예외(BusinessException, NotFoundException), GlobalExceptionHandler, GlobalModelAdvice, PageResult
+├─ config/            BackofficeProperties, SecurityConfig, WebConfig
+├─ account/           ★ 인증·계정 통합  (현재 auth + adminuser + bootstrap)
+│   ├─ AdminUser, AdminRole, AdminUserForm, AdminUserMapper, AdminUserService, AdminUserController
+│   ├─ LoginController, PasswordController, CurrentAdmin, AdminUserDetailsService, InitialAdminRunner
+├─ category/          (변경 없음) Category, CategoryForm, CategoryController, CategoryService, CategoryMapper
+├─ post/              게시물 '관리' — 목록·상태·휴지통
+│   ├─ Post, PostStatus, PostSearch, PostForm, PostMapper
+│   ├─ PostService          (search, get, create, update, apply, changeStatus)
+│   ├─ PostController       (list, new/create, edit/update, status)
+│   ├─ PostTrashService     ★ 분리 (delete=휴지통, searchTrash, restore, purge)
+│   ├─ PostTrashController  ★ 분리 (/admin/posts/trash, /{id}/delete, /restore, /purge)
+│   ├─ PostPreviewController★ 분리 (/{id}/preview, POST /preview)
+│   └─ version/         ★ 하위 패키지
+│       ├─ PostVersion, PostVersionMapper, PostVersionService, PostVersionController (/admin/posts/{id}/versions/**)
+├─ editor/            ★ 본문(블록) 모델·정화 — 게시물·템플릿·미리보기가 공유
+│   ├─ BlockContent (→ BlockSanitizer 로 개명 권장), BlockTypes(상수)
+├─ template/          PostTemplate, PostTemplateMapper, PostTemplateService ★ 신설, PostTemplateController
+├─ media/             ★ image → media 개명  ImageFile, ImageMapper, ImageStorageService, ImageController
+├─ stats/             (변경 없음) DailyStat, StatsMapper, StatsService, StatsController
+├─ publicapi/         ★ api → publicapi 개명  PublicApiController
+└─ faq/               FaqController (자리표시 유지)
+
+src/main/resources/
+├─ application.yml
+├─ db/migration/      V1__init_cms.sql  V2__post_versions.sql  V3__post_templates.sql   (변경 없음)
+├─ mapper/            ★ 기능 폴더로
+│   ├─ account/AdminUserMapper.xml   category/CategoryMapper.xml   media/ImageMapper.xml
+│   ├─ post/PostMapper.xml   post/PostVersionMapper.xml   template/PostTemplateMapper.xml   stats/StatsMapper.xml
+├─ static/css/
+│   ├─ admin.css      공통(변수·레이아웃·컴포넌트)만 남김
+│   ├─ dashboard.css  ★ 분리 (KPI·차트·순위·비율바)
+│   ├─ editor.css     글쓰기 페이지 레이아웃·도구 줄·패널
+│   ├─ blocks.css     ★ 분리 (블록 렌더·대화상자·슬래시 메뉴 — 에디터 라이브러리 전용)
+│   └─ front.css
+├─ static/js/
+│   ├─ admin.js
+│   ├─ editor/        ★ block-editor.js 분할 (로드 순서 고정)
+│   │   ├─ core.js        상수·유틸·cleanInline·upload·prepareImage · window.BlockEditor 네임스페이스
+│   │   ├─ blocks.js      Editor 생성자, 상태, 블록 조작(add/remove/move/duplicate/convert), 직렬화
+│   │   ├─ render.js      renderBlock/Text/List/Image/Table/Code, 드래그
+│   │   ├─ input.js       키보드·마크다운 단축·Enter 분할·붙여넣기(htmlToBlocks)·슬래시 메뉴
+│   │   ├─ dialogs.js     링크 대화상자, 보관함 피커
+│   │   ├─ toolbar.js     buildToolbar(3줄), updateToolbarState, exec/setFont/setFontSize/setAlign
+│   │   └─ index.js       mount() 공개 API 조립
+│   └─ post/          ★ editor.html 인라인 JS 외부화
+│       ├─ editor-page.js   자동 백업·복구 바·지문·상태 배너·저장 버튼·대표 이미지
+│       ├─ templates.js     템플릿 패널
+│       └─ history.js       버전 이력 다이얼로그
+└─ templates/
+    ├─ layout/admin.html   error.html
+    ├─ account/  login.html  password.html  user-list.html  user-form.html   ★ auth+adminuser+account 통합
+    ├─ post/     list.html  trash.html  editor.html(마크업만)  editor/_props.html  editor/_template-panel.html ★ 프래그먼트 분리
+    ├─ front/    post.html  blocks.html
+    ├─ category/list.html   dashboard/index.html   stats/index.html   faq/index.html</pre>
+  <p class="small muted">★ = 이번 작업에서 새로 생기거나 위치가 바뀌는 항목. 표시가 없는 항목은 그대로 둡니다.</p>
+</div>
+
+<div class="section">
+  <h2 id="s3"><span class="num">3</span>Java 패키지 재배치</h2>
+
+  <h3>3.1 account — 인증·계정 통합</h3>
+  <p><code>auth/</code>(3) + <code>adminuser/</code>(7) + <code>bootstrap/InitialAdminRunner</code>를 <code>account/</code> 하나로 합칩니다. 로그인 → 사용자 조회 → 임시 비밀번호 변경 → 계정 관리까지 한 흐름이 한 폴더에서 읽힙니다. 클래스 이름은 유지하고 패키지 선언과 import만 바뀝니다.</p>
+  <table>
+    <tr><th>현재</th><th>변경 후</th><th>비고</th></tr>
+    <tr><td>auth/LoginController, CurrentAdmin, AdminUserDetailsService</td><td>account/…</td><td>SecurityConfig의 import 수정</td></tr>
+    <tr><td>adminuser/AdminUser, AdminRole, AdminUserForm, AdminUserMapper, AdminUserService, AdminUserController, PasswordController</td><td>account/…</td><td>MyBatis namespace 변경 필요 (4장)</td></tr>
+    <tr><td>bootstrap/InitialAdminRunner</td><td>account/InitialAdminRunner</td><td>bootstrap 패키지 삭제</td></tr>
+  </table>
+
+  <h3>3.2 post — 책임 분리</h3>
+  <p><code>PostController</code>(16개 매핑)와 <code>PostService</code>를 세 묶음으로 나눕니다. URL은 전부 그대로이므로 화면·테스트·SecurityConfig의 경로 규칙은 바뀌지 않습니다.</p>
+  <table>
+    <tr><th style="width:190px">새 클래스</th><th>가져오는 메서드</th><th>URL</th></tr>
+    <tr><td>PostController (유지, 축소)</td><td>list, createForm, create, editForm, update, changeStatus, addFormOptions</td><td>/admin/posts, /new, /{id}/edit, /{id}, /{id}/status</td></tr>
+    <tr><td>PostTrashController ★</td><td>trash, delete, restore, purge</td><td>/admin/posts/trash, /{id}/delete, /{id}/restore, /{id}/purge</td></tr>
+    <tr><td>PostPreviewController ★</td><td>preview, previewDraft</td><td>/admin/posts/{id}/preview, POST /admin/posts/preview</td></tr>
+    <tr><td>version/PostVersionController ★</td><td>versions, version, restoreVersion (+ VERSION_TIME 포맷터)</td><td>/admin/posts/{id}/versions/**</td></tr>
+    <tr><td>PostService (유지, 축소)</td><td>search, get, getPublished, create, update, apply, blocksOf, blocksOfJson, changeStatus</td><td>—</td></tr>
+    <tr><td>PostTrashService ★</td><td>delete(soft), searchTrash, getDeleted, restore, purge</td><td>purge 는 PostVersionService.deleteByPost 호출</td></tr>
+    <tr><td>version/PostVersionService ★</td><td>record(post, reason, adminId), versionsOf, version, restore</td><td>PostService.create/update 가 record 호출</td></tr>
+  </table>
+  <div class="box small"><b>주의</b> <code>@RequestMapping("/admin/posts")</code> 아래에 <code>/trash</code>(고정 경로)와 <code>/{id}/…</code>(변수 경로)가 서로 다른 컨트롤러로 나뉘어도 Spring MVC는 고정 경로를 우선 매칭하므로 충돌하지 않습니다. 각 컨트롤러에 <code>@ModelAttribute("menu") → "posts"</code>를 넣어 좌측 메뉴 활성 표시를 유지합니다(휴지통은 "trash").</div>
+
+  <h3>3.3 editor — 블록 모델 독립</h3>
+  <p><code>BlockContent</code>는 게시물뿐 아니라 템플릿·미리보기·공개 API가 함께 쓰는 "본문 형식" 정의입니다. <code>post/</code>에서 꺼내 <code>editor/</code>로 옮기고, 역할이 드러나게 <code>BlockSanitizer</code>로 이름을 바꾸는 것을 권장합니다(선택). 블록 타입·허용 글꼴 상수는 <code>BlockTypes</code>로 분리해 프런트 JS의 <code>FONTS</code>와 1:1로 대응하는 주석을 둡니다.</p>
+
+  <h3>3.4 template — Service 계층 추가</h3>
+  <p>다른 기능과 같은 모양이 되도록 <code>PostTemplateService</code>를 만들어 검증·정화·개수 제한·트랜잭션을 옮기고, 컨트롤러는 요청/응답 변환만 남깁니다. 동작·URL·JSON 형식은 동일합니다.</p>
+
+  <h3>3.5 개명: image → media, api → publicapi</h3>
+  <p><code>image</code>는 앞으로 첨부파일(PDF 등)까지 담을 수 있도록 <code>media</code>로, <code>api</code>는 내부 JSON 엔드포인트(템플릿·이미지·버전)와 구분되도록 <code>publicapi</code>로 바꿉니다. URL(<code>/admin/images</code>, <code>/api/public</code>)은 그대로 둡니다. 클래스 이름 변경(ImageController → MediaController)은 2차 작업으로 미룹니다.</p>
+
+  <h3>3.6 삭제</h3>
+  <ul>
+    <li><code>stage0/</code> 전체, <code>bootstrap/SampleDataRunner</code>, <code>test/verification/Stage0WebTest</code>, <code>test/resources/stage0/</code></li>
+    <li><code>Stage0DatabaseTest</code>: Stage0 리소스에 의존하므로 함께 삭제(기능 테스트는 BackofficeWebTest가 대신함). 기록이 필요하면 <code>docs/STAGE0_VERIFICATION.md</code>에 이미 남아 있음.</li>
+    <li><code>src/compatibility</code>: pom 프로파일 <code>egov43-probe</code>와 함께 유지할지 결정. 유지한다면 <code>docs/</code>에 용도를 한 줄 적고, 아니면 삭제.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2 id="s4"><span class="num">4</span>템플릿·매퍼·마이그레이션 재배치</h2>
+  <h3>4.1 MyBatis 매퍼 XML → mapper/&lt;기능&gt;/</h3>
+  <p><code>application.yml</code>의 <code>mapper-locations: classpath:mapper/**/*.xml</code>이 이미 하위 폴더를 포함하므로 폴더만 만들면 됩니다. 단 <b>XML의 <code>namespace</code>는 인터페이스의 새 FQN과 반드시 일치</b>해야 합니다(패키지가 바뀐 account·media·publicapi·editor 관련).</p>
+  <table>
+    <tr><th>XML</th><th>새 위치</th><th>namespace 변경</th></tr>
+    <tr><td>AdminUserMapper.xml</td><td>mapper/account/</td><td>egovframework.backoffice.adminuser.AdminUserMapper → …backoffice.account.AdminUserMapper</td></tr>
+    <tr><td>ImageMapper.xml</td><td>mapper/media/</td><td>…image.ImageMapper → …media.ImageMapper</td></tr>
+    <tr><td>PostMapper.xml, PostVersionMapper.xml</td><td>mapper/post/</td><td>PostVersionMapper 만 …post.version.PostVersionMapper 로</td></tr>
+    <tr><td>CategoryMapper.xml, PostTemplateMapper.xml, StatsMapper.xml</td><td>mapper/category/, template/, stats/</td><td>변경 없음</td></tr>
+  </table>
+  <div class="box small"><b>타입 별칭</b> <code>type-aliases-package: egovframework.backoffice</code>는 하위 패키지를 모두 스캔하므로 <code>resultType="Post"</code> 같은 단순명은 그대로 동작합니다. 단, 서로 다른 패키지에 같은 단순명 클래스를 두면 충돌하므로 이번 구조에서는 중복 이름을 만들지 않습니다.</div>
+
+  <h3>4.2 Thymeleaf 템플릿</h3>
+  <table>
+    <tr><th>현재</th><th>변경 후</th><th>컨트롤러 return 값 수정</th></tr>
+    <tr><td>auth/login.html</td><td>account/login.html</td><td>LoginController: "account/login"</td></tr>
+    <tr><td>account/password.html</td><td>account/password.html</td><td>변경 없음</td></tr>
+    <tr><td>adminuser/list.html, form.html</td><td>account/user-list.html, user-form.html</td><td>AdminUserController 4곳</td></tr>
+    <tr><td>post/editor.html (495)</td><td>post/editor.html(마크업 ~150) + post/editor/_props.html + post/editor/_template-panel.html</td><td><code>th:replace="~{post/editor/_props :: props}"</code>로 포함</td></tr>
+    <tr><td>image/list.html ✕, post/form.html ✕, stage0/status.html ✕</td><td>삭제</td><td>—</td></tr>
+  </table>
+  <h3>4.3 마이그레이션</h3>
+  <p>Flyway 스크립트는 체크섬이 기록되므로 <b>이름·내용을 바꾸지 않습니다</b>. 폴더도 <code>db/migration</code> 그대로 둡니다. 기능별로 보고 싶을 때는 파일 머리 주석(이미 있음)으로 구분합니다.</p>
+</div>
+
+<div class="section">
+  <h2 id="s5"><span class="num">5</span>JS 분할 계획 (block-editor.js · editor.html)</h2>
+  <h3>5.1 분할 방식</h3>
+  <p>번들러 없이도 동작하도록 <b>하나의 전역 네임스페이스 <code>window.BlockEditor</code></b>에 모듈이 차례로 메서드를 붙이는 방식을 씁니다. 각 파일은 <code>(function (BE) { … })(window.BlockEditor = window.BlockEditor || {});</code> 형태이고, <code>Editor.prototype</code>은 <code>BE.Editor</code>로 공유합니다. 로드 순서는 <code>core → blocks → render → input → dialogs → toolbar → index</code>로 고정하고 <code>editor.html</code>에서 그 순서로 <code>&lt;script&gt;</code>를 넣습니다.</p>
+  <table>
+    <tr><th style="width:120px">파일</th><th class="c" style="width:60px">예상 줄</th><th>옮겨갈 현재 코드</th><th>외부에 드러낼 것</th></tr>
+    <tr><td>core.js</td><td class="c">190</td><td>FONT_SIZES·COLORS·BG_COLORS·FONTS·FONT_OK, el/csrf/toast/saveRange/restoreRange, escapeHtml, fontName, normalizeSize, cleanInline, prepareImage, upload, validUrl</td><td>BE.util, BE.consts, BE.cleanInline, BE.upload, BE.prepareImage, BE.validUrl</td></tr>
+    <tr><td>blocks.js</td><td class="c">230</td><td>Editor 생성자(컨테이너·이벤트 바인딩), setBlocks/appendBlocks/getBlocks/serializeBlock/sync/changed/isEmpty, newBlock, addBlock, blockAtY, insertImages, focusBlock/setFocus, removeBlock, move, duplicate, focusNeighbor, convert/convertTo/replaceWith, stats</td><td>BE.Editor</td></tr>
+    <tr><td>render.js</td><td class="c">210</td><td>renderBlock, renderText(+bindText 호출), renderList/setListStyle/refreshList, renderImage, renderTable, renderCode, enableDrag</td><td>Editor.prototype.render*</td></tr>
+    <tr><td>input.js</td><td class="c">230</td><td>caretAt, MD_SHORTCUTS, bindText, BLOCK_TAGS/htmlToBlocks, pasteHtml/pasteBlocks, SLASH_ITEMS, openSlash/slashMove/slashPick/closeSlash</td><td>BE.htmlToBlocks</td></tr>
+    <tr><td>dialogs.js</td><td class="c">110</td><td>anchorOfSelection, openLinkDialog, openPicker</td><td>—</td></tr>
+    <tr><td>toolbar.js</td><td class="c">200</td><td>exec, setFontSize, setFont, setAlign, buildToolbar, updateToolbarState</td><td>—</td></tr>
+    <tr><td>index.js</td><td class="c">20</td><td>BE.mount(container, opts) → new BE.Editor(...)</td><td>BE.mount</td></tr>
+  </table>
+  <h3>5.2 editor.html 인라인 JS 외부화 → static/js/post/</h3>
+  <table>
+    <tr><th style="width:150px">파일</th><th>내용</th><th>서버 값 전달 방법</th></tr>
+    <tr><td>post/editor-page.js</td><td>editor 마운트, 자동 백업/복구 바, 지문·나가기 경고, 글자 수, 공개 상태↔배너·버튼, 저장 버튼, Ctrl+S, 대표 이미지 업로드</td><td rowspan="3"><code>&lt;div id="editorConfig" data-upload-url data-recent-url data-templates-url data-versions-url data-post-id&gt;</code>에 Thymeleaf가 값을 넣고 JS가 <code>dataset</code>으로 읽음 — 인라인 표현식 제거</td></tr>
+    <tr><td>post/templates.js</td><td>템플릿 패널 열기/닫기, 목록 카드, 불러오기/뒤에 추가/이름/삭제, 이름 입력 대화상자, 저장</td></tr>
+    <tr><td>post/history.js</td><td>버전 이력 다이얼로그, 블록 간이 렌더, 편집기에 불러오기, 복원 폼 제출</td></tr>
+  </table>
+  <p>세 파일은 <code>window.PostEditorPage = { init(config) }</code> 같은 작은 네임스페이스로 서로를 참조하고, <code>editor.html</code> 끝에서 <code>PostEditorPage.init(document.getElementById('editorConfig').dataset)</code> 한 줄만 호출합니다.</p>
+  <div class="box small"><b>검증 포인트</b> 분할 뒤 <code>node --check</code>로 각 파일 문법 확인 → 정적 미리보기(Playwright)로 슬래시 메뉴·링크·붙여넣기·복제·글꼴·템플릿 패널 시나리오 재실행 → 서버 기동 후 실제 저장·미리보기 확인.</div>
+</div>
+
+<div class="section">
+  <h2 id="s6"><span class="num">6</span>CSS 재구성</h2>
+  <table>
+    <tr><th style="width:130px">파일</th><th>남기는/옮기는 구역</th><th>로드하는 화면</th></tr>
+    <tr><td>admin.css</td><td>:root 변수, 초기화, GNB, .wrap 그리드, LNB(프로필·메뉴), 카드·표·배지·버튼·입력·페이저·토스트·빈 상태, 로그인, 휴지통 안내</td><td>모든 관리 화면(layout/admin.html)</td></tr>
+    <tr><td>dashboard.css ★</td><td>admin.css에서 .stamp, .visit-row, .chart-card, .chart, .two-col, .mini-card, .rank, .ratio, .kpis, .bars, .tabs 이동</td><td>dashboard/index.html, stats/index.html만 (scripts/head 프래그먼트로 추가 로드)</td></tr>
+    <tr><td>editor.css</td><td>:root --ed-* 변수, 상단 바, 배너, 2단 그리드, 도구 줄(.ed-rt*, .be-toolbar 크롬), 콘텐츠 속성, 템플릿 패널, 이력 다이얼로그</td><td>post/editor.html</td></tr>
+    <tr><td>blocks.css ★</td><td>editor.css에서 .be, .be-block, .be-handle, .be-text, 블록별(.be-image/.be-table/.be-codearea 등), .be-picker/.be-dlg, .be-slash, .be-btn 이동 — 에디터 라이브러리와 함께 재사용</td><td>post/editor.html (editor.css 다음)</td></tr>
+    <tr><td>front.css</td><td>변경 없음</td><td>front/post.html</td></tr>
+  </table>
+  <p>정리하면서 사용처가 없는 규칙(옛 2줄 도구 모음 <code>.ed-top-2row</code>, <code>.insert-row</code>, 옛 하단 바·발행 패널 잔재가 남아 있다면)을 제거합니다. 제거 전 <code>grep</code>으로 템플릿·JS에서 클래스명 사용 여부를 확인합니다.</p>
+</div>
+
+<div class="section">
+  <h2 id="s7"><span class="num">7</span>파일 이동표 (현재 → 변경 후)</h2>
+  <p class="small muted">경로는 <code>src/main/java/egovframework/backoffice/</code>, <code>src/main/resources/</code> 기준. "—"는 변경 없음.</p>
+  <table>
+    <tr><th style="width:260px">현재</th><th style="width:260px">변경 후</th><th>작업</th></tr>
+    <tr><td colspan="3" style="background:#f3f4f6"><b>Java — account</b></td></tr>
+    <tr><td>auth/LoginController.java</td><td>account/LoginController.java</td><td>이동, 템플릿 경로 "account/login"</td></tr>
+    <tr><td>auth/CurrentAdmin.java · AdminUserDetailsService.java</td><td>account/…</td><td>이동</td></tr>
+    <tr><td>adminuser/AdminUser · AdminRole · AdminUserForm · AdminUserMapper · AdminUserService · AdminUserController · PasswordController</td><td>account/…</td><td>이동, XML namespace 수정, 템플릿 경로 "account/user-*"</td></tr>
+    <tr><td>bootstrap/InitialAdminRunner.java</td><td>account/InitialAdminRunner.java</td><td>이동</td></tr>
+    <tr><td>bootstrap/SampleDataRunner.java ✕</td><td>(삭제)</td><td>삭제</td></tr>
+    <tr><td colspan="3" style="background:#f3f4f6"><b>Java — post / editor / template / media / publicapi</b></td></tr>
+    <tr><td>post/PostController.java</td><td>post/PostController + PostTrashController + PostPreviewController + version/PostVersionController</td><td>분할</td></tr>
+    <tr><td>post/PostService.java</td><td>post/PostService + PostTrashService + version/PostVersionService</td><td>분할</td></tr>
+    <tr><td>post/PostVersion.java · PostVersionMapper.java</td><td>post/version/…</td><td>이동, XML namespace 수정</td></tr>
+    <tr><td>post/BlockContent.java</td><td>editor/BlockContent.java (→ BlockSanitizer 선택)</td><td>이동, import 5곳(PostService, PostTemplateController, PublicApiController, 테스트 2)</td></tr>
+    <tr><td>post/Post · PostStatus · PostSearch · PostForm · PostMapper</td><td>—</td><td>—</td></tr>
+    <tr><td>template/PostTemplateController.java</td><td>template/PostTemplateController + PostTemplateService ★</td><td>Service 추출</td></tr>
+    <tr><td>image/*.java (4)</td><td>media/*.java</td><td>패키지 개명, XML namespace 수정</td></tr>
+    <tr><td>api/PublicApiController.java</td><td>publicapi/PublicApiController.java</td><td>패키지 개명</td></tr>
+    <tr><td>stage0/*.java ✕ (2)</td><td>(삭제)</td><td>삭제</td></tr>
+    <tr><td>category/*, stats/*, faq/*, common/*, config/*</td><td>—</td><td>import 수정만</td></tr>
+    <tr><td colspan="3" style="background:#f3f4f6"><b>리소스 — mapper</b></td></tr>
+    <tr><td>mapper/AdminUserMapper.xml</td><td>mapper/account/AdminUserMapper.xml</td><td>이동 + namespace</td></tr>
+    <tr><td>mapper/ImageMapper.xml</td><td>mapper/media/ImageMapper.xml</td><td>이동 + namespace</td></tr>
+    <tr><td>mapper/PostMapper.xml</td><td>mapper/post/PostMapper.xml</td><td>이동</td></tr>
+    <tr><td>mapper/PostVersionMapper.xml</td><td>mapper/post/PostVersionMapper.xml</td><td>이동 + namespace(post.version)</td></tr>
+    <tr><td>mapper/CategoryMapper.xml · PostTemplateMapper.xml · StatsMapper.xml</td><td>mapper/category/ · template/ · stats/</td><td>이동</td></tr>
+    <tr><td colspan="3" style="background:#f3f4f6"><b>리소스 — templates</b></td></tr>
+    <tr><td>templates/auth/login.html</td><td>templates/account/login.html</td><td>이동</td></tr>
+    <tr><td>templates/adminuser/list.html · form.html</td><td>templates/account/user-list.html · user-form.html</td><td>이동·개명</td></tr>
+    <tr><td>templates/post/editor.html</td><td>post/editor.html + post/editor/_props.html + post/editor/_template-panel.html</td><td>프래그먼트 분리, 인라인 JS 제거</td></tr>
+    <tr><td>templates/post/form.html ✕ · image/list.html ✕ · stage0/status.html ✕</td><td>(삭제)</td><td>삭제</td></tr>
+    <tr><td>templates/layout, post/list·trash, front/*, category, dashboard, stats, faq, error</td><td>—</td><td>—</td></tr>
+    <tr><td colspan="3" style="background:#f3f4f6"><b>리소스 — static</b></td></tr>
+    <tr><td>static/js/block-editor.js</td><td>static/js/editor/{core,blocks,render,input,dialogs,toolbar,index}.js</td><td>7개로 분할</td></tr>
+    <tr><td>(editor.html 인라인 JS)</td><td>static/js/post/{editor-page,templates,history}.js</td><td>외부화</td></tr>
+    <tr><td>static/css/admin.css</td><td>admin.css + dashboard.css</td><td>분리</td></tr>
+    <tr><td>static/css/editor.css</td><td>editor.css + blocks.css</td><td>분리</td></tr>
+    <tr><td>static/js/admin.js · css/front.css</td><td>—</td><td>—</td></tr>
+    <tr><td colspan="3" style="background:#f3f4f6"><b>테스트</b></td></tr>
+    <tr><td>test/…/BackofficeWebTest.java</td><td>test/…/post/PostWebTest · post/PostVersionWebTest · template/TemplateWebTest · account/AccountWebTest · media/ImageWebTest</td><td>기능별 분할(선택, 3단계 이후)</td></tr>
+    <tr><td>test/…/post/BlockContentTest.java</td><td>test/…/editor/BlockContentTest.java</td><td>이동</td></tr>
+    <tr><td>test/…/verification/* · test/resources/stage0/*</td><td>(삭제)</td><td>삭제</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2 id="s8"><span class="num">8</span>단계별 실행 계획과 검증</h2>
+  <p>각 단계는 독립 커밋으로 남기고, 끝날 때마다 <code>.\mvnw.cmd -B -ntp clean verify</code>와 아래 "확인" 항목을 수행합니다. 한 단계가 실패하면 그 단계만 되돌립니다.</p>
+  <table>
+    <tr><th style="width:70px" class="c">단계</th><th style="width:170px">작업</th><th>세부</th><th style="width:220px">확인</th><th class="c" style="width:60px">예상</th></tr>
+    <tr><td class="c"><b>0</b></td><td>정리</td><td>자리표시자 7개·stage0 테스트·리소스 삭제, src/compatibility 유지 여부 결정, 사용 안 하는 CSS 규칙 grep 후 제거</td><td>빌드·테스트 통과, 화면 깨짐 없음</td><td class="c">0.5일</td></tr>
+    <tr><td class="c"><b>1</b></td><td>Java 패키지 이동</td><td>account 통합, image→media, api→publicapi, BlockContent→editor, PostVersion→post/version. IDE의 "Move/Rename" 리팩터링 사용(import 자동 수정)</td><td>XML namespace 7개 점검, 로그인→글 저장→이미지 업로드 수동 확인</td><td class="c">0.5일</td></tr>
+    <tr><td class="c"><b>2</b></td><td>Controller/Service 분할</td><td>PostTrash·PostPreview·PostVersion 컨트롤러/서비스 분리, PostTemplateService 추출. 메서드 본문은 복사-붙여넣기, 시그니처 유지</td><td>BackofficeWebTest 전부 통과(URL 불변이므로 수정 없이 통과해야 함), SecurityConfig 변경 없음 확인</td><td class="c">0.5일</td></tr>
+    <tr><td class="c"><b>3</b></td><td>리소스 재배치</td><td>mapper/&lt;기능&gt;/, templates/account/, editor.html 프래그먼트 분리, 컨트롤러 return 경로 수정</td><td>모든 화면 1회씩 열기(관리자 홈·글 관리·휴지통·글쓰기·카테고리·통계·계정·비밀번호·FAQ·로그인)</td><td class="c">0.5일</td></tr>
+    <tr><td class="c"><b>4</b></td><td>JS 분할</td><td>block-editor.js → editor/ 7개, 인라인 JS → post/ 3개, data-* 설정 전달, script 순서 고정</td><td>node --check, 정적 미리보기 시나리오(슬래시·링크·붙여넣기·복제·글꼴·템플릿·이력), 실제 저장·발행·미리보기</td><td class="c">1일</td></tr>
+    <tr><td class="c"><b>5</b></td><td>CSS 분리·테스트 분할</td><td>dashboard.css, blocks.css 분리 및 로드 추가, 테스트 클래스 기능별 분할, README·docs 갱신</td><td>대시보드·글쓰기 화면 스크린샷 전후 비교, 테스트 수 동일</td><td class="c">0.5일</td></tr>
+  </table>
+  <h3>권장 순서의 이유</h3>
+  <p>Java(1·2단계)를 먼저 끝내면 IDE 리팩터링으로 import가 자동 정리되어 가장 안전하고, 리소스(3단계)는 Java의 return 문자열·namespace가 확정된 뒤 옮겨야 두 번 손대지 않습니다. JS 분할(4단계)은 가장 손이 많이 가고 회귀 위험이 커서 다른 단계가 안정된 뒤 마지막에 합니다.</p>
+  <h3>Git 작업 방식</h3>
+  <ul>
+    <li>브랜치 <code>refactor/feature-layout</code>에서 단계별 커밋: <code>refactor(0): remove placeholders</code>, <code>refactor(1): move packages</code> …</li>
+    <li>이동은 반드시 <code>git mv</code>(또는 IDE 이동)로 하여 히스토리가 이어지게 합니다.</li>
+    <li>각 단계 커밋 메시지에 "동작 변경 없음 / 검증: verify 통과, 화면 N개 확인"을 적습니다.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2 id="s9"><span class="num">9</span>위험 요소와 대응</h2>
+  <table>
+    <tr><th style="width:36px" class="c">#</th><th style="width:200px">위험</th><th>증상</th><th>대응</th></tr>
+    <tr><td class="c">1</td><td>MyBatis namespace 불일치</td><td>기동 시 <code>Invalid bound statement (not found)</code></td><td>패키지 이동 시 XML namespace를 함께 수정하는 체크리스트(7개 파일) 운영, 통합 테스트가 모든 매퍼를 1회 이상 호출하도록 유지</td></tr>
+    <tr><td class="c">2</td><td>타입 별칭 충돌</td><td>같은 단순명 클래스 2개 → 기동 실패</td><td>이번 구조에 중복 이름 없음. 새 클래스 추가 시 규칙 명시</td></tr>
+    <tr><td class="c">3</td><td>템플릿 경로 오타</td><td>500 TemplateInputException</td><td>컨트롤러 return 문자열 수정 목록(5곳)을 3단계 확인 항목에 포함, 모든 화면 1회 열기</td></tr>
+    <tr><td class="c">4</td><td>SecurityConfig 경로 규칙 깨짐</td><td>SUPPORT가 휴지통 접근 가능 등</td><td>URL을 바꾸지 않는 것이 원칙. BackofficeWebTest의 권한 테스트(403 확인)로 검증</td></tr>
+    <tr><td class="c">5</td><td>JS 로드 순서·전역 의존</td><td>"BlockEditor.Editor is undefined"</td><td>index.js에서 필수 모듈 존재를 검사해 콘솔 경고, editor.html의 script 순서를 주석으로 고정</td></tr>
+    <tr><td class="c">6</td><td>Thymeleaf 인라인 값 전달 누락</td><td>업로드 URL이 undefined</td><td>data-* 속성으로 일괄 전달, init()에서 필수 값 검증</td></tr>
+    <tr><td class="c">7</td><td>CSS 분리 후 누락</td><td>대시보드 차트 스타일 사라짐</td><td>분리한 CSS를 레이아웃 프래그먼트의 head 슬롯 또는 해당 템플릿에서 로드, 전후 스크린샷 비교</td></tr>
+    <tr><td class="c">8</td><td>Flyway 체크섬</td><td>기동 시 Validate failed</td><td>마이그레이션 파일은 절대 이동·수정하지 않음</td></tr>
+    <tr><td class="c">9</td><td>운영 DB 데이터</td><td>—</td><td>스키마 변경이 없으므로 데이터 영향 없음. 배포 전 data/ 백업만 수행</td></tr>
+    <tr><td class="c">10</td><td>동시 진행 중인 기능 작업과 충돌</td><td>머지 충돌</td><td>리팩터링 기간(2~3일) 동안 기능 브랜치 머지를 멈추거나, 1·2단계를 먼저 머지한 뒤 기능 작업 재개</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2 id="s10"><span class="num">10</span>완료 기준 체크리스트</h2>
+  <table>
+    <tr><th style="width:36px" class="c">✓</th><th>항목</th></tr>
+    <tr><td class="c">☐</td><td>최상위 Java 패키지가 account · category · post(+version) · editor · template · media · stats · publicapi · faq · common · config 11개로 정리되고 빈 패키지가 없다</td></tr>
+    <tr><td class="c">☐</td><td>1줄짜리 자리표시자 파일과 Stage0 관련 테스트·리소스가 모두 삭제되었다</td></tr>
+    <tr><td class="c">☐</td><td>Java 파일 중 300줄을 넘는 것은 BlockContent(정화 규칙) 하나 이하다</td></tr>
+    <tr><td class="c">☐</td><td>mapper XML이 기능 폴더 아래에 있고 namespace가 인터페이스 FQN과 일치한다</td></tr>
+    <tr><td class="c">☐</td><td>templates/ 폴더 이름이 Java 패키지 이름과 1:1로 대응한다 (account, post, category, stats, dashboard, front, faq, layout)</td></tr>
+    <tr><td class="c">☐</td><td>block-editor.js가 editor/ 아래 7개 파일로 나뉘고 각 파일이 300줄 이하다</td></tr>
+    <tr><td class="c">☐</td><td>editor.html에 인라인 <code>&lt;script&gt;</code> 로직이 없고 data-* 설정과 init 호출만 있다</td></tr>
+    <tr><td class="c">☐</td><td>dashboard.css · blocks.css가 분리되었고 사용하지 않는 CSS 규칙이 없다</td></tr>
+    <tr><td class="c">☐</td><td>모든 URL이 변경 전과 동일하다 (보고서 8장 URL 맵 기준)</td></tr>
+    <tr><td class="c">☐</td><td><code>mvnw clean verify</code> 통과, 테스트 수가 줄지 않았다 (Stage0 삭제분 제외)</td></tr>
+    <tr><td class="c">☐</td><td>관리 화면 11개와 글쓰기·미리보기·로그인을 수동으로 1회씩 확인했다</td></tr>
+    <tr><td class="c">☐</td><td>README의 구조 설명과 docs/ 문서가 새 구조로 갱신되었다</td></tr>
+  </table>
+  <div class="box"><b>이후 2차 작업 후보</b> (이번 범위 밖) ImageController → MediaController 개명과 첨부파일 지원, 서버 자동저장(fetch 기반 저장 흐름), FAQ 기능 구현, PostgreSQL 전환, 프런트 빌드 도구 도입.</div>
+</div>
+</div></body></html>

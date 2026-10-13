@@ -1,0 +1,82 @@
+<!-- 템플릿 관리 — 레이아웃 구성 패널 (template/editor.html 에서 th:replace, static/js/template/layout-panel.js 가 제어)
+     글이 프론트에서 어떤 구성으로 보일지 정한다: 프리셋(1단/2단) · 정렬 · 폭 · 머리 요소 순서 · 사이드바/하단 위젯. 값은 #layoutJson 에 JSON 으로 저장 -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+  <section class="lo-panel" id="layoutPanel" th:fragment="panel">
+    <div class="lo-body">
+      <div class="lo-sec-title">프리셋 <span class="ed-help">클릭해서 기본 구성을 고르고, 아래에서 세부 요소를 조정합니다</span></div>
+      <div class="lo-presets">
+        <div class="lo-preset-group">
+          <div class="lo-preset-group-label">1단</div>
+          <button type="button" class="lo-preset" data-preset="basic" title="기본 · 제목 아래 본문, 보통 폭">
+            <span class="lo-mini"><i class="t"></i><i class="b"></i></span>기본
+          </button>
+          <button type="button" class="lo-preset" data-preset="wide" title="넓게 · 본문 폭을 넓힘">
+            <span class="lo-mini wide"><i class="t"></i><i class="b"></i></span>넓게
+          </button>
+          <button type="button" class="lo-preset" data-preset="hero" title="히어로 · 대표 이미지를 맨 위에 크게">
+            <span class="lo-mini"><i class="img"></i><i class="t"></i><i class="b"></i></span>히어로
+          </button>
+          <button type="button" class="lo-preset" data-preset="magazine" title="매거진 · 제목은 왼쪽, 대표 이미지는 오른쪽">
+            <span class="lo-mini"><span class="row"><i class="t half"></i><i class="img half"></i></span><i class="b"></i></span>매거진
+          </button>
+        </div>
+        <div class="lo-preset-group">
+          <div class="lo-preset-group-label">2단</div>
+          <button type="button" class="lo-preset" data-preset="side-left" title="좌측 사이드바 · 목차·프로필 등 위젯을 왼쪽에">
+            <span class="lo-mini"><i class="t"></i><span class="row"><i class="s"></i><i class="b grow"></i></span></span>좌 사이드바
+          </button>
+          <button type="button" class="lo-preset" data-preset="side-right" title="우측 사이드바 · 위젯을 오른쪽에">
+            <span class="lo-mini"><i class="t"></i><span class="row"><i class="b grow"></i><i class="s"></i></span></span>우 사이드바
+          </button>
+        </div>
+      </div>
+
+      <div class="lo-settings">
+        <div class="lo-setting">
+          <span class="lo-setting-label">전체 정렬</span>
+          <label><input type="radio" name="loAlign" value="center"> 중앙</label>
+          <label><input type="radio" name="loAlign" value="left"> 좌측</label>
+        </div>
+        <div class="lo-setting">
+          <span class="lo-setting-label">글 영역</span>
+          <label><input type="radio" name="loWidth" value="normal"> 보통</label>
+          <label><input type="radio" name="loWidth" value="wide"> 넓게</label>
+        </div>
+      </div>
+
+      <div class="lo-sec-title">구성 <span class="ed-help">요소를 마우스로 끌어 원하는 영역에 놓으세요. ✕ 를 누르면 사용 안 함으로 빠집니다</span></div>
+      <div class="lo-canvas">
+        <div class="lo-zone lo-zone-header" data-zone="header">
+          <div class="lo-zone-label">머리 영역</div>
+          <div class="lo-chips" data-zone="header"></div>
+        </div>
+        <div class="lo-middle">
+          <div class="lo-zone lo-zone-side" data-zone="sidebar">
+            <div class="lo-zone-label">사이드바</div>
+            <div class="lo-chips lo-chips-col" data-zone="sidebar"></div>
+          </div>
+          <div class="lo-main"><span>글 영역</span><small>아래 "본문 구성"의 블록이 들어갑니다</small></div>
+        </div>
+        <div class="lo-zone lo-zone-footer" data-zone="footer">
+          <div class="lo-zone-label">본문 아래</div>
+          <div class="lo-chips" data-zone="footer"></div>
+        </div>
+      </div>
+      <div class="lo-tray">
+        <div class="lo-zone-label">사용 안 함 <span class="ed-help">끌어서 위 영역에 넣으면 표시됩니다</span></div>
+        <div class="lo-chips" data-zone="tray"></div>
+      </div>
+
+      <div class="lo-foot">
+        <button type="button" class="ed-btn sm" data-layout-reset>기본값으로 되돌리기</button>
+        <span class="ed-help" data-layout-summary></span>
+      </div>
+      <div class="ed-help lo-note">
+        대표 이미지는 글에서 <b>직접 지정</b>했을 때만 머리 영역에 표시됩니다(본문 첫 이미지 자동 사용 시 중복을 피하려고 숨깁니다).
+      </div>
+    </div>
+  </section>
+</body>
+</html>

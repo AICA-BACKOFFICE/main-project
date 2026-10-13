@@ -1,0 +1,415 @@
+<title>인사교 사이트 시안</title>
+<style>
+  /* 배포 링크의 틀: 위에 얇은 바(사이트 보기 · 편집하기), 아래에 사이트 또는 편집 화면이 꽉 차게 들어가요. */
+  :root {
+    --bar: #ffffff; --ink: #13203c; --muted: #657087; --line: #dfe4ee; --accent: #244cd2; --accent-soft: #edf1ff; --ground: #e9ecf2;
+    --font: Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bar: #141d30; --ink: #e9eefb; --muted: #9aa7c2; --line: #263249; --accent: #8aa6ff; --accent-soft: #1c2a4a; --ground: #0e1424; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bar: #141d30; --ink: #e9eefb; --muted: #9aa7c2; --line: #263249; --accent: #8aa6ff; --accent-soft: #1c2a4a; --ground: #0e1424; color-scheme: dark; }
+  html, body { height: 100%; }
+  body { display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--ground); color: var(--ink); font-family: var(--font); }
+  .bar { display: flex; align-items: center; gap: 14px; min-width: 0; padding-inline: 16px; padding-block: 8px; background: var(--bar); border-bottom: 1px solid var(--line); }
+  .brand { flex: none; font-size: 14px; letter-spacing: -.02em; }
+  .brand span { color: var(--muted); font-weight: 500; }
+  .tabs { display: flex; flex: none; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--ground); }
+  .tabs button { height: 30px; padding-inline: 14px; border: 0; border-radius: 7px; background: none; color: var(--muted); font: 600 13px/1 var(--font); cursor: pointer; }
+  .tabs button:hover { color: var(--ink); }
+  .tabs button[aria-selected="true"] { background: var(--bar); color: var(--accent); box-shadow: 0 1px 2px rgba(16, 24, 40, .1); }
+  .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .note { min-width: 0; margin: 0 0 0 auto; overflow: hidden; color: var(--muted); font-size: 12.5px; white-space: nowrap; text-overflow: ellipsis; }
+  .stage { position: relative; min-height: 0; }
+  .stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #ffffff; }
+  .notice { position: absolute; inset: 0; display: grid; place-items: center; padding-inline: 16px; }
+  .notice div { display: grid; gap: 10px; max-width: 420px; padding: 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--bar); line-height: 1.6; }
+  .notice strong { font-size: 16px; }
+  .notice p { margin: 0; color: var(--muted); }
+  @media (max-width: 640px) { .brand span, .note { display: none; } }
+</style>
+<header class="bar">
+  <strong class="brand">인사교 <span>사이트 시안</span></strong>
+  <div class="tabs" role="tablist" aria-label="화면">
+    <button type="button" role="tab" id="tab-front" aria-selected="true" aria-controls="view-front" data-view="front">사이트 보기</button>
+    <button type="button" role="tab" id="tab-back" aria-selected="false" aria-controls="view-back" data-view="back">편집하기</button>
+  </div>
+  <p class="note" id="note">불러오는 중…</p>
+</header>
+<main class="stage">
+  <iframe id="view-front" title="인사교 사이트"></iframe>
+  <iframe id="view-back" title="인사교 사이트 편집" hidden></iframe>
+  <div class="notice" id="notice" hidden><div><strong id="notice-title"></strong><p id="notice-text"></p></div></div>
+</main>
+<script>
+(() => {
+  'use strict';
+  // 빌드(artifact/build.cjs)가 채워 넣는 설정: 편집할 페이지, 편집기 옵션, 사이트 안 그림 목록, 페이지에 넣은 스크립트 태그
+  const CONFIG = /*BUILD:CONFIG*/null;
+  const PART_SIZE = 60000;      // 글 한 조각의 길이(저장소 문서 하나에 들어가도록 나눠 저장해요)
+  const BACKUP_KEEP = 30;       // 페이지마다 남겨 둘 반영 기록 수
+  const MAX_UPLOAD = 20 * 1024 * 1024;
+  const IMAGE_TYPES = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif', svg: 'image/svg+xml' };
+
+  const $ = selector => document.querySelector(selector);
+  const frames = { front: $('#view-front'), back: $('#view-back') };
+  const store = { db: null, assets: null, canEdit: false };
+  // 저장소 내용을 그대로 들고 있는 사본: 페이지 스크립트가 기다리지 않고 바로 꺼내 쓰도록 미리 읽어 둬요.
+  const cache = { static: {}, heads: {}, parts: {}, texts: {} };
+  let view = 'front';
+
+  // ── 작은 도구 ──
+  const hash = value => {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < value.length; i++) { h ^= value.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return (h >>> 0).toString(16).padStart(8, '0') + value.length.toString(16);
+  };
+  const now = () => new Date().toISOString();
+  const pad = value => String(value).padStart(2, '0');
+  const stamp = (date = new Date()) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
+  const pageById = id => CONFIG.pages.find(page => page.id === id) || null;
+  const keyOf = (id, kind) => `${id}-${kind}`;
+  const textOf = (id, kind) => cache.texts[keyOf(id, kind)] ?? null;
+  const publishedOf = id => textOf(id, 'published') ?? cache.static[id] ?? null;
+  const workingOf = id => textOf(id, 'draft') ?? publishedOf(id);
+  const scriptJson = value => JSON.stringify(value).replace(/</g, '\\u003c');
+  const looksLikePage = html => /^\s*<!doctype html/i.test(html) && /<\/html>\s*$/i.test(html) && /<body[\s>]/i.test(html);
+  // 글을 조각으로 나눌 때 한 글자(서로게이트 쌍)가 둘로 갈리지 않게 합니다.
+  function split(value) {
+    const parts = [];
+    for (let start = 0; start < value.length;) {
+      let end = Math.min(start + PART_SIZE, value.length);
+      const code = value.charCodeAt(end - 1);
+      if (end < value.length && code >= 0xd800 && code <= 0xdbff) end -= 1;
+      parts.push(value.slice(start, end));
+      start = end;
+    }
+    return parts.length ? parts : [''];
+  }
+
+  // ── 페이지에 넣을 글 ──
+  // 편집 화면: 백오피스 서버가 하던 것처럼 원본 글에 편집기(canvas.css · 설정 · canvas.js)를 붙여요.
+  function withEditor(id, html) {
+    const base = new URL('admin/', location.href).href;
+    const crlf = (html.match(/\r\n/g) || []).length;
+    const eol = crlf && crlf >= (html.match(/\n/g) || []).length / 2 ? '\r\n' : '\n';
+    const doctype = (html.match(/^﻿?<!doctype[^>]*>/i) || [null])[0];
+    const style = `<link rel="stylesheet" href="${base}canvas.css" data-bo-internal>`;
+    // 이 글은 <script> 안에 있어서, 닫는 태그를 <\/script>로 적어야 여기서 끊기지 않아요.
+    const settings = `<script data-bo-internal>window.__BO_PAGE__=${scriptJson({ id, eol, doctype, source: html, ...CONFIG.pageOptions })};<\/script>`;
+    const script = `${settings}<script src="${base}canvas.js" data-bo-internal><\/script>`;
+    const headEnd = html.search(/<\/head>/i);
+    let result = headEnd >= 0 ? html.slice(0, headEnd) + style + html.slice(headEnd) : style + html;
+    const bodyEnd = result.toLowerCase().lastIndexOf('</body>');
+    result = bodyEnd >= 0 ? result.slice(0, bodyEnd) + script + result.slice(bodyEnd) : result + script;
+    return result;
+  }
+  // 페이지 스크립트(common/js/aica-artifact.js)가 부릅니다: 바꿔 보여 줄 글이 없으면 null(원래 파일 그대로).
+  function pageHtml(pathname, mode) {
+    const page = CONFIG.pages.find(item => pathname.endsWith(`/${item.file}`) || pathname.endsWith(`/${item.file.replace(/index\.html$/, '')}`));
+    if (!page) return null;
+    if (mode === 'edit') {
+      const html = workingOf(page.id);
+      return html ? withEditor(page.id, html) : null;
+    }
+    const html = mode === 'preview' ? workingOf(page.id) : textOf(page.id, 'published');
+    return html && html !== cache.static[page.id] ? html : null;
+  }
+
+  // ── 저장소: 편집본은 조각(parts)으로 나눠 저장하고, 머리(versions)에 조각 수와 확인값을 둬요 ──
+  async function readParts(collection, key, head) {
+    const parts = [];
+    for (let i = 0; i < head.parts; i++) {
+      const part = await store.db.doc(`${collection}/${key}-${i}`).get();
+      if (!part.exists) return null;
+      parts.push(String(part.data().text ?? ''));
+    }
+    return hash(parts.join('')) === head.hash ? parts : null;
+  }
+  async function loadVersion(doc) {
+    const head = doc.data();
+    if (!head) return;
+    const known = cache.heads[doc.id];
+    if (known && known.hash === head.hash && cache.texts[doc.id] != null) {
+      cache.heads[doc.id] = head;
+      return;
+    }
+    const parts = await readParts('parts', doc.id, head);
+    if (!parts) return; // 다른 곳에서 쓰는 중이면 다음 알림 때 다시 읽어요.
+    cache.heads[doc.id] = head;
+    cache.parts[doc.id] = parts;
+    cache.texts[doc.id] = parts.join('');
+  }
+  function forget(key) {
+    delete cache.heads[key];
+    delete cache.parts[key];
+    delete cache.texts[key];
+  }
+  const pageOfKey = key => key.replace(/-(published|draft)$/, '');
+  function watchVersions() {
+    return new Promise(resolve => {
+      let first = true;
+      const done = () => { if (first) { first = false; resolve(); } };
+      store.db.collection('versions').onSnapshot(async snap => {
+        const before = Object.fromEntries(Object.entries(cache.heads).map(([key, head]) => [key, head.hash]));
+        for (const doc of snap.docs) await loadVersion(doc);
+        for (const key of Object.keys(cache.heads)) if (!snap.docs.some(doc => doc.id === key)) forget(key);
+        const changed = new Set();
+        for (const key of new Set([...Object.keys(before), ...Object.keys(cache.heads)])) {
+          if (before[key] !== cache.heads[key]?.hash) changed.add(pageOfKey(key));
+        }
+        if (first) done();
+        else if (changed.size) remoteChange(changed);
+      }, () => done());
+    });
+  }
+  async function writeVersion(id, kind, value, extra = {}) {
+    const key = keyOf(id, kind);
+    const parts = split(value);
+    const old = cache.parts[key] || [];
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i] !== old[i]) await store.db.doc(`parts/${key}-${i}`).set({ text: parts[i] });
+    }
+    const head = { page: id, kind, parts: parts.length, hash: hash(value), length: value.length, savedAt: now(), ...extra };
+    await store.db.doc(`versions/${key}`).set(head);
+    for (let i = parts.length; i < old.length; i++) await store.db.doc(`parts/${key}-${i}`).delete();
+    cache.heads[key] = head;
+    cache.parts[key] = parts;
+    cache.texts[key] = value;
+    return head;
+  }
+  async function removeVersion(id, kind) {
+    const key = keyOf(id, kind);
+    const head = cache.heads[key];
+    if (!head) return;
+    await store.db.doc(`versions/${key}`).delete();
+    for (let i = 0; i < head.parts; i++) await store.db.doc(`parts/${key}-${i}`).delete();
+    forget(key);
+  }
+  function stateOf(id) {
+    const draft = cache.heads[keyOf(id, 'draft')];
+    const published = cache.heads[keyOf(id, 'published')];
+    const base = hash(publishedOf(id) || '');
+    return {
+      page: id,
+      hasDraft: Boolean(draft),
+      draftSavedAt: draft?.savedAt || null,
+      conflict: Boolean(draft && draft.baseHash && draft.baseHash !== base),
+      publishedAt: published?.savedAt || CONFIG.builtAt
+    };
+  }
+
+  // ── 반영 기록(백업) ──
+  async function listBackups(id) {
+    const snap = await store.db.collection('backups').where('page', '==', id).get();
+    return snap.docs.map(doc => doc.data()).sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+  }
+  async function deleteBackup(item) {
+    const key = item.name.replace(/\.html$/, '');
+    await store.db.doc(`backups/${key}`).delete();
+    for (let i = 0; i < item.parts; i++) await store.db.doc(`backupParts/${key}-${i}`).delete();
+  }
+  async function backupPublished(id) {
+    const value = publishedOf(id);
+    if (!value) return null;
+    let key = `${id}-${stamp()}`;
+    for (let i = 2; (await store.db.doc(`backups/${key}`).get()).exists; i++) key = `${id}-${stamp()}-${i}`;
+    const parts = split(value);
+    for (let i = 0; i < parts.length; i++) await store.db.doc(`backupParts/${key}-${i}`).set({ text: parts[i] });
+    await store.db.doc(`backups/${key}`).set({ page: id, name: `${key}.html`, parts: parts.length, hash: hash(value), size: new Blob([value]).size, savedAt: now() });
+    const old = (await listBackups(id)).slice(BACKUP_KEEP);
+    for (const item of old) await deleteBackup(item);
+    return `${key}.html`;
+  }
+  async function readBackup(id, name) {
+    const key = String(name).replace(/\.html$/, '');
+    if (!key.startsWith(`${id}-`)) return null;
+    const head = (await store.db.doc(`backups/${key}`).get()).data();
+    if (!head) return null;
+    const parts = await readParts('backupParts', key, head);
+    return parts ? parts.join('') : null;
+  }
+
+  // ── 그림 ──
+  async function assetList(id) {
+    const page = pageById(id);
+    const dir = page.file.replace(/[^/]*$/, '');
+    const up = '../'.repeat(dir.split('/').length - 1);
+    const items = CONFIG.images.map(item => ({
+      path: item.file.startsWith(dir) ? item.file.slice(dir.length) : up + item.file,
+      size: item.size, modifiedAt: CONFIG.builtAt, upload: false, own: item.file.startsWith(dir)
+    }));
+    if (store.assets) {
+      try {
+        const { assets } = await store.assets.list();
+        for (const asset of assets) {
+          if (/^image\//.test(asset.contentType)) items.push({ path: `/_blob/${asset.id}`, size: asset.sizeBytes, modifiedAt: asset.createdAt, upload: true, own: true });
+        }
+      } catch {}
+    }
+    return items.sort((a, b) => {
+      if (a.upload !== b.upload) return a.upload ? -1 : 1;
+      if (a.upload) return String(b.modifiedAt).localeCompare(String(a.modifiedAt));
+      if (a.own !== b.own) return a.own ? -1 : 1;
+      return a.path.localeCompare(b.path);
+    });
+  }
+  async function upload(name, body) {
+    const ext = String(name || '').split('.').pop().toLowerCase();
+    if (!IMAGE_TYPES[ext]) return json(400, { error: 'PNG, JPG, WEBP, GIF, AVIF, SVG 이미지만 올릴 수 있어요.' });
+    const blob = body instanceof Blob ? body : new Blob([body || '']);
+    if (!blob.size) return json(400, { error: '빈 파일이에요.' });
+    if (blob.size > MAX_UPLOAD) return json(400, { error: '20MB보다 작은 이미지를 올려 주세요.' });
+    if (!store.assets) return json(403, { error: '이미지를 올릴 수 있는 권한이 없어요. 이 링크의 편집자만 이미지를 올릴 수 있어요.' });
+    const result = await store.assets.upload(blob, { type: blob.type || IMAGE_TYPES[ext] });
+    return json(200, { path: `/_blob/${result.id}` });
+  }
+
+  // ── 백오피스(편집 화면)의 요청을 받아 주는 곳: 로컬 백오피스 서버(/__bo/api/…)와 같은 모양으로 답해요 ──
+  const json = (status, value) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+  const plain = (status, value) => new Response(value, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+  function describe(error) {
+    const code = error?.code;
+    if (code === 'quota_exceeded') return '저장 공간이 가득 찼어요. 오래된 반영 기록을 정리한 뒤 다시 시도해 주세요.';
+    if (code === 'invalid_argument') return '저장하지 못했어요. 이 링크의 편집 권한이 있는지 확인해 주세요.';
+    if (code === 'resource_exhausted' || code === 'rate_limited') return '요청이 많아 잠시 저장하지 못했어요. 조금 뒤 자동으로 다시 저장돼요.';
+    if (code === 'too_large') return '파일이 너무 커요. 20MB보다 작은 이미지를 올려 주세요.';
+    if (code === 'unsupported_type') return '올릴 수 없는 파일 형식이에요.';
+    return `저장소에 연결하지 못했어요${code ? ` (${code})` : ''}. 잠시 뒤 다시 시도해 주세요.`;
+  }
+  async function bodyText(body) {
+    if (typeof body === 'string') return body;
+    return body ? new Response(body).text() : '';
+  }
+  async function apiFetch(input, init = {}) {
+    const url = new URL(String(input), location.href);
+    const route = decodeURIComponent(url.pathname.split('/__bo/api/')[1] || '');
+    const method = String(init.method || 'GET').toUpperCase();
+    if (!store.db) return json(503, { error: '저장소에 연결하지 못했어요. claude.ai에 로그인한 상태로 열어 주세요.' });
+    if (route === 'pages' && method === 'GET') {
+      return json(200, CONFIG.pages.map(page => ({ id: page.id, title: page.title, file: page.file, url: page.url, hasDraft: Boolean(cache.heads[keyOf(page.id, 'draft')]) })));
+    }
+    if (route === 'front' || route === 'front/start') return json(200, { running: true, clients: 0 });
+    const page = pageById(url.searchParams.get('page')) || CONFIG.pages[0];
+    const id = page.id;
+    const writing = method !== 'GET';
+    if (writing && !store.canEdit) return json(403, { error: '이 링크의 편집 권한이 없어 저장하지 못했어요. 편집자로 공유받은 뒤 다시 열어 주세요.' });
+    try {
+      if (route === 'state' && method === 'GET') return json(200, stateOf(id));
+      if (route === 'published' && method === 'GET') return plain(200, publishedOf(id) || '');
+      if (route === 'draft' && method === 'PUT') {
+        const html = await bodyText(init.body);
+        if (!looksLikePage(html)) return json(400, { error: '페이지 형식이 올바르지 않아요.' });
+        const published = publishedOf(id) || '';
+        if (html === published) await removeVersion(id, 'draft');
+        else await writeVersion(id, 'draft', html, { baseHash: cache.heads[keyOf(id, 'draft')]?.baseHash || hash(published) });
+        return json(200, stateOf(id));
+      }
+      if (route === 'draft' && method === 'DELETE') {
+        await removeVersion(id, 'draft');
+        return json(200, stateOf(id));
+      }
+      if (route === 'publish' && method === 'POST') {
+        const html = await bodyText(init.body);
+        if (!looksLikePage(html)) return json(400, { error: '페이지 형식이 올바르지 않아요.' });
+        const backup = await backupPublished(id);
+        await writeVersion(id, 'published', html);
+        await removeVersion(id, 'draft');
+        return json(200, { ...stateOf(id), backup, front: { running: true, clients: 0 } });
+      }
+      if (route === 'backups' && method === 'GET') {
+        return json(200, (await listBackups(id)).map(item => ({ name: item.name, size: item.size, savedAt: item.savedAt })));
+      }
+      if (route.startsWith('backups/') && method === 'GET') {
+        const value = await readBackup(id, route.slice('backups/'.length));
+        return value == null ? json(404, { error: '백업을 찾을 수 없어요.' }) : plain(200, value);
+      }
+      if (route === 'assets' && method === 'GET') return json(200, await assetList(id));
+      if (route === 'upload' && method === 'POST') return await upload(url.searchParams.get('name'), init.body);
+      return json(404, { error: '알 수 없는 요청이에요.' });
+    } catch (error) {
+      return json(500, { error: describe(error) });
+    }
+  }
+
+  // ── 화면 ──
+  function setNote() {
+    const note = $('#note');
+    if (!store.db) note.textContent = '사이트 보기만 할 수 있어요. 편집하려면 claude.ai에 로그인한 상태로 열어 주세요.';
+    else if (!store.canEdit) note.textContent = '사이트 보기 전용이에요. 편집은 이 링크의 편집자만 할 수 있어요.';
+    else note.textContent = view === 'front' ? '편집하기에서 ‘사이트에 반영’한 내용이 여기에 바로 보여요.' : '편집 내용은 자동으로 임시저장돼요. ‘사이트에 반영’을 눌러야 사이트 보기에 적용돼요.';
+  }
+  function notice(title, text) {
+    $('#notice-title').textContent = title;
+    $('#notice-text').textContent = text;
+    $('#notice').hidden = false;
+  }
+  function show(next) {
+    view = next;
+    for (const button of document.querySelectorAll('[data-view]')) button.setAttribute('aria-selected', String(button.dataset.view === next));
+    frames.front.hidden = next !== 'front';
+    $('#notice').hidden = true;
+    if (next === 'back') {
+      if (!store.db || !store.canEdit) {
+        frames.back.hidden = true;
+        if (!store.db) notice('편집하려면 로그인이 필요해요', 'claude.ai에 로그인한 상태로 이 링크를 열면 편집하기를 쓸 수 있어요. 사이트 보기는 지금도 할 수 있어요.');
+        else notice('편집 권한이 없어요', '편집은 이 링크를 편집자로 공유받은 사람만 할 수 있어요. 사이트 보기는 누구나 할 수 있어요.');
+      } else {
+        frames.back.hidden = false;
+        if (!frames.back.getAttribute('src')) frames.back.src = 'admin/index.html';
+      }
+    } else {
+      frames.back.hidden = true;
+    }
+    setNote();
+  }
+  // 사이트 보기 탭에서 지금 보고 있는 페이지(사이트 폴더 기준 경로)
+  function frontFile() {
+    try {
+      const path = frames.front.contentWindow.location.pathname;
+      return CONFIG.files.find(file => path.endsWith(`/${file}`)) || null;
+    } catch { return null; }
+  }
+  function showFront(file) {
+    show('front');
+    const target = file || CONFIG.home;
+    if (frontFile() === target) frames.front.contentWindow.location.reload();
+    else frames.front.src = target;
+  }
+  function afterPublish(id) {
+    const page = pageById(id);
+    if (page && frontFile() === page.file) frames.front.contentWindow.location.reload();
+  }
+  // 다른 사람이 반영하면 사이트 보기 탭이 그 페이지를 보고 있을 때 새로 그려요.
+  function remoteChange(changed) {
+    const file = frontFile();
+    const page = CONFIG.pages.find(item => item.file === file);
+    if (page && changed.has(page.id)) frames.front.contentWindow.location.reload();
+  }
+
+  window.AICA_SHELL = { ready: false, pageHtml, fetch: apiFetch, showFront, afterPublish };
+  for (const button of document.querySelectorAll('[data-view]')) button.addEventListener('click', () => show(button.dataset.view));
+
+  async function start() {
+    // 원본 페이지 글(배포 빌드가 넣은 스크립트 태그는 뺀 것)을 먼저 읽어 둬요.
+    await Promise.all(CONFIG.pages.map(async page => {
+      try {
+        const response = await fetch(page.file, { cache: 'no-store' });
+        if (response.ok) cache.static[page.id] = (await response.text()).split(CONFIG.loaderTag).join('');
+      } catch {}
+    }));
+    const use = name => (window.claude && typeof window.claude.use === 'function' ? window.claude.use(name).catch(() => null) : Promise.resolve(null));
+    const [db, assets, user] = await Promise.all([use('db'), use('assets'), use('user')]);
+    store.db = db;
+    store.assets = assets;
+    if (db) {
+      store.canEdit = user ? await user.canEdit().catch(() => false) : true;
+      await watchVersions();
+    }
+    window.AICA_SHELL.ready = true;
+    frames.front.src = CONFIG.home;
+    show(view);
+  }
+  start();
+})();
+</script>

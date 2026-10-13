@@ -1,0 +1,19 @@
+# 지우지 않고 모아 둔 예전 파일(약 8GB · GitHub 크기 제한) — 작업한 컴퓨터에만 둠
+/예전 파일/
+# 빌드하면 저절로 생기는 것
+/백오피스/target/
+/백오피스/.cache/
+/백오피스/.tools/
+node_modules/
+# H2 데이터베이스가 켜져 있을 때만 생기는 파일
+*.lock.db
+*.trace.db
+# 저장하다 남은 임시 파일
+*.tmp
+# 개인 편집기 · 운영체제 파일
+.idea/
+.vscode/
+*.iml
+Thumbs.db
+desktop.ini
+.DS_Store

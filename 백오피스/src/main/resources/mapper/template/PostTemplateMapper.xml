@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.backoffice.template.PostTemplateMapper">
+
+  <sql id="columns">
+    t.id, t.name, t.title_hint, t.category_id, t.blocks_json, t.layout_json, t.created_by, t.created_at, t.updated_at,
+    u.name AS creator_name, c.name AS category_name
+  </sql>
+  <sql id="joins">
+    FROM post_templates t
+    LEFT JOIN admin_users u ON u.id = t.created_by
+    LEFT JOIN categories c ON c.id = t.category_id
+  </sql>
+
+  <select id="findAll" resultType="PostTemplate">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    ORDER BY t.updated_at DESC, t.id DESC
+    LIMIT #{limit}
+  </select>
+
+  <select id="findById" resultType="PostTemplate">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    WHERE t.id = #{id}
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO post_templates (name, title_hint, category_id, blocks_json, layout_json, created_by)
+    VALUES (#{name}, #{titleHint}, #{categoryId}, #{blocksJson}, #{layoutJson}, #{createdBy})
+  </insert>
+
+  <update id="update">
+    UPDATE post_templates
+       SET name = #{name}, title_hint = #{titleHint}, category_id = #{categoryId},
+           blocks_json = #{blocksJson}, layout_json = #{layoutJson}, updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id}
+  </update>
+
+  <delete id="delete">
+    DELETE FROM post_templates WHERE id = #{id}
+  </delete>
+
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM post_templates
+  </select>
+</mapper>

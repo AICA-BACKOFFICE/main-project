@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout(${form.id == null} ? '관리자 등록' : '관리자 수정', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <h2 class="page-title" th:text="${form.id == null} ? '관리자 등록' : '관리자 수정'">관리자 등록</h2>
+
+  <div class="card" style="max-width:720px">
+    <div class="card-body">
+      <form th:object="${form}" method="post"
+            th:action="${form.id == null} ? @{/admin/users} : @{/admin/users/{id}(id=${form.id})}" autocomplete="off">
+        <div class="alert error" th:if="${#fields.hasGlobalErrors()}">
+          <div th:each="e : ${#fields.globalErrors()}" th:text="${e}"></div>
+        </div>
+        <div class="form-grid">
+          <label class="lbl req" for="loginId">이메일 (로그인 ID)</label>
+          <div>
+            <input class="input wide mono" th:field="*{loginId}" id="loginId" type="email" maxlength="120" placeholder="hong@aica-gj.kr" autocomplete="off" th:readonly="${form.id != null}">
+            <div class="help" th:if="${form.id == null}">이메일 주소가 로그인 ID 가 됩니다. 등록 후에는 변경할 수 없습니다.</div>
+            <div class="field-error" th:if="${#fields.hasErrors('loginId')}" th:errors="*{loginId}"></div>
+          </div>
+
+          <label class="lbl req" for="name">이름</label>
+          <div>
+            <input class="input wide" th:field="*{name}" id="name" maxlength="50">
+            <div class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+          </div>
+
+          <label class="lbl req">역할</label>
+          <div class="radio-row" style="flex-direction:column;gap:8px">
+            <label th:each="r : ${roles}">
+              <input type="radio" th:field="*{role}" th:value="${r}">
+              <b th:text="${r.label}">역할</b> <span class="muted" th:text="'— ' + ${r.description}"></span>
+            </label>
+          </div>
+
+          <label class="lbl" for="active">상태</label>
+          <label class="check"><input type="checkbox" th:field="*{active}" id="active"> 활성 (해제하면 로그인할 수 없습니다)</label>
+
+          <label class="lbl" for="password" th:classappend="${form.id == null} ? 'req'" th:text="${form.id == null} ? '초기 비밀번호' : '비밀번호 재설정'">초기 비밀번호</label>
+          <div>
+            <input class="input wide" type="password" th:field="*{password}" id="password" minlength="8" autocomplete="new-password"
+                   th:placeholder="${form.id == null} ? '8자 이상' : '변경할 때만 입력 (8자 이상)'">
+            <div class="help">발급한 비밀번호는 담당자에게 직접 전달하세요. 해당 관리자는 첫 로그인 후 비밀번호를 변경해야 합니다.</div>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:20px;justify-content:flex-end;display:flex">
+          <a class="btn ghost" th:href="@{/admin/users}">목록</a>
+          <button class="btn primary" type="submit" th:text="${form.id == null} ? '등록' : '저장'">등록</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</main>
+<th:block th:fragment="scripts"></th:block>
+</body>
+</html>

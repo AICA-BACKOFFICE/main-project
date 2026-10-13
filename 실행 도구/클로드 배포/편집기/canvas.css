@@ -1,0 +1,15 @@
+/* 편집 모드 전용: 움직임을 멈춰 모든 내용을 제자리에 고정합니다(사이트의 동작 줄이기 설정과 같은 상태). */
+html { scroll-behavior: auto !important; }
+*, *::before, *::after { animation: none !important; transition: none !important; }
+/* 영상은 클릭으로 재생되지 않고 선택되도록 합니다. */
+iframe { pointer-events: none !important; }
+a[href] { cursor: default !important; }
+/* 선택한 작은 아이콘·그림은 그대로 끌어서 옮길 수 있어요. */
+[data-bo-grab], [data-bo-grab] * { cursor: move !important; }
+[data-bo-editing] { cursor: text !important; user-select: text !important; -webkit-user-select: text !important; outline: none !important; caret-color: #2f5bff; }
+[data-bo-editing]:empty::before { content: '내용을 입력하세요'; color: #9aa6bd; }
+/* 글자를 모두 지운 문단·제목은 높이가 0이 되어 클릭할 수 없으므로, 편집 화면에서만 자리 표시를 보여 줍니다.
+   페이지 스크립트가 채우는 알림 칸(aria-live, 예: 검색 결과 수)은 원래 비어 있으므로 빼냅니다. */
+:is(p, h1, h2, h3, h4, h5, h6, li, dt, dd, figcaption, blockquote, strong, small):empty:not([data-bo-editing]):not([aria-live])::before {
+  content: '빈 글자 · 클릭해서 입력하거나 Delete로 지우기'; display: inline-block; color: #b3bccc; font: 400 13px/1.6 'School Pretendard', sans-serif; letter-spacing: 0;
+}

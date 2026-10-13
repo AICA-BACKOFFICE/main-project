@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.backoffice.post.PostMapper">
+
+  <sql id="columns">
+    p.id, p.category_id, p.sub_category_id, p.title, p.summary, p.thumbnail_url, p.thumbnail_mode, p.status,
+    p.author_id, p.view_count, p.published_at, p.created_at, p.updated_at, p.deleted_at, p.layout_json, p.status_before_trash, p.story_json,
+    c.name AS category_name, c.slug AS category_slug, sc.name AS sub_category_name, sc.slug AS sub_category_slug,
+    u.name AS author_name
+  </sql>
+
+  <sql id="joins">
+    FROM posts p
+    LEFT JOIN categories c ON c.id = p.category_id
+    LEFT JOIN categories sc ON sc.id = p.sub_category_id
+    LEFT JOIN admin_users u ON u.id = p.author_id
+  </sql>
+
+  <sql id="searchWhere">
+    WHERE p.deleted_at IS NULL
+    <if test="s.status != null">
+      AND p.status = #{s.status}
+    </if>
+    <if test="s.categoryId != null">
+      AND p.category_id = #{s.categoryId}
+    </if>
+    <if test="s.subCategoryId != null">
+      AND p.sub_category_id = #{s.subCategoryId}
+    </if>
+    <if test="s.keyword != null and s.keyword != ''">
+      AND (LOWER(p.title) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(p.summary, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(u.name, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(u.login_id, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%')))
+    </if>
+    <if test="s.authorId != null">
+      AND p.author_id = #{s.authorId}
+    </if>
+  </sql>
+
+  <select id="search" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    <include refid="searchWhere"/>
+    ORDER BY p.id DESC
+    LIMIT #{s.size} OFFSET #{s.offset}
+  </select>
+
+  <select id="countSearch" resultType="long">
+    SELECT COUNT(*)
+    <include refid="joins"/>
+    <include refid="searchWhere"/>
+  </select>
+
+  <select id="findById" resultType="Post">
+    SELECT <include refid="columns"/>, p.blocks_json
+    <include refid="joins"/>
+    WHERE p.id = #{id} AND p.deleted_at IS NULL
+  </select>
+
+  <select id="findPublishedById" resultType="Post">
+    SELECT <include refid="columns"/>, p.blocks_json
+    <include refid="joins"/>
+    WHERE p.id = #{id} AND p.deleted_at IS NULL AND p.status = 'PUBLISHED'
+  </select>
+
+  <select id="findPublished" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    WHERE p.deleted_at IS NULL AND p.status = 'PUBLISHED'
+    <if test="categorySlug != null and categorySlug != ''">
+      AND c.slug = #{categorySlug}
+    </if>
+    <if test="subSlug != null and subSlug != ''">
+      AND sc.slug = #{subSlug}
+    </if>
+    ORDER BY p.published_at DESC, p.id DESC
+    LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="countPublished" resultType="long">
+    SELECT COUNT(*)
+    <include refid="joins"/>
+    WHERE p.deleted_at IS NULL AND p.status = 'PUBLISHED'
+    <if test="categorySlug != null and categorySlug != ''">
+      AND c.slug = #{categorySlug}
+    </if>
+    <if test="subSlug != null and subSlug != ''">
+      AND sc.slug = #{subSlug}
+    </if>
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO posts (category_id, sub_category_id, title, summary, thumbnail_url, thumbnail_mode, status, blocks_json, layout_json,
+                       story_json, author_id, published_at)
+    VALUES (#{categoryId}, #{subCategoryId}, #{title}, #{summary}, #{thumbnailUrl}, #{thumbnailMode}, #{status}, #{blocksJson}, #{layoutJson},
+            #{storyJson}, #{authorId}, #{publishedAt})
+  </insert>
+
+  <update id="update">
+    UPDATE posts
+       SET category_id = #{categoryId},
+           sub_category_id = #{subCategoryId},
+           title = #{title},
+           summary = #{summary},
+           thumbnail_url = #{thumbnailUrl},
+           thumbnail_mode = #{thumbnailMode},
+           status = #{status},
+           blocks_json = #{blocksJson},
+           layout_json = #{layoutJson},
+           story_json = #{storyJson},
+           published_at = #{publishedAt},
+           updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="softDelete">
+    UPDATE posts SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP,
+           status_before_trash = status, status = 'HIDDEN'
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <sql id="trashWhere">
+    WHERE p.deleted_at IS NOT NULL
+    <if test="s.keyword != null and s.keyword != ''">
+      AND (LOWER(p.title) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(p.summary, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%')))
+    </if>
+  </sql>
+
+  <select id="findTrash" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    <include refid="trashWhere"/>
+    ORDER BY p.deleted_at DESC, p.id DESC
+    LIMIT #{s.size} OFFSET #{s.offset}
+  </select>
+
+  <select id="countTrash" resultType="long">
+    SELECT COUNT(*)
+    <include refid="joins"/>
+    <include refid="trashWhere"/>
+  </select>
+
+  <select id="findDeletedById" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    WHERE p.id = #{id} AND p.deleted_at IS NOT NULL
+  </select>
+
+  <!-- 복원: 휴지통으로 옮기기 전 상태(게시중이었으면 게시중)로 되돌린다 -->
+  <update id="restore">
+    UPDATE posts SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP,
+           status = COALESCE(status_before_trash, status), status_before_trash = NULL
+     WHERE id = #{id} AND deleted_at IS NOT NULL
+  </update>
+
+  <delete id="deleteViewLogs">
+    DELETE FROM post_view_logs WHERE post_id = #{id}
+  </delete>
+
+  <delete id="hardDelete">
+    DELETE FROM posts WHERE id = #{id} AND deleted_at IS NOT NULL
+  </delete>
+
+  <update id="updateStatus">
+    UPDATE posts
+       SET status = #{status},
+           published_at = CASE WHEN #{status} = 'PUBLISHED' AND published_at IS NULL THEN CURRENT_TIMESTAMP ELSE published_at END,
+           updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="increaseViewCount">
+    UPDATE posts SET view_count = view_count + 1 WHERE id = #{id}
+  </update>
+
+  <select id="countAll" resultType="long">
+    SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL
+  </select>
+
+  <select id="countByStatus" resultType="long">
+    SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND status = #{status}
+  </select>
+
+  <select id="findTopViewed" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    WHERE p.deleted_at IS NULL
+    ORDER BY p.view_count DESC, p.id DESC
+    LIMIT #{limit}
+  </select>
+
+  <!-- 선배들의 이야기 사이트 데이터: 게시중인 고정 양식 글(최신 게시 순) -->
+  <select id="findPublishedStories" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    WHERE p.deleted_at IS NULL AND p.status = 'PUBLISHED' AND p.story_json IS NOT NULL
+      AND c.slug IN ('review', 'interview', 'project', 'cohort')
+    ORDER BY p.published_at DESC, p.id DESC
+  </select>
+
+  <!-- 사이트 데이터 가져오기: 이미 있는 글(휴지통 포함)인지 -->
+  <select id="countStoryById" resultType="long">
+    SELECT COUNT(*) FROM posts WHERE id = #{id} AND story_json IS NOT NULL
+  </select>
+
+  <select id="findRecent" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    WHERE p.deleted_at IS NULL
+    ORDER BY p.updated_at DESC, p.id DESC
+    LIMIT #{limit}
+  </select>
+</mapper>

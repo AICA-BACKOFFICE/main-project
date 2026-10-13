@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="'로그인 | ' + ${siteName}">로그인</title>
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="login-wrap">
+  <form class="login-box" th:action="@{/login}" method="post" autocomplete="off">
+    <h1 th:text="${siteName}">운영툴</h1>
+    <div class="env">관리자 로그인 · <span th:text="${envLabel}">local</span></div>
+
+    <div class="alert error" th:if="${param.error}">이메일 또는 비밀번호가 올바르지 않거나 비활성화된 계정입니다.</div>
+    <div class="alert info" th:if="${param.logout}">로그아웃했습니다.</div>
+    <div class="alert info" th:if="${toast}" th:text="${toast}"></div>
+
+    <input class="input" type="text" name="loginId" placeholder="이메일" autocomplete="username" required autofocus>
+    <input class="input" type="password" name="password" placeholder="비밀번호" required>
+    <button class="btn green" type="submit">로그인</button>
+    <p class="help" style="margin-top:14px">계정은 최상위 관리자가 발급합니다. 최초 기동 시 <b>admin</b> 계정이 자동 생성됩니다.</p>
+  </form>
+</div>
+</body>
+</html>

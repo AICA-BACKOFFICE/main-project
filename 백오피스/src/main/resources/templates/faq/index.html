@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout('지원 전 Check FAQ 관리', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <h2 class="page-title">지원 전 Check FAQ 관리</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="left">
+        <select class="select" disabled><option>전체 상태</option></select>
+        <span class="count">(표시 0건 / 총 0 건)</span>
+      </div>
+      <button class="btn primary" type="button" disabled>신규 등록</button>
+    </div>
+    <table class="list">
+      <thead>
+      <tr>
+        <th style="width:70px">ID</th>
+        <th>질문</th>
+        <th style="width:120px">카테고리</th>
+        <th style="width:90px">상태</th>
+        <th style="width:110px">작성자</th>
+        <th style="width:130px">수정일</th>
+        <th style="width:160px" class="right">액션</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td colspan="7">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+            <div>지원 전 Check FAQ 관리 기능은 준비 중입니다.</div>
+            <div class="help" style="margin-top:6px">지금 사이트의 자주 묻는 질문은 카테고리 페이지 관리 › 지원 전 체크에서 고칠 수 있어요.</div>
+            <div class="help" style="margin-top:6px">질문 등록 → 답변대기 → 답변 작성 → 게시 흐름으로 구성할 예정입니다.</div>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+<th:block th:fragment="scripts"></th:block>
+</body>
+</html>
