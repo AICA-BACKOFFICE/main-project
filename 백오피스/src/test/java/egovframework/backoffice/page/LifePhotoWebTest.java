@@ -229,6 +229,13 @@ class LifePhotoWebTest {
         MockHttpSession session = login();
         mvc.perform(get("/admin/pages/life-photos").session(session)).andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("인사교 라이프 게시물 관리")));
+        // 왼쪽 메뉴 세부 카테고리로 열면 그 탭이 선택되고, 모르는 값이면 시설 사진
+        String food = mvc.perform(get("/admin/pages/life-photos").param("section", "food").session(session)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(UTF_8);
+        assertThat(food).contains("data-section=\"food\"").contains("class=\"lnb-tree open\"")
+                .containsPattern("<a[^>]*class=\"on\"[^>]*>오늘 점심, 여기 어때요\\?</a>");
+        assertThat(mvc.perform(get("/admin/pages/life-photos").param("section", "x").session(session))
+                .andReturn().getResponse().getContentAsString(UTF_8)).contains("data-section=\"fac\"");
         JsonNode m = model(session);
         JsonNode space = m.at("/floors/0/spaces/0");
         assertThat(m.at("/defaultFloor").asText()).isEqualTo("23");

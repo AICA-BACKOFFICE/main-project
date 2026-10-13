@@ -168,12 +168,12 @@
     function cOf(c){ var m = c.className.match(/\bc(\d+)\b/); return m ? m[1] : ''; }
     function tOf(c){ return (c.className.match(/\bg(\d)\b/g) || []).map(function(x){ return TAGS[+x.slice(1)]; }); }
     function inC(c, k){ var v = +cOf(c), r = k.split('-'); return r.length > 1 ? v >= +r[0] && v <= +r[1] : v === +k; }
-    // 기수 버튼: 최근 두 기수는 따로, 그보다 앞선 기수는 한 묶음(지금은 7기 · 6기 · 3–5기). 새 기수 글이 올라오면 저절로 늘어나요
+    // 기수 버튼: 3–5기만 한 묶음, 6기부터는 기수마다 따로(지금은 7기 · 6기 · 3–5기). 새 기수 글이 올라오면 그 기수 버튼이 저절로 생겨요
     function cohortGroups(){
       var all = cards.map(function(c){ return +cOf(c); }).filter(function(v, i, a){ return v && a.indexOf(v) === i; }).sort(function(a, b){ return b - a; });
-      var out = all.slice(0, 2).map(String), rest = all.slice(2);
-      if (rest.length) out.push(rest.length > 1 ? rest[rest.length - 1] + '-' + rest[0] : String(rest[0]));
-      return out;
+      var out = all.filter(function(v){ return v > 5; }).map(String);
+      if (all.some(function(v){ return v >= 3 && v <= 5; })) out.push('3-5');
+      return out.concat(all.filter(function(v){ return v < 3; }).map(String));
     }
     function match(c){ return (coh === 'all' || inC(c, coh)) && (!tag || tOf(c).indexOf(tag) > -1); }
     // 거르기 버튼: 이름만(글 수 숫자는 안 씀, 2026-10-08 사용자 결정). 걸리는 글이 없는 태그만 누를 수 없게

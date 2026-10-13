@@ -30,9 +30,9 @@
     var av=a.querySelector('.by .av'),c=av?parseInt(av.textContent,10):0,dur=a.querySelector('.ph .dur');
     return {a:a,c:c,v:!!dur,t:(a.querySelector('h3')||{}).textContent||'',s:(a.querySelector('.tb p')||{}).textContent||'',n:(a.querySelector('.by b')||{}).textContent||'',tr:(a.querySelector('.by em')||{}).textContent||''};
   });
-  // 기수 버튼: 최근 두 기수는 따로, 앞선 기수는 한 묶음(지금은 7기 · 6기 · 3–5기)
+  // 기수 버튼: 3–5기만 한 묶음, 6기부터는 기수마다 따로(지금은 7기 · 6기 · 3–5기)
   var CS=D.map(function(d){return d.c}).filter(function(v,i,a){return v&&a.indexOf(v)===i}).sort(function(a,b){return b-a});
-  var COHS=CS.slice(0,2).map(String),REST=CS.slice(2);if(REST.length)COHS.push(REST.length>1?REST[REST.length-1]+'-'+REST[0]:String(REST[0]));
+  var COHS=CS.filter(function(v){return v>5}).map(String);if(CS.some(function(v){return v>=3&&v<=5}))COHS.push('3-5');COHS=COHS.concat(CS.filter(function(v){return v<3}).map(String));
   var STEP=6,shown=STEP,coh='all',kind='all',view='grid';
   try{view=localStorage.getItem('iva-view')||'grid'}catch(e){}
   var out=sec.querySelector('.iva-out'),more=sec.querySelector('.iva-more'),empty=sec.querySelector('.iva-empty');

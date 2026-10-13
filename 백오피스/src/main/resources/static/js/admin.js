@@ -31,6 +31,22 @@
     }
   });
 
+  // 왼쪽 메뉴 세부 카테고리 펼치기 · 접기(화살표). 지금 보고 있는 메뉴는 서버가 펼쳐 두고, 나머지는 마지막으로 펼친 상태를 기억
+  document.querySelectorAll('.lnb-tree').forEach(function (tree) {
+    var btn = tree.querySelector('.lnb-toggle');
+    if (!btn) return;
+    var key = 'lnb-open-' + tree.dataset.tree;
+    var set = function (open) { tree.classList.toggle('open', open); btn.setAttribute('aria-expanded', String(open)); };
+    if (!tree.classList.contains('open')) {
+      try { if (localStorage.getItem(key) === '1') set(true); } catch (e) { /* 저장소를 못 쓰면 접힌 채로 */ }
+    }
+    btn.addEventListener('click', function () {
+      var open = !tree.classList.contains('open');
+      set(open);
+      try { localStorage.setItem(key, open ? '1' : '0'); } catch (e) { /* 무시 */ }
+    });
+  });
+
   // CSRF 헬퍼 (fetch 용)
   window.csrfHeaders = function () {
     var token = document.querySelector('meta[name="_csrf"]');

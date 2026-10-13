@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
@@ -32,10 +33,12 @@ public class LifePhotoController {
     }
 
     @GetMapping("/admin/pages/life-photos")
-    public String view(Model model, HttpServletRequest request) {
+    public String view(@RequestParam(required = false) String section, Model model, HttpServletRequest request) {
         String context = request.getContextPath();
         String front = properties.getPages().getFrontUrl();
         model.addAttribute("menu", "life-photos");
+        // 왼쪽 메뉴 세부 카테고리로 열 탭: 시설 사진(fac) · 오늘 점심, 여기 어때요?(food) · 수업 끝나고, 바람 쐬러 가요(fun)
+        model.addAttribute("lifeSection", "food".equals(section) || "fun".equals(section) ? section : "fac");
         model.addAttribute("frontLink", (front == null || front.isBlank() ? context + "/admin/pages/site/" : front.trim().replaceAll("/*$", "/"))
                 + "life/index.html#facilities");
         return "page/life-photos";

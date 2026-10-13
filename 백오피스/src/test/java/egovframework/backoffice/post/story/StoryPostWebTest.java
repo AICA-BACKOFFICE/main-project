@@ -196,6 +196,21 @@ class StoryPostWebTest {
     }
 
     @Test
+    @Order(4)
+    void sidebarOpensEachStoryKindAndTheTopBarMenusAreGone() throws Exception {
+        MockHttpSession session = login();
+        String page = mvc.perform(get("/admin/posts").param("kind", "interview").session(session)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(UTF_8);
+        // 왼쪽 메뉴: 선배들의 이야기가 펼쳐지고 선배 인터뷰가 선택, 목록은 인터뷰 카테고리로 걸러짐
+        assertThat(page).containsPattern("<a[^>]*class=\"on\"[^>]*>선배 인터뷰</a>")
+                .doesNotContainPattern("<a[^>]*class=\"on\"[^>]*>선배들의 이야기 게시물 관리</a>")
+                .containsPattern("<option value=\"" + categoryId("interview") + "\" selected=\"selected\">")
+                .contains("영상 인터뷰");
+        // 상단 메뉴(게시물 · 미디어 · FAQ · 통계) · 임시 비밀번호 안내 · 운영진 공지 메뉴는 없음
+        assertThat(page).doesNotContain("gnb-menu").doesNotContain("임시 비밀번호를 사용 중입니다").doesNotContain(">운영진 공지<");
+    }
+
+    @Test
     @Order(3)
     void photosAreCopiedToTheSiteAndUnsafeValuesAreDropped() throws Exception {
         MockHttpSession session = login();

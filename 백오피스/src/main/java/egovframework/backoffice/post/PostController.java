@@ -1,8 +1,11 @@
 package egovframework.backoffice.post;
 
 import egovframework.backoffice.account.CurrentAdmin;
+import egovframework.backoffice.category.Category;
 import egovframework.backoffice.category.CategoryService;
+import egovframework.backoffice.post.story.StoryKind;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,13 +41,22 @@ public class PostController {
     }
 
     @GetMapping
-    public String list(@ModelAttribute("search") PostSearch search, Model model) {
+    public String list(@ModelAttribute("search") PostSearch search, @RequestParam(required = false) String kind, Model model) {
+        // 왼쪽 메뉴의 세부 카테고리(선배 후기 · 선배 인터뷰 · 프로젝트 · 기수별 모아보기)는 카테고리 slug(kind)로 연다
+        Category kindCategory = categoryService.findBySlug(kind);
+        if (kindCategory != null && kindCategory.isTop()) {
+            search.setCategoryId(kindCategory.getId());
+            search.setSubCategoryId(null);
+        }
         if (search.getSize() < 1 || search.getSize() > 100) {
             search.setSize(20);
         }
+        List<Category> tree = categoryService.treeAll();
         model.addAttribute("result", postService.search(search));
-        model.addAttribute("categoryTree", categoryService.treeAll());
+        model.addAttribute("categoryTree", tree);
         model.addAttribute("statuses", PostStatus.values());
+        model.addAttribute("storyKind", storyKind(tree.stream().filter(c -> c.getId().equals(search.getCategoryId()))
+                .map(Category::getSlug).findFirst().orElse(null)));
         return "post/list";
     }
 
@@ -80,6 +92,12 @@ public class PostController {
         model.addAttribute("form", PostForm.from(post));
         addFormOptions(model);
         return "post/editor";
+    }
+
+    /** 왼쪽 메뉴에서 표시할 선배들의 이야기 세부 카테고리(review · interview · project · cohort). 그 밖의 카테고리는 null */
+    private static String storyKind(String categorySlug) {
+        StoryKind kind = StoryKind.ofSlug(categorySlug);
+        return kind == null ? null : kind.slug();
     }
 
     @PostMapping("/{id}")

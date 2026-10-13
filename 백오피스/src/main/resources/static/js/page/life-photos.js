@@ -13,7 +13,8 @@
   var CSRF = meta('_csrf'), CSRF_HEADER = meta('_csrf_header') || 'X-CSRF-TOKEN';
   var SIZES = [['', '꽉 차게(기본)'], ['150%', '1.5배 확대'], ['200%', '2배 확대'], ['250%', '2.5배 확대'], ['300%', '3배 확대']];
   var SECTIONS = [['fac', '시설 사진', '#facilities'], ['food', '오늘 점심, 여기 어때요?', '#tp-food'], ['fun', '수업 끝나고, 바람 쐬러 가요', '#tp-fun']];
-  var model = null, section = 'fac', floor = null, foodKind = 'food', busy = false;
+  var model = null, floor = null, foodKind = 'food', busy = false;
+  var section = /^(fac|food|fun)$/.test(root.dataset.section || '') ? root.dataset.section : 'fac';
   var dirty = { spaces: {}, food: false, fun: {} };
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -69,6 +70,13 @@
     }
     root.innerHTML = h;
     syncBar();
+    syncNav();
+  }
+
+  // 왼쪽 메뉴의 세부 카테고리 표시와 주소(?section=)를 지금 탭에 맞춘다
+  function syncNav() {
+    document.querySelectorAll('a[data-life-section]').forEach(function (a) { a.classList.toggle('on', a.dataset.lifeSection === section); });
+    try { history.replaceState(null, '', location.pathname + '?section=' + section); } catch (e) { /* 무시 */ }
   }
 
   function leftTabs() {
@@ -353,6 +361,15 @@
       model = m; dirty = { spaces: {}, food: false, fun: {} }; render();
       toast(m.saved ? '저장했어요. 사이트의 인사교 라이프에 반영됐어요.' : '바뀐 내용이 없어요.');
     }));
+  });
+
+  // 왼쪽 메뉴의 세부 카테고리를 누르면 페이지를 다시 열지 않고 탭만 바꾼다(저장 안 한 변경 유지)
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a[data-life-section]');
+    if (!a || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault();
+    section = a.dataset.lifeSection;
+    if (model) render(); else syncNav();
   });
 
   window.addEventListener('beforeunload', function (e) { if (model && isDirty()) { e.preventDefault(); e.returnValue = ''; } });
