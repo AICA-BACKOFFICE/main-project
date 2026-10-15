@@ -2,3 +2,5 @@
 # (관리자 페이지의 임시저장 · 버전 기록이 사이트 원본 파일과 바이트 단위로 맞아야 해요). 백오피스/ 는 백오피스/.gitattributes 규칙을 따라요.
 * -text
 *.command text eol=lf
+# 클라우드 저장소와 GitHub에서 같은 텍스트 블롭을 사용해요.
+sites/aica-backoffice/** text=auto
