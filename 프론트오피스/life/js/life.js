@@ -1,9 +1,10 @@
 /* =========================================================
    인사교 라이프 — 시설 둘러보기 · 생활 꿀팁 · 오시는 길
    박지원 시안8(2026-10-07 전달) script.js에서 이 세 화면이 쓰는 동작만 옮김. [nn]은 시안 블록 번호
-   본문(시설 둘러보기 · 크게 보기 창 · 목록 스크롤 안내 자리 포함)은 모두 index.html에 있고, 이 파일은 움직임만
+   본문은 모두 index.html에 있고, 이 파일은 움직임만
    2026-10-07 정리: 실제로 안 돌던 시안 블록은 뺌 — [10] 지도 핀 터치 대체 · [09] 핀 고정(.pick)(둘 다 [15]가 핀 클릭을 먼저 받아 닿지 않음)
    2026-10-12: 예전 엘리베이터(층별 · 공간별 안내 [18]~[27]) 삭제 — 시설 둘러보기는 아래 '건물 단면 + 사진'(.bx9)
+   2026-10-14 코드 정리: 안 돌던 블록 삭제 — 옛 히어로 패널 · 꿀팁 바로가기 막대 표시 · 문화·여가 지도 · 크게 보기 창 · 근처 식당 목록 스크롤
    ========================================================= */
 (function(){
 'use strict';
@@ -20,8 +21,8 @@ if (!MAIN) return;
 var PG = $$(':scope > .page', MAIN);
 var SCREEN = { overview:'home', home:'home', facilities:'facility', facility:'facility', tips:'tips', directions:'way', way:'way' };   // 시안10-B v3: overview = 히어로 페이지
 var CANON = { facility:'#facilities', way:'#directions' };
-var NAME = { home:'인사교 Real Life', facility:'시설 둘러보기', tips:'생활 꿀팁', way:'오시는 길' };
-var SUB = { home:'none', facility:'facilities', tips:'tips', way:'directions' };   // home: 하위 메뉴 바에 표시 없음   // menu.js 하위 메뉴 id
+var NAME = { home:'인사교 LIFE', facility:'시설 둘러보기', tips:'생활 꿀팁', way:'오시는 길' };
+var SUB = { home:'overview', facility:'facilities', tips:'tips', way:'directions' };   // home: 하위 메뉴 바에 표시 없음   // menu.js 하위 메뉴 id
 var BASE_TITLE = document.title;
 function route(){
   var raw = decodeURIComponent(location.hash.slice(1)), part = raw.split('/'), id = SCREEN[part[0]], target = null;
@@ -45,13 +46,41 @@ function route(){
     if (!was) {
       var go = function(){ target.scrollIntoView(); };
       setTimeout(go, 40);
-      // 목록 높이(아래 [09] · [16])를 화면을 연 뒤 정하므로 그다음 한 번 더 맞춤
+      // 글꼴 · 높이가 화면을 연 뒤 자리 잡으므로 그다음 한 번 더 맞춤
       (document.fonts ? document.fonts.ready : Promise.resolve()).then(function(){ setTimeout(go, 160); });
     }
   }
   else window.scrollTo({ top: 0, behavior: 'instant' });   // 다른 화면으로 바뀌므로 부드러운 스크롤(공통 base.css) 없이 맨 위로
 }
 addEventListener('hashchange', route);
+
+/* ---------- 생활 꿀팁: 주제별 화면(10-13, 1안) ----------
+   #tips = 세 주제 카드(허브)만(10-14 생활 적응 삭제) · #tp-house · #tp-food · #tp-fun(또는 그 안의 위치) = 그 주제만.
+   위 route()가 화면을 연 다음 실행되도록 그 뒤에 등록. 왼쪽 메뉴(site.js가 만듦)의 '생활 꿀팁' 아래에 네 주제를 붙임 */
+var TPG = document.getElementById('pg-tips');
+function topic(){
+  if (!TPG) return;
+  var h = decodeURIComponent(location.hash.slice(1)), el = h && document.getElementById(h);
+  var sec = el && el.closest ? el.closest('.tp-sec') : null, was = TPG.dataset.topic || '';
+  if (sec) TPG.dataset.topic = sec.id; else if (!TPG.hidden) delete TPG.dataset.topic;
+  var now = TPG.dataset.topic || '';
+  $$('.tp-bar nav a, .lnb-tp a', document).forEach(function(a){
+    var on = a.getAttribute('href') === '#' + now;
+    a.classList.toggle('is-on', on);   // 왼쪽 메뉴는 site.js가 aria-current를 다시 정하므로 표시는 클래스로
+    if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  });
+  if (now !== was || el === sec) setTimeout(function(){ window.scrollTo({ top: 0, behavior: 'instant' }); dispatchEvent(new Event('resize')); }, 200);
+}
+addEventListener('hashchange', topic);
+function lnbTopics(){
+  $$('.lnb a, .side-nav a', document).forEach(function(a){
+    if (a.textContent.trim() !== '생활 꿀팁' || (a.nextElementSibling && a.nextElementSibling.classList.contains('lnb-tp'))) return;
+    var d = document.createElement('div'); d.className = 'lnb-tp';
+    d.innerHTML = $$('.tp-bar nav a', TPG).map(function(x){ return '<a href="' + x.getAttribute('href') + '">' + x.textContent + '</a>'; }).join('');
+    a.parentNode.insertBefore(d, a.nextSibling); topic();
+  });
+}
+if (TPG) { setTimeout(lnbTopics, 0); addEventListener('load', lnbTopics); }
 
 /* 시안10-B v4: 헤더 GNB · 모바일 메뉴 · 푸터의 「인사교 라이프」(주소 없는 life/index.html)를 이 페이지 안에서 누르면 히어로 페이지로.
    공통 site.js는 같은 페이지 링크를 새로 불러오지 않고 #위치만 지워(맨 위로) 화면이 그대로였음 → 그 뒤에 화면 전환을 한 번 더 */
@@ -63,29 +92,8 @@ document.addEventListener('click', function(e){
   setTimeout(function(){ dispatchEvent(new HashChangeEvent('hashchange')); }, 0);   // route() → 히어로 페이지(주소 없음 = home)
 });
 
-/* 시안10-B v7: 히어로 패널 — 마우스를 올리거나 초점이 가면 그 패널을 펼침(961px 이상). 마지막에 고른 패널이 펼쳐진 채로 남음 */
-(function(){
-  var ps = $$('.lh-p .lhp', MAIN); if (!ps.length) return;
-  function open(p){ ps.forEach(function(x){ x.classList.toggle('is-open', x === p); }); }
-  ps.forEach(function(p){
-    p.addEventListener('pointerenter', function(e){ if (e.pointerType === 'mouse') open(p); });
-    p.addEventListener('focus', function(){ open(p); });
-  });
-})();
 /* 시안10-B v5: 하위 메뉴 바 왼쪽 제목 「인사교 Real Life」는 뺌(히어로 페이지는 헤더 GNB 「인사교 라이프」로) */
-(function(){ var t = document.querySelector('#subnav .subnav-title'); if (t) t.remove(); })();
-
-/* ---------- 생활 꿀팁 바로가기 막대: 지금 보는 부분 표시 ([01]) ----------
-   항목은 링크(<a href="#tp-…">: 주소 공유 · 새 탭 가능). 누르면 브라우저가 그 위치로(부드러운 스크롤은 base.css) · 화면 전환은 위 route()가 맡음.
-   지금 보는 부분 = aria-current="location"(모양은 공통 하위 메뉴 바처럼 밑줄, life.css) */
-function spy(){
-  var pg = $(':scope > .page:not([hidden])', MAIN); if (!pg) return;
-  var sn = $$('.lnb-s a', pg); if (!sn.length) return;
-  var cur = null;   // 시안10: 바로가기에서 주거 · 근처 먹거리를 뺐으므로, 그 위를 보는 동안은 표시 없음
-  sn.forEach(function(a){ var t = document.getElementById(a.hash.slice(1)); if (t && t.getBoundingClientRect().top < innerHeight * .4) cur = a; });
-  sn.forEach(function(a){ if (a === cur) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current'); });
-}
-addEventListener('scroll', spy, { passive:true });
+/* 디자인통일v1: 하위 메뉴 바 왼쪽 제목 「인사교 LIFE」는 남김(10-12 사용자 요청) */
 
 /* ---------- 주소 복사 ([01]) ---------- */
 var cA = $('#copyAd');
@@ -94,80 +102,6 @@ if (cA) cA.addEventListener('click', function(){
   function done(){ b.textContent = '복사했어요'; setTimeout(function(){ b.textContent = '주소 복사'; }, 1600); }
   try { navigator.clipboard.writeText(t).then(done, done); } catch (e) { done(); }
 });
-
-/* ---------- 한 줄 메뉴: 지금 바로가기 버튼이 보이도록 가로 위치 맞추기 ([06]) ---------- */
-var lw = $('#pg-tips .lnb .wrap');
-addEventListener('scroll', function(){
-  if (!lw || !lw.offsetParent) return;
-  var on = lw.querySelector('.lnb-s [aria-current]'); if (!on) return;
-  var a = on.offsetLeft, b = a + on.offsetWidth;
-  if (a < lw.scrollLeft + 8 || b > lw.scrollLeft + lw.clientWidth - 8) lw.scrollLeft = a - lw.clientWidth / 2 + on.offsetWidth / 2;
-}, { passive:true });
-
-/* ---------- 문화 · 여가: 지도 핀 ↔ 목록 짝 표시 · 거르기 · 목록 높이 · 펼치기 ([09] · [17]) ----------
-   거르기: 조건에 안 맞는 곳은 목록에서 숨기고(hidden — Tab에서도 빠짐) 지도 핀만 흐리게(.off). 목록 머리 'n곳'은 보이는 곳만 셈.
-   861px 이상: 목록 상자 높이 = 옆 지도 칸, 목록만 안에서 스크롤 · 아래 줄 '↓ n곳 더'(보이는 곳만 셈, 넘치지 않으면 숨김).
-   860px 이하: 안 스크롤 없이 처음 5곳 + '나머지 n곳 더 보기'(시안은 화면보다 긴 목록 안에 스크롤이 갇혀 페이지가 안 내려갔음, 2026-10-08) */
-(function(){
-  var r = $('.lmap', MAIN); if (!r) return;
-  var pins = $$('.lmp', r), li = $$('.lmli', r), ol = $('.lml', r), box = $('.lmlw', r), lw2 = $('.lmw2', r), sep = $('.lmsep', r);
-  var cnt = $('.lmlh em', r), empty = $('.lmempty', r), more = $('.lmmore', r), mb = more && more.querySelector('button'), m = box.querySelector('.fdmore');
-  var N = 5, w = 'all', free = false, unfold = false, bw = $$('[data-lw]', MAIN), bf = $('#lmFree');
-  function hl(i, on){ pins.concat(li).forEach(function(e){ if (e.dataset.i === i) e.classList.toggle('on', on); }); }
-  pins.concat(li).forEach(function(e){
-    e.addEventListener('mouseenter', function(){ hl(e.dataset.i, true); });
-    e.addEventListener('mouseleave', function(){ hl(e.dataset.i, false); });
-    e.addEventListener('focus', function(){ hl(e.dataset.i, true); });
-    e.addEventListener('blur', function(){ hl(e.dataset.i, false); });
-  });
-  function vis(){ return li.filter(function(e){ return !e.classList.contains('off'); }); }
-  function tip(){
-    var v = li.filter(function(e){ return !e.hidden; }), rr = ol.getBoundingClientRect();
-    var left = v.filter(function(e){ return e.getBoundingClientRect().bottom > rr.bottom + 2; }).length, end = ol.scrollTop + ol.clientHeight >= ol.scrollHeight - 4;
-    m.classList.toggle('end', end);
-    m.innerHTML = end ? '목록 끝 · ' + v.length + '곳' : '↓ 아래로 스크롤하면 <b>' + Math.max(left, 1) + '곳</b> 더 있어요';
-  }
-  function layout(){
-    var v = vis(), narrow = NARROW.matches, fold = narrow && !unfold && v.length > N;
-    li.forEach(function(e){ e.hidden = e.classList.contains('off') || (fold && v.indexOf(e) >= N); });
-    if (sep) {   // '더 멀리 · 버스 · 지하철로' 줄: 앞뒤에 보이는 곳이 있을 때만
-      var all = $$(':scope > li', ol), k = all.indexOf(sep), shown = function(x){ return x.classList.contains('lmli') && !x.hidden; };
-      sep.hidden = !(all.slice(0, k).some(shown) && all.slice(k + 1).some(shown));
-    }
-    if (cnt) cnt.textContent = v.length + '곳';
-    if (empty) empty.hidden = v.length > 0;
-    if (more) {
-      more.hidden = !narrow || v.length <= N;
-      mb.setAttribute('aria-expanded', String(unfold));
-      mb.textContent = unfold ? '접기' : '나머지 ' + (v.length - N) + '곳 더 보기';
-    }
-    if (narrow) { box.style.maxHeight = ''; m.hidden = true; return; }
-    if (!ol.offsetParent) return;   // 다른 화면을 보는 중(크기를 잴 수 없음) — 화면이 바뀌면 다시 잼
-    box.style.maxHeight = lw2 ? Math.max(320, Math.round(lw2.getBoundingClientRect().height)) + 'px' : '';
-    m.hidden = !v.length; if (m.hidden) return;
-    tip();
-    if (ol.scrollHeight <= ol.clientHeight + 4) m.hidden = true;   // 다 보이면 아래 줄 없음
-  }
-  function ap(){
-    pins.concat(li).forEach(function(e){ e.classList.toggle('off', !((w === 'all' || e.dataset.w === w) && (!free || e.dataset.f === 'free'))); });
-    pins.forEach(function(p){ p.tabIndex = p.classList.contains('off') ? -1 : 0; });   // 흐린 핀은 Tab에서 뺌(눌러도 안 열림)
-    ol.scrollTop = 0; layout();
-  }
-  function pressW(v){ w = v; bw.forEach(function(x){ x.setAttribute('aria-pressed', x.dataset.lw === v); }); }
-  bw.forEach(function(b){ b.addEventListener('click', function(){ pressW(b.dataset.lw); ap(); }); });
-  if (bf) bf.addEventListener('click', function(){ free = !free; bf.setAttribute('aria-pressed', free); ap(); });
-  if (empty) empty.querySelector('[data-lmreset]').addEventListener('click', function(){ pressW('all'); free = false; if (bf) bf.setAttribute('aria-pressed', 'false'); ap(); });
-  if (mb) mb.addEventListener('click', function(){
-    unfold = !unfold; layout();
-    if (!unfold) mb.scrollIntoView({ block:'nearest', behavior: RM ? 'auto' : 'smooth' });   // 접은 뒤 버튼이 화면 밖이면 그 자리로
-  });
-  ol.addEventListener('scroll', function(){ if (!NARROW.matches && !m.hidden) tip(); }, { passive:true });
-  addEventListener('resize', layout);
-  if (NARROW.addEventListener) NARROW.addEventListener('change', function(){ unfold = false; layout(); });
-  addEventListener('hashchange', function(){ setTimeout(layout, 80); });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
-  layout(); setTimeout(layout, 60);
-})();
 
 /* ---------- 주거(단독 시안 2026-10-12): 교육장 가운데 지도 + 오른쪽 '동별 주거 정보'(탭 1~5)
    지도의 동 원을 누르거나 탭을 누르면 그 동 정보로 바뀌고 지도 원도 강조. 탭은 ← → · Home · End ---------- */
@@ -209,16 +143,30 @@ addEventListener('scroll', function(){
   var cards = $$('.fdg .fdc', MAIN), empty = $('.fdempty', MAIN), rs = $('[data-fdreset]', MAIN);
   var mw = $('.fdmore2', MAIN), mb = mw && mw.querySelector('button'), N = 8;
   var MID = matchMedia('(max-width: 1100px)');
-  function cnt(){ return MID.matches ? 6 : 8; }   // PC 4열 × 2줄 = 8곳, 1100px 이하(3 · 2 · 1열)는 6곳
-  var k = 'food', g = 'all', near = false, all = false;
+  function cnt(){ return 8; }   // 10-13: 대표 8곳씩, 아래 숫자 페이지(선배들의 이야기 후기와 같은 모양)
+  var k = 'food', g = 'all', near = false, all = false, pg = 1, sig = '';
+  var nav = document.createElement('nav'); nav.className = 'cpager fdpager'; nav.setAttribute('aria-label', '먹거리 페이지');
+  var dsc = list.nextElementSibling; list.parentNode.insertBefore(nav, dsc && dsc.classList.contains('fdisc') ? dsc.nextSibling : list.nextSibling);   // 10-14: 안내 문구는 카드 바로 아래 오른쪽
+  function pbtn(t, to, o){ var b = document.createElement('button'); b.type = 'button'; b.textContent = t;
+    if (o.cur) b.setAttribute('aria-current', 'page'); if (o.dis) b.disabled = true; if (o.aria) b.setAttribute('aria-label', o.aria);
+    b.onclick = function(){ pg = to; ap(); var top = list.getBoundingClientRect().top + scrollY - 200; scrollTo({ top: top, behavior: RM ? 'auto' : 'smooth' }); };
+    return b; }
   function ap(){
     N = cnt();
+    var s2 = k + '|' + g + '|' + near; if (s2 !== sig) { sig = s2; pg = 1; }
     var hits = cards.filter(function(c){ return c.dataset.t === k && (g === 'all' || c.dataset.g === g) && (!near || +c.dataset.w <= 10); });
+    var pages = Math.max(1, Math.ceil(hits.length / N)); if (pg > pages) pg = pages;
     cards.forEach(function(c){ c.hidden = true; });
-    hits.forEach(function(c, i){ c.hidden = !all && i >= N; });
+    hits.forEach(function(c, i){ c.hidden = !(i >= (pg - 1) * N && i < pg * N); });
     if (empty) empty.hidden = hits.length > 0;
     list.hidden = !hits.length;
-    if (mw) { var rest = hits.length - N; mw.hidden = all || rest <= 0; if (rest > 0) mb.textContent = '나머지 ' + rest + '곳 더 보기'; mb.setAttribute('aria-expanded', 'false'); }
+    if (mw) mw.hidden = true;
+    nav.innerHTML = ''; nav.hidden = pages < 2;
+    if (pages > 1) {
+      nav.appendChild(pbtn('←', pg - 1, { dis: pg === 1, aria: '이전 페이지' }));
+      for (var i = 1; i <= pages; i++) nav.appendChild(pbtn(String(i), i, { cur: i === pg, aria: i + '페이지' }));
+      nav.appendChild(pbtn('→', pg + 1, { dis: pg === pages, aria: '다음 페이지' }));
+    }
   }
   function tab(b, focus){
     k = b.dataset.fk; all = false;
@@ -293,76 +241,6 @@ addEventListener('scroll', function(){
   });
 })();
 
-/* ---------- 문화 · 여가: 누르면 크게 보기 ([15], 창 dialog.lbx는 index.html에) ---------- */
-(function(){
-  var map = $('.lmm.one', MAIN), d = $('dialog.lbx', MAIN);
-  if (!map || !d || !d.showModal) return;   // <dialog> 없는 옛 브라우저(Safari 15.4 미만)는 크게 보기 없이 목록만
-  // 이전 · 다음은 거른 뒤 남은 곳만 돎(860px 이하에서 '더 보기'로 접혀 있는 곳은 포함)
-  var lis = $$('.lmap .lmli', MAIN), list = [], cur = 0, byPtr = false;
-  var q = function(s){ return d.querySelector(s); };
-  function show(k){
-    cur = (k + list.length) % list.length;
-    var li = list[cur], i = li.dataset.i, pin = map.querySelector('.lmp[data-i="' + i + '"]');
-    var im = pin.querySelector('.lmi'), cls = [].slice.call(im.classList).filter(function(c){ return c.indexOf('im-') === 0; }), fig = q('.lbxi');
-    fig.className = 'lbxi ' + cls.join(' '); fig.setAttribute('aria-label', li.querySelector('b').textContent);
-    var n = q('.lbxn'); n.textContent = li.querySelector('.lmn').textContent; n.classList.toggle('wkd', li.dataset.w === 'wkd');
-    q('h3').textContent = li.querySelector('b').textContent; q('.lbxt').innerHTML = li.querySelector('.lmt').innerHTML;
-    var ds = li.querySelector('.lmdist'); q('.lbxd').textContent = ds ? ds.textContent : ''; q('.lbxx').textContent = li.querySelector('p').textContent;
-    q('.lbxc').textContent = (cur + 1) + ' / ' + list.length;
-  }
-  function open(i){
-    list = lis.filter(function(li){ return !li.classList.contains('off'); });
-    var k = -1; list.forEach(function(li, j){ if (li.dataset.i === i) k = j; }); if (k < 0) return;
-    $$('[data-go]', d).forEach(function(b){ b.hidden = list.length < 2; });
-    show(k); if (!d.open) d.showModal(); q('.lbxx2').focus();
-  }
-  map.addEventListener('click', function(e){ var p = e.target.closest('.lmp'); if (!p) return; e.preventDefault(); e.stopImmediatePropagation(); if (p.classList.contains('off')) return; byPtr = e.detail > 0; open(p.dataset.i); }, true);
-  lis.forEach(function(li){
-    li.addEventListener('click', function(e){ byPtr = e.detail > 0; open(li.dataset.i); });
-    li.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); byPtr = false; open(li.dataset.i); } });
-  });
-  q('.lbxx2').addEventListener('click', function(){ d.close(); });
-  $$('[data-go]', d).forEach(function(b){ b.addEventListener('click', function(){ show(cur + +b.dataset.go); }); });
-  d.addEventListener('click', function(e){ if (e.target === d) d.close(); });
-  d.addEventListener('close', function(){
-    $$('.lmap .lmp.on,.lmap .lmli.on', MAIN).forEach(function(x){ x.classList.remove('on'); });
-    if (byPtr) setTimeout(function(){ var a = document.activeElement; if (a && a.closest && a.closest('.lmp,.lmli')) a.blur(); }, 0);
-  });
-  d.addEventListener('keydown', function(e){ if (list.length < 2) return; if (e.key === 'ArrowRight') show(cur + 1); if (e.key === 'ArrowLeft') show(cur - 1); });
-})();
-
-/* ---------- 근처 식당: 5곳이 넘으면 목록 안에서 스크롤 ([16], 안내 줄 p.fdmore는 index.html에) ----------
-   861px 이상만. 860px 이하는 모두 펼침(폰에서 목록 안에 스크롤이 갇히던 것 — 숨기는 곳도 1 ~ 2곳뿐, 2026-10-08) */
-(function(){
-  var N = 5, cs = $$('.fd2c', MAIN); if (!cs.length) return;
-  cs.forEach(function(c){
-    var ul = c.querySelector('ul'), m = c.querySelector('.fdmore');
-    function vis(){ return [].slice.call(ul.children).filter(function(li){ return !li.hidden; }); }
-    function upd(){
-      var v = vis();
-      if (v.length <= N || c.hidden || NARROW.matches) { ul.classList.remove('fdsc'); ul.style.maxHeight = ''; m.hidden = true; return; }
-      if (!c.offsetParent) return;   // 다른 화면을 보는 중(크기를 잴 수 없음) — 화면이 바뀌면 다시 잼
-      ul.classList.add('fdsc'); var h = 0;
-      for (var i = 0; i < N; i++) h += v[i].getBoundingClientRect().height;
-      h += Math.round(v[N].getBoundingClientRect().height * .45); ul.style.maxHeight = h + 'px'; m.hidden = false; tip();
-    }
-    function tip(){
-      var v = vis(), left = 0, r = ul.getBoundingClientRect();
-      v.forEach(function(li){ if (li.getBoundingClientRect().bottom > r.bottom + 2) left++; });
-      var end = ul.scrollTop + ul.clientHeight >= ul.scrollHeight - 4;
-      m.classList.toggle('end', end);
-      m.innerHTML = end ? '목록 끝 · ' + v.length + '곳' : '↓ 아래로 스크롤하면 <b>' + Math.max(left, 1) + '곳</b> 더 있어요';
-    }
-    ul.addEventListener('scroll', tip, { passive:true }); c._fdupd = upd;
-  });
-  function all(){ cs.forEach(function(c){ if (c._fdupd) c._fdupd(); }); }
-  $$('[data-fg2],[data-fdreset],#fdNear', MAIN).forEach(function(b){ b.addEventListener('click', function(){ setTimeout(all, 0); }); });
-  addEventListener('resize', all); addEventListener('hashchange', function(){ setTimeout(all, 80); });
-  if (NARROW.addEventListener) NARROW.addEventListener('change', all);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(all);
-  setTimeout(all, 50);
-})();
-
 /* ---------- 시설 둘러보기: 건물 단면 + 사진 ----------
    왼쪽 건물 단면의 층(.bx9-f) → 오른쪽 그 층 묶음(.bx9-g) · 공간 탭(.bx9-t) → 공간(.bx9-s) · 사진 넘김(.bx9-ph) · 작은 사진(.bx9-tb)
    다른 곳에서 data-fac="층-공간"(예: 1-0) 링크를 누르면 그 공간을 열어 둠 */
@@ -426,5 +304,87 @@ if (BX) (function(){
   setTimeout(place, 50);
 })();
 
-route(); spy();
+route();
+})();
+
+/* 라이프 인터랙션 */
+(function(){
+  var q=function(s){return document.querySelector(s)}, qa=function(s){return [].slice.call(document.querySelectorAll(s))};
+  // 월세 예산 슬라이더
+  var tabs=q('#tp-house .hzp-tabs');
+  if(tabs){
+    var rents=qa('#tp-house .hzp').map(function(p){var b=p.querySelector('.hzc-rent b');var m=b&&b.textContent.match(/(\d+)/);return m?+m[1]:99});
+    var w=document.createElement('div');w.className='rentslide';
+    w.innerHTML='<label for="rentIn">월세 예산<output id="rentOut">35만 원</output></label><input id="rentIn" type="range" min="20" max="60" step="1" value="35"><small>예산 안에 드는 동만 진하게 보여요</small>';
+    tabs.parentNode.insertBefore(w,tabs);
+    var inp=w.querySelector('input'),out=w.querySelector('output');
+    function up(){var v=+inp.value;out.textContent=v+'만 원';qa('#tp-house .hzp-t').forEach(function(t,i){t.classList.toggle('over',rents[i]>v);t.classList.toggle('fit',rents[i]<=v)})}
+    inp.addEventListener('input',up);up();
+  }
+})();
+(function(){
+  var q=function(s){return document.querySelector(s)};
+  var bar=q('#tp-food .fdbar .r'); var list=q('#fdList'); if(!bar||!list) return;
+  var b=document.createElement('button');b.type='button';b.className='lunch-go';
+  b.innerHTML='<img class="dc" src="assets/dice.webp" alt="" width="160" height="167">'+'<span class="cue" aria-hidden="true"><em>고민된다면?</em><svg viewBox="0 0 64 60" width="64" height="60" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10C18 4 34 6 36 18c1.5 9-9 12-12 6-3-7 8-12 16-6 8 6 12 18 17 34"/><path d="M49.9 45.9L57 52l2.4-9.1"/></svg></span>';b.setAttribute('aria-label','오늘 점심 뭐 먹지? 주사위 굴려서 한 곳 골라 주기');
+  bar.insertBefore(b,bar.firstChild);
+  b.addEventListener('click',function(){
+    var cards=[].slice.call(list.querySelectorAll('.fdc')).filter(function(c){return c.offsetParent});
+    if(!cards.length) return;
+    cards.forEach(function(c){c.classList.remove('pick','lit')});
+    list.classList.remove('picked');list.classList.add('rolling');
+    var i=Math.floor(Math.random()*cards.length),n=i+12+Math.floor(Math.random()*cards.length),prev;
+    (function step(){
+      if(prev) prev.classList.remove('lit');
+      prev=cards[i%cards.length];prev.classList.add('lit');i++;
+      if(i<n) setTimeout(step,70+(n-i<5?(5-(n-i))*60:0));
+      else{prev.classList.remove('lit');prev.classList.add('pick');list.classList.remove('rolling');list.classList.add('picked');prev.scrollIntoView({behavior:'smooth',block:'center'});}
+    })();
+  });
+  b.addEventListener('click',function(){b.classList.remove('go');void b.offsetWidth;b.classList.add('go')});
+})();
+
+/* 선배 손글씨 포스트잇 */
+(function(){
+  function note(el, txt, pos, after){
+    if(!el) return;
+    var a=document.createElement('div');a.className='snote-a';
+    var n=document.createElement('div');n.className='snote';n.setAttribute('aria-hidden','true');
+    n.innerHTML='<p>'+txt+'</p>';
+    for(var k in pos){ if(k[0]=='-') n.style.setProperty(k,pos[k]); else n.style[k]=pos[k]; }
+    a.appendChild(n); el.parentNode.insertBefore(a, after?el.nextSibling:el);
+  }
+  var q=function(s){return document.querySelector(s)};
+  // 시설 둘러보기 사진 3곳(10-14): 사진 가운데 오른쪽(다음 화살표 자리)을 가려서, 사진 오른쪽 위 모서리에 붙임 — 사진 앞에 넣어 기준점이 사진 위 끝
+  note(q('.bx9-g[data-g="23"] .bx9-ph'),'같이 고민하면<br>더 빨리 풀려요',{top:'-6px','--r':'4deg'});
+  note(q('.bx9-g[data-g="8"] .bx9-ph'),'밥 먹으면서<br>동기랑 제일 친해져요',{top:'-6px','--r':'4deg'});
+  note(q('.bx9-g[data-g="1"] .bx9-ph'),'머리 식힐 땐<br>1층으로 내려가 봐요',{top:'-6px','--r':'4deg'});
+  note(q('#tp-house .hzmw'),'방 구할 땐<br>천천히 비교해 봐요',{left:'-34px',top:'24px','--r':'4deg'});
+  note(q('#tp-fun .fsg'),'수업 끝나면<br>동네 산책 추천!',{right:'-14px',top:'-80px','--r':'0deg'});
+  note(q('#pg-way .wmap'),'여기까지 오는 길,<br>첫걸음부터 응원해요',{left:'calc(66% - 16px)',top:'-136px','--r':'4deg'});   // 10-13: 조금 왼쪽 · 위로, 오른쪽으로 기울임
+})();
+
+/* 왼쪽 메뉴 첫 줄을 지금 화면의 첫 섹션 머리와 같은 높이에(10-13) */
+(function(){
+  var m=document.getElementById('main'); if(!m) return;
+  function f(){ var r=document.getElementById('siteLnb'); if(!r||innerWidth<1200) return;
+    var pg=[].filter.call(document.querySelectorAll('.life-page .page'),function(p){return !p.hidden})[0]; if(!pg) return;
+    var h=[].filter.call(pg.querySelectorAll('.tp-back, .sh, h2:not(.lh-sr)'),function(e){return e.offsetParent!==null})[0]; if(!h) return;   // 10-13: 숨은 화면(생활 꿀팁 허브 · 다른 주제)의 머리는 건너뜀 if(h&&h.closest('.lo-hd')) h=h.closest('.lo-hd'); if(!h) return;
+    var t=h.getBoundingClientRect().top-r.getBoundingClientRect().top-3; if(t>0) m.style.setProperty('--lnb-top',t+'px'); }
+  addEventListener('load',f); addEventListener('hashchange',function(){ setTimeout(f,80); }); addEventListener('resize',f); if(document.fonts) document.fonts.ready.then(f);
+})();
+
+/* 점심 주사위 되돌리기(10-13): 고른 카드 오른쪽 위 × 버튼 · 식당/카페 · 거르기 칩을 누르면 굴리기 전으로 */
+(function(){
+  var list=document.getElementById('fdList'); if(!list) return;
+  function reset(){ if(!list.classList.contains('picked')) return;
+    list.classList.remove('picked','rolling');
+    [].forEach.call(list.querySelectorAll('.fdc'),function(c){ c.classList.remove('pick','lit'); var x=c.querySelector('.fd-unpick'); if(x) x.remove(); }); }
+  new MutationObserver(function(){
+    var c=list.querySelector('.fdc.pick'); if(!c||c.querySelector('.fd-unpick')) return;
+    var b=document.createElement('button'); b.type='button'; b.className='fd-unpick'; b.innerHTML='<span aria-hidden="true">×</span>'; b.setAttribute('aria-label','주사위 결과 지우고 전체 다시 보기');
+    b.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); reset(); });
+    c.appendChild(b); b.focus({preventScroll:true});
+  }).observe(list,{subtree:true,attributes:true,attributeFilter:['class']});
+  document.addEventListener('click',function(e){ if(e.target.closest('#tp-food .fdk-b, #tp-food .chips button')) reset(); },true);
 })();

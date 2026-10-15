@@ -6,6 +6,8 @@ import egovframework.backoffice.common.BusinessException;
 import egovframework.backoffice.common.NotFoundException;
 import egovframework.backoffice.common.PageResult;
 import egovframework.backoffice.config.BackofficeProperties;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -103,6 +105,24 @@ public class ImageStorageService {
         image.setSubCategoryId(sub);
         mapper.insert(image);
         return mapper.findById(image.getId());
+    }
+
+    /**
+     * 파일 내용으로 저장한다(카테고리 페이지 관리의 그림 올리기처럼 이미 받은 그림을 미디어 관리에도 함께 남길 때).
+     * 미디어 관리가 받지 않는 형식(SVG · AVIF 등)이면 BusinessException.
+     */
+    @Transactional
+    public ImageFile storeBytes(byte[] data, String originalName, Long uploaderId) {
+        return store(new BytesFile(data, originalName), uploaderId, null, null);
+    }
+
+    /** 저장된 파일 위치(업로드 폴더 밖이면 NotFoundException) */
+    public Path fileOf(ImageFile image) {
+        Path file = root.resolve(image.getStoredName()).normalize();
+        if (!file.startsWith(root) || !Files.isRegularFile(file)) {
+            throw new NotFoundException("파일을 찾을 수 없습니다.");
+        }
+        return file;
     }
 
     public List<ImageFile> recent(int limit) {
@@ -240,6 +260,18 @@ public class ImageStorageService {
             throw new IllegalStateException("파일을 읽을 수 없습니다.", e);
         }
         return "unknown";
+    }
+
+    /** 이미 받은 파일 내용을 저장 흐름(store)에 그대로 넘기기 위한 껍데기 */
+    private record BytesFile(byte[] data, String originalName) implements MultipartFile {
+        @Override public String getName() { return "file"; }
+        @Override public String getOriginalFilename() { return originalName; }
+        @Override public String getContentType() { return null; }
+        @Override public boolean isEmpty() { return data == null || data.length == 0; }
+        @Override public long getSize() { return data == null ? 0 : data.length; }
+        @Override public byte[] getBytes() { return data; }
+        @Override public InputStream getInputStream() { return new ByteArrayInputStream(data == null ? new byte[0] : data); }
+        @Override public void transferTo(File dest) throws IOException { Files.write(dest.toPath(), data); }
     }
 
     private static String safeName(String name) {

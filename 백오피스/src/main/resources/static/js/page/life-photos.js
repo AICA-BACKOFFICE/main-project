@@ -8,9 +8,9 @@
   'use strict';
   var root = document.getElementById('lifePhotos');
   if (!root) return;
+  var DRAFT_API = root.dataset.draftApi;
   var API = root.dataset.api, UPLOAD = root.dataset.upload, SITE = root.dataset.siteBase, FRONT = (root.dataset.front || '').split('#')[0], EDITOR = root.dataset.editor;
   var meta = function (n) { var m = document.querySelector('meta[name="' + n + '"]'); return m ? m.getAttribute('content') : ''; };
-  var CSRF = meta('_csrf'), CSRF_HEADER = meta('_csrf_header') || 'X-CSRF-TOKEN';
   var SIZES = [['', '꽉 차게(기본)'], ['150%', '1.5배 확대'], ['200%', '2배 확대'], ['250%', '2.5배 확대'], ['300%', '3배 확대']];
   var SECTIONS = [['fac', '시설 사진', '#facilities'], ['food', '오늘 점심, 여기 어때요?', '#tp-food'], ['fun', '수업 끝나고, 바람 쐬러 가요', '#tp-fun']];
   var model = null, floor = null, foodKind = 'food', busy = false;
@@ -26,15 +26,28 @@
   function sectionDirty(k) { return k === 'fac' ? Object.keys(dirty.spaces).length > 0 : k === 'food' ? dirty.food : Object.keys(dirty.fun).length > 0; }
   function mark(on) { return on ? ' <i class="lp-mark" title="저장 안 한 변경">●</i>' : ''; }
 
-  function request(url, opts) {
+  // 보안 토큰은 보낼 때마다 새로 읽어요(다시 로그인하면 admin.js 의 로그인 확인이 새 토큰을 넣어 줌).
+  // 로그인이 풀렸으면(관리자 서버를 다시 켠 뒤 등) 화면 위에 안내를 띄우고, 그사이 다시 로그인돼 있으면 한 번 더 보내요.
+  function request(url, opts, retried) {
     opts = opts || {};
     opts.headers = opts.headers || {};
     opts.credentials = 'same-origin';
-    if (opts.method && opts.method !== 'GET') opts.headers[CSRF_HEADER] = CSRF;
-    return fetch(url, opts).catch(function () { throw new Error('관리자 서버에 연결하지 못했어요. 서버(백오피스.cmd 창)가 켜져 있는지 확인해 주세요.'); })
+    if (opts.method && opts.method !== 'GET') opts.headers[meta('_csrf_header') || 'X-CSRF-TOKEN'] = meta('_csrf');
+    return fetch(url, opts).catch(function () {
+      if (window.BOSession) window.BOSession.check();
+      throw new Error('관리자 서버에 연결하지 못했어요. 서버(백오피스.cmd 창)가 켜져 있는지 확인해 주세요.');
+    })
       .then(function (r) {
         return r.json().catch(function () { return {}; }).then(function (body) {
-          if (r.status === 401 || r.status === 403) throw new Error('로그인이 끝났거나 권한이 없어요. 새로 고쳐 다시 로그인해 주세요.');
+          if (r.status === 401 || r.status === 403) {
+            if (!retried && window.BOSession) {
+              return window.BOSession.check().then(function (ok) {
+                if (ok) return request(url, opts, true);
+                throw new Error('로그인이 풀려서 하지 못했어요. 화면 위 안내대로 다시 로그인한 뒤 한 번 더 해 주세요.');
+              });
+            }
+            throw new Error(r.status === 401 ? '로그인이 풀려서 하지 못했어요. 다시 로그인한 뒤 한 번 더 해 주세요.' : '이 작업을 할 권한이 없어요. 관리자 계정으로 로그인했는지 확인해 주세요.');
+          }
           if (!r.ok) throw new Error(body.message || ('요청을 처리하지 못했어요 (' + r.status + ')'));
           return body;
         });
@@ -49,10 +62,7 @@
   // ── 그리기 ──
   function render() {
     var h = '';
-    if (model.hasDraft) {
-      h += '<div class="alert error">인사교 라이프에 아직 사이트에 반영하지 않은 페이지 편집(임시저장)이 있어 지금은 저장할 수 없어요. '
-        + '<a href="' + esc(EDITOR) + '">카테고리 페이지 관리 › 인사교 라이프</a>에서 먼저 반영하거나 편집을 취소해 주세요.</div>';
-    }
+    if (model.hasDraft) h += window.draftNoteHtml(model.draft, '인사교 라이프', EDITOR);
     h += '<div class="lp-sections" role="tablist" aria-label="고칠 곳">' + SECTIONS.map(function (s) {
       return '<button type="button" role="tab" class="lp-section" data-section="' + s[0] + '" aria-selected="' + (section === s[0]) + '">' + esc(s[1]) + mark(sectionDirty(s[0])) + '</button>';
     }).join('') + '</div>';
@@ -218,11 +228,14 @@
   // ── 조작 ──
   root.addEventListener('click', function (e) {
     var t = e.target.closest('[data-section],[data-floor],[data-kind],[data-act]');
-    if (!t || !root.contains(t) || t.disabled || t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA') return;
+    // 화면 전체 칸(#lifePhotos)에도 지금 탭(data-section)이 적혀 있어서, 그 칸 자체가 잡히면 탭을 누른 것으로 오해해 다시 그려요.
+    // 그러면 '새 사진 올리기' · '바꾸기'처럼 누르는 순간 칸이 바뀌어 고른 사진이 들어오지 않고, 글자 칸도 눌러 쓸 수 없었어요. 화면 전체 칸은 건너뜀
+    if (!t || t === root || !root.contains(t) || t.disabled || t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA') return;
     if (t.dataset.section) { section = t.dataset.section; render(); return; }
     if (t.dataset.floor) { floor = t.dataset.floor; render(); return; }
     if (t.dataset.kind) { foodKind = t.dataset.kind; render(); return; }
     var act = t.dataset.act;
+    if (act === 'discard-draft') { discardDraft(); return; }
     // 먹거리
     if (/^food-/.test(act)) {
       var fc = t.closest('[data-food]'), fi = fc ? Number(fc.dataset.food) : -1;
@@ -324,6 +337,16 @@
       withBusy(upload(files[0], 'facility-' + s.id).then(function (ph) { s.photos[i] = { cls: '', src: ph.src, bs: '', bp: '', caption: old.caption, url: ph.url }; dirty.spaces[s.id] = true; render(); }));
     }
   });
+
+  // 임시저장 버리기: 페이지 편집기에서 반영하지 않은 편집을 지우면 여기서 다시 저장할 수 있어요(여기서 고치던 것은 그대로)
+  function discardDraft() {
+    var n = (model.draft && model.draft.changes ? model.draft.changes.length : 0) + (model.draft && model.draft.more || 0);
+    if (!confirm('인사교 라이프 페이지 편집기의 임시저장(' + (n ? n + '곳 바뀜' : '반영하지 않은 편집') + ')을 버릴까요?\n버리면 그 편집 내용은 되돌릴 수 없어요. 사이트에 이미 반영된 내용은 그대로예요.')) return;
+    withBusy(request(DRAFT_API, { method: 'DELETE' }).then(function () {
+      model.hasDraft = false; model.draft = null; render();
+      toast('임시저장을 버렸어요. 이제 저장할 수 있어요.');
+    }));
+  }
 
   // ── 저장: 바꾼 것만 ──
   function check() {

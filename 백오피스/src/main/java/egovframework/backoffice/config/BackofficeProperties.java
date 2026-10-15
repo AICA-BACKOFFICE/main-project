@@ -44,22 +44,29 @@ public class BackofficeProperties {
         private List<Item> items = new ArrayList<>(List.of(
                 new Item("about", "인사교 알아보기", "about/index.html"),
                 new Item("stories", "선배들의 이야기", "stories/index.html"),
+                // 2026-10-14 사이트 새 시안: 이야기가 '한눈에 보기'(위) + 종류별 페이지로 나뉨 → 사이드바에서는 선배들의 이야기 아래에 펼쳐 보임
+                new Item("stories-reviews", "선배들의 이야기 › 후기", "stories/reviews.html", "stories"),
+                new Item("stories-interviews", "선배들의 이야기 › 인터뷰", "stories/interviews.html", "stories"),
+                new Item("stories-projects", "선배들의 이야기 › 프로젝트", "stories/projects.html", "stories"),
+                new Item("stories-cohorts", "선배들의 이야기 › 기수별 이모저모", "stories/cohorts.html", "stories"),
                 new Item("life", "인사교 라이프", "life/index.html"),
                 new Item("check", "지원 전 체크", "check/index.html")));
         /** 편집 화면에서 고를 수 없게 잠글 곳 — 모든 페이지가 함께 쓰는 머리말·바닥글·모바일 메뉴 등(common/js/site.js 가 그림) */
-        private List<String> locked = new ArrayList<>(List.of("#siteHeader", "#siteFooter", "#drawer", ".skip-link", ".floating", "#toast"));
+        private List<String> locked = new ArrayList<>(List.of("#siteHeader", "#siteFooter", "#drawer", ".skip-link", ".floating", "#toast",
+                "#siteLnb", ".st-mhf"));   // 왼쪽 메뉴(site.js) · 이야기 제목 띠(mast-fix.js)도 스크립트가 그리는 곳
         /** 페이지 기능이 내용을 자동으로 채워 편집 화면에서는 누를 수 없게 할 곳(지원 전 체크의 질문 분류·검색) */
         private List<String> inert = new ArrayList<>(List.of(".faq-tools"));
         private String inertNotice = "분류 버튼과 검색은 질문 목록에 맞춰 자동으로 채워지는 곳이라 편집 화면에서는 누를 수 없어요. "
                 + "분류별 질문 수는 저장할 때 자동으로 맞춰지고, 동작은 ‘미리보기’에서 확인할 수 있어요.";
         /**
-         * 곳마다 따로 안내하는 '누를 수 없는 곳': [선택자, 안내]. 선배들의 이야기의 글 목록 · 글 창 · 맨 위 대표 이야기는
-         * 게시물 관리의 글(stories/js/stories-data.js)로 그려지는 곳이라 페이지 편집에서는 고르지 못하게 한다.
+         * 곳마다 따로 안내하는 '누를 수 없는 곳': [선택자, 안내]. 선배들의 이야기의 글 목록 · 글 창 · 한눈에 보기 미리보기는
+         * 게시물 관리의 글(stories/js/stories-data.js)로 그려지는 곳이라 페이지 편집에서는 고르지 못하게 한다(2026-10-14 새 시안 선택자 포함).
          */
         private List<List<String>> inertNotices = new ArrayList<>(List.of(List.of(
-                ".stories-page .hx-row, .stories-page .hx-segs, .stories-page .lq-t, .stories-page .idgrid, .stories-page .rvlist, "
-                        + ".stories-page .rev .pager, .stories-page .ivgrid, .stories-page .ivdots, .stories-page .iva-out, .stories-page .pr .stage, "
-                        + ".stories-page .pr .strip, .stories-page .g2 > a.st, .stories-page .cpager, .stories-page .ov, .stories-page .ivd, .stories-page .pjd",
+                ".stories-page .idgrid, .stories-page .rvlist, .stories-page .rev .pager, .stories-page .ov, "
+                        + ".stories-page .ivgrid, .stories-page .ivdots, .stories-page .iva-out, .stories-page .iva-chips, .stories-page .cpager, .stories-page .ivd, "
+                        + ".stories-page .pjgrid, .stories-page .pjd, .stories-page .cv3, .stories-page .cv3-m, "
+                        + ".stories-hub .hb-ivg, .stories-hub .hb-lqw, .stories-hub .hb-pis, .stories-hub .hb-pjs, .stories-hub .hb-mos",
                 "이 부분은 ‘선배들의 이야기 게시물 관리’에 올린 후기 · 인터뷰 · 프로젝트 · 기수 기록으로 채워지는 곳이에요. "
                         + "글을 쓰거나 고치려면 게시물 관리 › 선배들의 이야기 게시물 관리에서 해 주세요. 발행하면 이 자리에 바로 반영돼요.")));
         /** 글꼴 목록: [CSS font-family, 이름]. 사이트에 들어 있는 글꼴만 넣는다(배포해도 그대로 보이도록) */
@@ -90,5 +97,11 @@ public class BackofficeProperties {
         private String id;
         private String title;
         private String file;
+        /** 사이드바에서 이 페이지를 펼쳐 보일 위 페이지 id(이야기 하위 페이지 → stories). 없으면 맨 위 */
+        private String parent;
+
+        public Item(String id, String title, String file) {
+            this(id, title, file, null);
+        }
     }
 }

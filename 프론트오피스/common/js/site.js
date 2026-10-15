@@ -1,6 +1,6 @@
 /* =========================================================
-   공통 틀: 상단 헤더(GNB · 드롭다운 · 검색) · 하위 메뉴 바 · 모바일 메뉴 · 푸터 · 플로팅 버튼 · 토스트 — 모든 페이지에 같이 붙음
-   메뉴 내용 · 바깥 연결처 주소 · 검색 추천 키워드는 menu.js에서 고칩니다. 이 파일은 페이지를 추가해도 고칠 일이 없습니다.
+   공통 틀: 상단 헤더(GNB · 드롭다운) · 하위 메뉴 바 · 왼쪽 메뉴 · 모바일 메뉴 · 푸터 · 플로팅 버튼 · 토스트 — 모든 페이지에 같이 붙음
+   메뉴 내용 · 바깥 연결처 주소는 menu.js에서 고칩니다. 이 파일은 페이지를 추가해도 고칠 일이 없습니다.
 
    페이지에서 쓰는 법(check/index.html 참고):
      <html data-menu="메뉴 id">        지금 카테고리(홈은 생략). 헤더 메뉴에 현재 위치로 표시하고 그 아래 하위 메뉴 바(세부 카테고리)
@@ -8,16 +8,17 @@
                                        바 왼쪽 카테고리 제목(menu.js title)을 빼려면 data-subnav-title="off"(라이프: 첫 화면 히어로가 제목)
                                        글 상세처럼 하위 메뉴 주소에 없는 페이지는 data-sub="하위 메뉴 id"로 밑줄 위치를 정함
                                        (탭 화면 페이지는 페이지 스크립트가 data-sub를 바꾸고 Site.syncSubnav() 호출)
+                                       하위 메뉴가 페이지마다 따로인 페이지는 data-nav="side"면 위쪽 바 대신 본문 왼쪽 메뉴(common/css/lnb.css, 10-13 사본: 이야기 하위 4페이지)
      <header class="site-header" id="siteHeader"></header>
      <main id="main" tabindex="-1">…</main>
-     <footer class="site-footer" id="siteFooter"></footer>   사진 출처 같은 페이지 메모는 data-note="…"
+     <footer class="site-footer" id="siteFooter"></footer>   페이지 메모 data-note="…"는 10-14부터 화면에 안 보임(메모로만)
      <script src="../common/js/menu.js" defer></script>
      <script src="../common/js/site.js" defer></script>
    페이지 스크립트에서 쓸 수 있는 것: Site.href(메뉴 id, 하위 id) · Site.menu(메뉴 id) · Site.toast(글) · Site.reduce · Site.syncSubnav()
    본문에서 쓰는 속성(마크업 예는 common/css/site.css 맨 아래 절):
      <a data-site-link="apply">   바깥 연결처(menu.js SITE_LINKS 키). 주소가 있으면 href로, 없으면 누를 때 안내 토스트
      data-scroll-fade               가로로 넘치는 탭 줄. 더 있는 쪽 끝을 흐리게(.fade-l · .fade-r)
-     주소 ?cat=값                    처음 열 때 본문의 분류 버튼 [data-cat="값"][aria-pressed]을 눌러 둠(검색 추천 키워드 → 그 분류)
+     주소 ?cat=값                    처음 열 때 본문의 분류 버튼 [data-cat="값"][aria-pressed]을 눌러 둠
 
    서버(Spring · Thymeleaf)가 헤더 · 모바일 메뉴 · 푸터 · 플로팅 버튼을 같은 마크업으로 미리 그려 보내면
    다시 그리지 않고 동작만 붙입니다. 그때는 menu.js가 없어도 됩니다(현재 위치는 그려진 링크로 판단).
@@ -27,8 +28,7 @@ const Site = (() => {
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ICON = {
-    chev:'<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>',
-    search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>'
+    chev:'<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>'
   };
   const html = document.documentElement;
 
@@ -54,6 +54,10 @@ const Site = (() => {
   }
 
   const current = menuOf(html.dataset.menu) || null;
+  /* 왼쪽 하위 메뉴(10-13 사본, 사용자 결정: 한눈에 보기 허브는 넓게 · 하위 페이지는 왼쪽 메뉴): <html data-nav="side">인 페이지 + 하위 메뉴가 모두 페이지 링크인 메뉴만.
+     위쪽 바를 끈 페이지와 같은 흐름(--sub 0 · 바 안 그림 · 헤더 높이 72)으로 돌리고 main 맨 앞에 왼쪽 메뉴(renderLnb) */
+  const sideNav = !!current && html.dataset.nav === 'side' && current.children.length > 0;   // 10-13: 라이프처럼 같은 페이지 안 화면(#주소)도 왼쪽 메뉴로
+  if (sideNav) html.dataset.subnav = 'off';
   const subnavOn = !!current && html.dataset.subnav !== 'off';   // 하위 메뉴 바를 그릴지(그린 뒤에는 #subnav 유무로 판단)
   /* "폴더", "폴더/", "폴더/index.html"은 같은 페이지(서버 주소는 끝 / 없이 올 수 있음) */
   const pagePath = u => u.pathname.replace(/index\.html$/, '').replace(/\/$/, '');
@@ -64,14 +68,11 @@ const Site = (() => {
   function currentSub(){
     if (html.dataset.sub) return html.dataset.sub;
     const hash = decodeURIComponent(location.hash);
-    const links = $$('#subnav a[data-sub]').map(a => ({ id: a.dataset.sub, u: new URL(a.href) }));
+    const links = $$('#subnav a[data-sub], #siteLnb a[data-sub]').map(a => ({ id: a.dataset.sub, u: new URL(a.href) }));
     const here = links.filter(x => samePage(x.u));
     const hit = here.find(x => hash && decodeURIComponent(x.u.hash) === hash) || here.find(x => !x.u.hash) || here[0];
     return (hit || links[0])?.id;
   }
-
-  /* 주소에 ?조건 붙이기(#위치 앞에): withQuery('../check/index.html#faq', 'cat=지원금') → ../check/index.html?cat=지원금#faq */
-  const withQuery = (u, q) => q ? u.replace(/(#.*)?$/, m => '?' + q + m) : u;
 
   /* 바깥 연결처(menu.js SITE_LINKS) 링크 속성. 주소가 아직 없으면 누를 때 안내만 */
   function ext(key){
@@ -89,30 +90,20 @@ const Site = (() => {
     if (!el.firstElementChild) el.innerHTML = `
     <div class="hdr-bar">
       <div class="wrap hdr-inner">
-        <a class="logo" href="${ROOT + SITE_HOME}" aria-label="인공지능사관학교 홈">${logo('<span class="logo-sub">광주</span>')}</a>
+        <a class="logo" href="${ROOT + SITE_HOME}" aria-label="인공지능사관학교 홈">${logo()}</a>
         <nav class="hdr-nav" aria-label="주 메뉴">
           <ul class="gnb">${SITE_MENU.map(m => `
             <li><a class="gnb-link" href="${href(m)}" data-top="${m.id}"${m === current ? ' aria-current="page"' : ''}>${m.label}</a>
-              <ul class="drop">${m.children.map(c => `<li><a href="${href(m, c)}">${c.label}</a></li>`).join('')}</ul></li>`).join('')}
+              <ul class="drop">${m.children.filter(c => c.id !== 'overview').map(c => `<li><a href="${href(m, c)}">${c.label}</a></li>`).join('')}</ul></li>`).join('')}
           </ul>
         </nav>
         <div class="hdr-util">
-          <button class="icon-btn" id="searchBtn" aria-label="검색 열기" aria-expanded="false" aria-controls="searchPanel">${ICON.search}</button>
           <a class="official-link" ${ext('official')}>공식 홈페이지</a>
-          <a class="btn-apply" ${ext('apply')}>지원하기</a>
+          <a class="btn-apply btn-ask" ${ext('kakao')}><svg class="ic-kakao" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.5 3 2 6.4 2 10.7c0 2.7 1.8 5.1 4.5 6.5L5.5 21l4.3-2.4c.7.1 1.5.2 2.2.2 5.5 0 10-3.4 10-7.7S17.5 3 12 3z"/></svg>문의하기</a>
           <button class="icon-btn menu-toggle" id="menuBtn" aria-label="전체 메뉴 열기" aria-expanded="false" aria-controls="drawer">
             <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
           </button>
         </div>
-      </div>
-    </div>
-    <div class="search-panel" id="searchPanel">
-      <div class="wrap">
-        <form role="search" method="get">
-          <input id="q" name="q" type="search" aria-label="사이트 검색" placeholder="궁금한 걸 검색해 보세요. 예) 비전공자, 월세, 점심" data-placeholder-short="예) 비전공자, 월세, 점심">
-          <button class="icon-btn" type="submit" aria-label="검색">${ICON.search}</button>
-        </form>
-        <div class="search-tags">${SITE_SEARCH_TAGS.map(t => `<a href="${withQuery(href(t.menu, t.sub), t.query)}">${t.label}</a>`).join('')}</div>
       </div>
     </div>${subnavOn ? `
     <nav class="subnav" id="subnav" data-type="${current.type}" aria-label="${current.label} 세부 메뉴">
@@ -140,7 +131,7 @@ const Site = (() => {
           </div></div>
         </div>`).join('')}
       </div>
-      <a class="drawer-cta" ${ext('apply')}>지원하기</a>
+      <a class="drawer-cta" ${ext('kakao')}><svg class="ic-kakao" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.5 3 2 6.4 2 10.7c0 2.7 1.8 5.1 4.5 6.5L5.5 21l4.3-2.4c.7.1 1.5.2 2.2.2 5.5 0 10-3.4 10-7.7S17.5 3 12 3z"/></svg>문의하기</a>
     </aside>`);
     if (!$('.skip-link')) document.body.insertAdjacentHTML('afterbegin', '<a class="skip-link" href="#main">본문으로 바로가기</a>');
   }
@@ -160,19 +151,14 @@ const Site = (() => {
       </div>
       <address>
         <ul><li>인공지능사관학교</li><li>주소 : 광주광역시 동구 제봉로 92 (대성학원 1-3층)</li><li>전화문의 : 062-716-0677</li><li>E-Mail : aica_hrd@aicluster.or.kr</li></ul>
-        <ul><li>카카오톡 : @인공지능사관학교</li><li><a ${ext('official')}>홈페이지</a> : 문의하기 메뉴 클릭</li><li>상담시간 : 10시 ~ 17시 (월~금)</li></ul>
+        <ul><li>카카오톡 채널 : @인공지능사관학교</li><li><a ${ext('official')}>공식 홈페이지</a></li><li>상담시간 : 10시 ~ 17시 (월~금)</li></ul>
       </address>
-      <p class="footer-copy">COPYRIGHT 2025 ⓒ 인공지능사관학교 ALL RIGHTS RESERVED.</p>
+      <p class="footer-copy">COPYRIGHT 2026 ⓒ 인공지능사관학교 ALL RIGHTS RESERVED.</p>
     </div>`;
-    if (el.dataset.note) {
-      const note = document.createElement('p');
-      note.className = 'footer-note';
-      note.textContent = el.dataset.note;
-      $('.footer-copy', el).after(note);
-    }
+    // 10-14: 푸터 맨 아래 페이지 메모(data-note)는 보이지 않게 함(그리던 코드 삭제, 속성은 메모로 남김)
   }
 
-  /* 플로팅 버튼(FAB): 오른쪽 아래 맨 위로(스크롤하면 나타남). 지원하기는 헤더 · 모바일 메뉴에. 안내 토스트 자리도 같이 */
+  /* 플로팅 버튼(FAB): 오른쪽 아래 맨 위로(스크롤하면 나타남). 헤더 · 모바일 메뉴 버튼은 10-14부터 '문의하기'(카카오톡 채널, SITE_LINKS.kakao). 안내 토스트 자리도 같이 */
   function renderFloating(){
     if (!$('#fabTop')) document.body.insertAdjacentHTML('beforeend', `
     <div class="floating">
@@ -182,10 +168,38 @@ const Site = (() => {
     <div class="toast" id="toast" role="status" aria-live="polite"></div>`);
   }
 
+  /* 왼쪽 하위 메뉴(10-13 사본). main 맨 앞에 그림(모양 · 자리는 common/css/lnb.css). 페이지 제목 줄(.st-mh, 이야기 5페이지)이 있으면 그 바로 뒤 — 좁은 화면에서 제목 → 알약 줄 순서.
+     지금 항목은 하위 메뉴 바와 같은 기준(data-sub · currentSub)으로 setActiveSub가 aria-current="page" */
+  // 10-13: 제목 위 작은 영문(STORIES 등) 뺌
+  function renderLnb(){
+    const main = $('#main');
+    if (!sideNav || !main || $('#siteLnb')) return;
+    const mh = main.querySelector(':scope > .st-mh');
+    (mh || main).insertAdjacentHTML(mh ? 'afterend' : 'afterbegin', `
+    <nav class="lnb" id="siteLnb" aria-label="${current.label} 메뉴">
+      <div class="lnb-in">
+        <p class="lnb-head"><strong class="lnb-title">${current.label}</strong></p>
+        <ul class="lnb-list" role="list" data-scroll-fade>
+          ${current.children.map(c => `<li><a href="${href(current, c)}" data-sub="${c.id}">${c.label}</a></li>`).join('')}
+        </ul>
+      </div>
+    </nav>`);
+  }
   /* ---------- 하위 메뉴 바: 현재 항목 표시 ---------- */
   function setActiveSub(id){
     // 모바일 메뉴(☰)의 지금 카테고리 세부 링크에도 같은 표시(서버가 그린 메뉴면 data-sub가 있는 링크만)
     $$('#drawer a[data-sub]').forEach(a => { if (a.dataset.sub === id) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
+    // 10-13 사본: 왼쪽 메뉴(좁은 화면은 가로 줄 — 지금 항목이 보이게 가운데로)
+    const lnb = $('#siteLnb .lnb-list');
+    if (lnb) {
+      let on;
+      $$('a', lnb).forEach(a => { if (a.dataset.sub === id) { a.setAttribute('aria-current', 'page'); on = a; } else a.removeAttribute('aria-current'); });
+      const max = lnb.scrollWidth - lnb.clientWidth;
+      if (on && max > 1) {
+        const x = on.offsetLeft - lnb.clientWidth / 2 + on.offsetWidth / 2;
+        lnb.scrollLeft = x > max - 40 ? max : x < 40 ? 0 : x;   // 끝 40px 안이면 끝까지(흐림 띠가 지금 항목에 걸리지 않게)
+      }
+    }
     const list = $('#subnav .subnav-list');
     if (!list) return;
     let active;
@@ -206,7 +220,7 @@ const Site = (() => {
   }
   /* 주소의 #위치가 바뀌면 하위 메뉴 바의 현재 항목을 맞춤 */
   function syncSubnav(){
-    if ($('#subnav')) setActiveSub(currentSub());
+    if ($('#subnav') || $('#siteLnb')) setActiveSub(currentSub());
   }
   /* 한 페이지 + 위치(anchor) 메뉴(#subnav data-type="anchor"): 화면에 들어온 섹션을 하위 메뉴에 표시 */
   function setupScrollSpy(){
@@ -240,7 +254,8 @@ const Site = (() => {
     document.fonts?.ready.then(all);
   }
 
-  /* ---------- 본문의 바깥 연결처 링크: <a data-site-link="apply"> → SITE_LINKS 주소, 없으면 안내 토스트(헤더 지원하기와 같음) ---------- */
+  /* ---------- 본문의 바깥 연결처 링크: <a data-site-link="apply"> → SITE_LINKS 주소, 없으면 안내 토스트(헤더 지원하기와 같음) ----------
+     10-14 지금 본문에 쓰는 곳은 없음(Spring 본문 링크 계약으로 남김) */
   function linkSiteLinks(){
     if (typeof SITE_LINKS === 'undefined') return;   // 서버가 주소를 그려 보낸 페이지는 그대로
     $$('a[data-site-link]').forEach(a => {
@@ -251,22 +266,12 @@ const Site = (() => {
     });
   }
 
-  /* ---------- 주소 조건 ?cat=값: 본문의 분류 버튼(data-cat · aria-pressed)을 눌러 둠 — 검색 추천 키워드로 들어온 경우 ---------- */
+  /* ---------- 주소 조건 ?cat=값: 본문의 분류 버튼(data-cat · aria-pressed)을 눌러 둠 ---------- */
   function applyCat(params){
     const v = params.get('cat');
     if (!v) return;
     const b = $$('main [data-cat][aria-pressed]').find(x => x.dataset.cat === v);
     if (b && b.getAttribute('aria-pressed') !== 'true') b.click();
-  }
-
-  /* ---------- 검색 안내 문구: 좁은 화면(860px 이하)은 짧은 문구(긴 문구는 예시 중간에서 잘림) ---------- */
-  function fitPlaceholder(){
-    const q = $('#q');
-    if (!q || !q.dataset.placeholderShort) return;
-    const long = q.getAttribute('placeholder'), mq = matchMedia('(max-width: 860px)');
-    const set = () => q.setAttribute('placeholder', mq.matches ? q.dataset.placeholderShort : long);
-    set();
-    mq.addEventListener?.('change', set);
   }
 
   /* ---------- 동작 ---------- */
@@ -304,13 +309,7 @@ const Site = (() => {
     if (on) header.style.setProperty('--drop-h', Math.max(...$$('.drop', header).map(d => d.offsetHeight)) + 'px');
     header.classList.toggle('menu-open', on);
   }
-  /* 검색 패널. 통합 검색은 개발 단계에서 연결 */
-  function setSearch(on){
-    $('#searchPanel').classList.toggle('is-open', on);
-    $('#searchBtn').setAttribute('aria-expanded', String(on));
-    if (on) { setMega(false); setTimeout(() => $('#q').focus(), 30); }
-  }
-  const searchOpen = () => !!$('#searchPanel.is-open');
+  /* 헤더 검색은 2026-10-13에 뺌(검색 패널 코드도 10-14 삭제) */
 
   let toastTimer;
   function toast(msg){
@@ -350,11 +349,11 @@ const Site = (() => {
     const gnb = $('.gnb', header), dropBg = $('#dropBg');
     const inMega = el => !!el && (gnb.contains(el) || el === dropBg);
     let megaHold = false, focusHold = false;
-    header.addEventListener('pointerover', e => { if (e.pointerType !== 'touch' && !megaHold && inMega(e.target) && !searchOpen()) setMega(true); });
+    header.addEventListener('pointerover', e => { if (e.pointerType !== 'touch' && !megaHold && inMega(e.target)) setMega(true); });
     header.addEventListener('pointerout', e => { if (!inMega(e.relatedTarget)) { megaHold = false; setMega(false); } });
     gnb.addEventListener('focusin', () => { if (focusHold) focusHold = false; else setMega(true); });
 
-    // Esc: 열린 것을 닫고 초점을 연 자리로(모바일 메뉴 → ☰, 검색 → 검색 버튼, 드롭다운 하위 링크 → 그 위 메뉴)
+    // Esc: 열린 것을 닫고 초점을 연 자리로(모바일 메뉴 → ☰, 드롭다운 하위 링크 → 그 위 메뉴)
     document.addEventListener('keydown', e => {
       if (e.key === 'Tab') return trapDrawer(e);
       if (e.key !== 'Escape') return;
@@ -364,34 +363,25 @@ const Site = (() => {
         setMega(false);
         if (top && top !== document.activeElement) { focusHold = true; top.focus(); }
       }
-      if (searchOpen()) { setSearch(false); $('#searchBtn').focus(); }
     });
     gnb.addEventListener('focusout', e => { if (!gnb.contains(e.relatedTarget)) setMega(false); });
-
-    $('#searchBtn').addEventListener('click', () => setSearch(!searchOpen()));
-    // 검색: 서버가 폼에 검색 주소(action)를 넣었으면 그대로 제출(?q=검색어), 없으면 안내만
-    $('#searchPanel form').addEventListener('submit', e => {
-      if (e.currentTarget.getAttribute('action')) return;
-      e.preventDefault(); toast('통합 검색은 개발 단계에서 연결돼요');
-    });
 
     // 연결처가 정해지지 않은 링크(data-toast)는 안내만 띄움 — 페이지 본문에 나중에 그려진 링크도 포함
     document.addEventListener('click', e => {
       const a = e.target.closest('[data-toast]');
       if (a) { e.preventDefault(); toast(a.dataset.toast); }
     });
-    // 헤더 · 모바일 메뉴 · 푸터의 같은 페이지 링크는 새로 불러오지 않고 그 위치로 이동
+    // 헤더 · 모바일 메뉴 · 푸터 · 왼쪽 메뉴의 같은 페이지 링크는 새로 불러오지 않고 그 위치로 이동
     document.addEventListener('click', e => {
-      const a = e.target.closest('#siteHeader a[href], #drawer a[href], #siteFooter a[href]');
+      const a = e.target.closest('#siteHeader a[href], #drawer a[href], #siteFooter a[href], #siteLnb a[href]');
       if (!a || a.hasAttribute('data-toast') || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const u = new URL(a.href);
       if (!samePage(u)) { closeDrawer(); return; }
       e.preventDefault();
       closeDrawer();
       if (header.classList.contains('menu-open')) { megaHold = true; setMega(false); }
-      setSearch(false);
       goTo(u.hash);
-      applyCat(u.searchParams);   // 같은 페이지의 검색 추천 키워드(?cat=)
+      applyCat(u.searchParams);   // 같은 페이지의 분류 조건(?cat=)
     });
     addEventListener('hashchange', syncSubnav);
     // 본문으로 바로가기: 주소는 그대로 두고 초점만 본문으로(탭 화면 페이지의 주소 #interviews 등이 #main으로 바뀌지 않게).
@@ -403,39 +393,29 @@ const Site = (() => {
       m.focus();
     });
 
-    // 맨 위로: 페이지 끝 '다음으로' 띠(.next-band)의 카드가 버튼 자리를 지나는 동안은 감춤 — 좁은 화면에서 카드 오른쪽 화살표 원과 겹쳐 보였음.
-    // 카드가 다 지나가면(푸터 위) 다시 보임. 넓은 화면처럼 버튼이 카드 옆 바깥에 있으면 그대로
-    const floating = fabTop.parentElement;
-    const overBand = () => {
-      const band = $$('.next-band').find(b => b.offsetParent);   // 탭 화면 페이지는 보이는 화면의 띠 하나
-      if (!band) return false;
-      const f = floating.getBoundingClientRect();
-      return $$('a', band).some(a => {
-        const r = a.getBoundingClientRect();
-        return r.left < f.right && r.right > f.left && r.top < f.bottom + 8 && r.bottom > f.top - 8;
-      });
-    };
+    // 맨 위로: 한 화면 가까이 내려가면 보임(10-14: 페이지 끝 '다음으로' 띠가 없어져 띠와 겹칠 때 감추던 코드 삭제)
     const onScroll = () => {
       header.classList.toggle('is-scrolled', scrollY > 8);
-      fabTop.classList.toggle('is-visible', scrollY > innerHeight * .8 && !overBand());
+      fabTop.classList.toggle('is-visible', scrollY > innerHeight * .8);
     };
     fabTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }));
     addEventListener('scroll', onScroll, { passive: true });
     addEventListener('resize', () => { onScroll(); if ($('#subnav')) setActiveSub($('#subnav .subnav-list a.is-active')?.dataset.sub || null); });
-    addEventListener('hashchange', () => requestAnimationFrame(onScroll));   // 탭 화면 페이지: 화면이 바뀌면 띠도 바뀜
-    // 뒤로 가기로 돌아온 페이지에 열린 메뉴 · 드롭다운 · 검색이 남지 않게
-    addEventListener('pageshow', () => { closeDrawer(); setMega(false); setSearch(false); });
+    addEventListener('hashchange', () => requestAnimationFrame(onScroll));   // 탭 화면 페이지: 화면이 바뀌면 스크롤 위치도 바뀜
+    // 뒤로 가기로 돌아온 페이지에 열린 메뉴 · 드롭다운이 남지 않게
+    addEventListener('pageshow', () => { closeDrawer(); setMega(false); });
     onScroll();
   }
 
   if ($('#siteHeader')) {
     renderHeader();
+    renderLnb();
     renderFooter();
     renderFloating();
     bind();
     setupScrollSpy();
     setupScrollFade();
-    fitPlaceholder();
+    if ($('#siteLnb')) { syncSubnav(); document.fonts?.ready.then(syncSubnav); }   // 왼쪽 메뉴는 바로(첫 화면에 지금 항목이 비어 보이지 않게). 좁은 화면 가로 줄 위치는 글꼴이 자리 잡은 뒤 다시
     if ($('#subnav')) requestAnimationFrame(syncSubnav);
   }
   linkSiteLinks();

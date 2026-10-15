@@ -1,0 +1,54 @@
+/* 게시물 관리 › 지원 전 Check FAQ 관리 (templates/faq/index.html · static/js/page/faq.js) */
+.fq-loading { padding: 40px; text-align: center; color: var(--muted); }
+.fq-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 0 14px; flex-wrap: wrap; }
+.fq-cats { display: flex; gap: 8px; flex-wrap: wrap; }
+.fq-cat { height: 34px; padding: 0 14px; border: 1px solid #d5d5d5; border-radius: 999px; background: #fff; color: #333; cursor: pointer; font-size: 13px; font-weight: 600; }
+.fq-cat em { margin-left: 6px; font-style: normal; font-weight: 500; color: var(--muted); }
+.fq-cat[aria-selected="true"] { background: #1B7686; border-color: #1B7686; color: #fff; }
+.fq-cat[aria-selected="true"] em { color: #d4eef2; }
+.fq-top-r { display: flex; align-items: center; gap: 8px; }
+.fq-state { font-size: 12px; color: #c0392b; }
+.card.fq-list { overflow: visible; }
+.fq-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 14px 16px; border-top: 1px solid #eef0f4; }
+.fq-row:first-child { border-top: 0; }
+.fq-row.is-editing { grid-template-columns: 34px minmax(0, 1fr); background: #f8fbfc; }
+.fq-no { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #eef2f6; color: #556; font-size: 12px; font-weight: 700; }
+.fq-body { min-width: 0; }
+.fq-q { display: flex; align-items: baseline; gap: 6px; font-size: 14px; font-weight: 600; color: #111; }
+.fq-q b, .fq-a b { color: #1B7686; }
+.fq-badge { flex: none; background: #e7f3f5; color: #1B7686; font-weight: 600; }
+.fq-a { margin-top: 6px; color: #555; font-size: 13px; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fq-tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.fq-tools .btn.xs { min-width: 0; padding: 0 9px; }
+.fq-form { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.fq-line { display: flex; gap: 10px; flex-wrap: wrap; }
+.fq-field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #555; min-width: 0; }
+.fq-field > span { font-weight: 600; }
+.fq-field em { font-style: normal; font-weight: 400; color: var(--muted); margin-left: 4px; }
+.fq-field-cat .select { width: 140px; }
+.fq-field-q { flex: 1; min-width: 240px; }
+.fq-field-q .input { width: 100%; }
+.fq-rte-tools { display: flex; gap: 6px; }
+.fq-rte-tools .btn.xs { min-width: 0; }
+.fq-rte { min-height: 96px; padding: 10px 12px; border: 1px solid #d5d5d5; border-radius: 4px; background: #fff; font-size: 14px; line-height: 1.7; color: #222; outline: none; overflow-wrap: anywhere; }
+.fq-rte:focus { border-color: #1B7686; box-shadow: 0 0 0 3px rgba(27, 118, 134, .12); }
+.fq-rte a { color: #1b5fd0; text-decoration: underline; }
+.fq-rte .tbd { padding: 0 4px; border-radius: 3px; background: #fff4d6; color: #9a6b00; font-size: 12px; }
+.fq-form-tools { display: flex; gap: 8px; }
+.fq-empty { margin: 0; padding: 32px 16px; text-align: center; color: var(--muted); }
+.fq-help { margin: 12px 0 0; font-size: 12px; color: var(--muted); }
+/* 12개씩 페이지 */
+.fq-pager { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; }
+.fq-pager .fq-pn { min-width: 32px; }
+.fq-pager .fq-pn.on { background: #111; color: #fff; border-color: #111; }
+.fq-pager .fq-pinfo { margin-left: 8px; font-size: 12px; color: var(--muted); }
+/* 새 질문(목록 맨 위에서 씀) */
+.fq-row.is-new { background: #f3f8ff; box-shadow: inset 3px 0 0 #2457f5; }
+.fq-row.is-new .fq-no { background: #2457f5; color: #fff; font-size: 11px; }
+/* 좁은 화면: 고치기 단추를 질문 아래로 */
+@media (max-width: 720px) {
+  .fq-row { grid-template-columns: 28px minmax(0, 1fr); }
+  .fq-tools { grid-column: 2; }
+  .fq-row.is-editing { grid-template-columns: minmax(0, 1fr); }
+  .fq-row.is-editing .fq-no { display: none; }
+}

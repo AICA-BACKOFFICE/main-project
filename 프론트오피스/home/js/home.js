@@ -19,6 +19,16 @@ function setupHome(main){
   });
   requestAnimationFrame(()=>requestAnimationFrame(()=>ax.classList.add('is-in')));
   setTimeout(()=>ax.classList.add('is-settled'),reduce?0:2200);
+  /* 터치 화면: 마우스 올리기 대신 문을 차례로 하나씩 깨움(01 → 02 → 03 → 04 → 오시는 길, 1.5초씩 — 10-14 사용자 '2.5초 너무 길다'). 들어오는 움직임이 끝난 뒤 시작, 포스터가 화면 밖이거나 탭이 숨으면 멈춤. 움직임 줄이기면 안 돎(CSS가 처음부터 컬러) */
+  if(!reduce && matchMedia('(hover: none)').matches){
+    const order=['1','2','3','4','5']; let i=-1, timer=0, seen=false, ready=false;
+    const step=()=>{ i=(i+1)%order.length; setCat(order[i]); };
+    const play=()=>{ if(timer||!ready||!seen||document.hidden) return; step(); timer=setInterval(step,1500); };
+    const stop=()=>{ clearInterval(timer); timer=0; };
+    new IntersectionObserver(([e])=>{ seen=e.isIntersecting; seen?play():stop(); },{threshold:.35}).observe(grid);
+    document.addEventListener('visibilitychange',()=>document.hidden?stop():play());
+    setTimeout(()=>{ ready=true; play(); },2200);
+  }
   if(reduce || matchMedia('(hover: none)').matches) return;
   const layers=$$('[data-depth]',grid); let raf, tx=0, ty=0;
   const onMove=e=>{ const r=grid.getBoundingClientRect();

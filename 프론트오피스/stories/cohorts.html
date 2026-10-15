@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ko" data-menu="stories" data-sub="cohorts" data-nav="side" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="only light">
+  <title>기수별 이모저모 — 선배들의 이야기 — 인공지능사관학교</title>
+  <meta name="description" content="입교식부터 수료식까지, 기수마다 있었던 일을 모아 봅니다.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="기수별 이모저모 — 선배들의 이야기 — 인공지능사관학교">
+  <meta property="og:description" content="입교식부터 수료식까지, 기수마다 있었던 일을 모아 봅니다.">
+  <link rel="icon" type="image/png" href="../common/assets/brand/symbol-blue.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
+  <link rel="stylesheet" href="../common/css/tokens.css?v=1014L">
+  <link rel="stylesheet" href="../common/css/base.css">
+  <link rel="stylesheet" href="../common/css/site.css?v=1014L">
+  <link rel="stylesheet" href="css/stories.css">
+  <link rel="stylesheet" href="css/stories-sections.css">
+  <link rel="stylesheet" href="../common/css/unify.css?v=1014L">
+  <link rel="stylesheet" href="../common/css/lnb.css">
+  <link rel="stylesheet" href="css/mast.css">
+  <link rel="stylesheet" href="css/cohort-v3.css">
+  <script src="js/cohort-v3.js" defer></script>
+  <script src="js/mast-fix.js" defer></script>
+  <script src="../common/js/menu.js" defer></script>
+  <script src="../common/js/site.js" defer></script>
+  <script src="js/stories.js" defer></script>
+</head>
+<body>
+<header class="site-header" id="siteHeader"></header>
+<!-- 본문: 디자이너 시안 '선배들의이야기_최신'(2026-10-08) → 2026-10-13 한 페이지 탭을 2뎁스별 페이지로 나눔(사용자 요청: 한눈에 보기 + 하위 메뉴마다 페이지).
+     stories/index.html = 한눈에 보기(각 2뎁스 요약 + 전체 보기) · reviews.html = 후기 · interviews.html = 인터뷰 · projects.html = 프로젝트 · cohorts.html = 기수별 이모저모
+     각 페이지는 옛 탭 라디오(t1~t4) 중 자기 것만 checked — CSS(stories.css .pane)와 js/stories.js가 그대로 동작. 다른 페이지 글 주소는 그 페이지.html#글id로 고쳐 둠
+     반복 단위(첫 항목에만 data-field 표시, 나머지는 같은 구조): 후기 카드 .idc · 후기 리스트 행 .rvr · 글 창 .ov · 인터뷰 카드 .iv · 인터뷰 상세 .ivd · 프로젝트 .pp · 기수 카드 a.st
+     칸 이름: title · summary · body · category · cohort · tag · thumbnail · author · date(common 게시판과 같음) + track · duration · question · answer · team · type -->
+<main id="main" class="stories-page" tabindex="-1">
+<h1 class="sr">기수별 이모저모 — 선배들의 이야기</h1>   <!-- 10-13 사본: 나눈 페이지 제목(화면엔 안 보임, 원본 h1.sr과 같은 방식) -->
+<div class="wrap st-mh">   <!-- 10-13 사본: 이야기 5페이지 같은 제목 줄(stories/css/mast.css). 이 페이지 제목은 위 h1.sr -->
+  <div class="mhb mhb5">
+  <span class="mhb-deco" aria-hidden="true"><i class="dc-tape"></i><i class="dc-blob"></i><span class="dc-scrap"><i class="dc-pin"></i><em>Real<br>Stories</em><i class="dc-tick"></i><i class="dc-tape2"></i></span><svg class="dc-swoosh" viewBox="0 0 240 90" fill="none" stroke="#5B8DEF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 88C24 60 42 38 58 30c10-5 18 0 14 9-4 8-16 7-15-1 1-10 18-12 38-14 40-4 90-12 140-22"/></svg></span>
+  <div class="mhb-tx"><p class="st-mh-t">먼저 다녀온 선배들의 <b>SSUL</b></p>
+  <p class="st-mh-lead">인터뷰, 후기, 프로젝트, 기수 기록까지 먼저 지나간 선배들이 남긴 이야기를 한곳에 모았어요.</p></div>
+  <nav class="mhb-st" aria-label="선배들의 이야기 바로가기"><a href="interviews.html" style="--c:#8CC3FF;--r:-6deg">인터뷰</a><a href="reviews.html" style="--c:#FFE36E;--r:4deg">후기</a><a href="projects.html" style="--c:#7FDDA8;--r:-3deg">프로젝트</a><a href="cohorts.html" style="--c:#FF9CC8;--r:6deg">기수별 이모저모</a></nav>
+  </div>
+</div>
+<input class="tr tb" autocomplete="off" type="radio" name="tab" id="t1" tabindex="-1" aria-hidden="true">
+<input class="tr tb" autocomplete="off" type="radio" name="tab" id="t2" tabindex="-1" aria-hidden="true">
+<input class="tr tb" autocomplete="off" type="radio" name="tab" id="t3" tabindex="-1" aria-hidden="true">
+<input class="tr tb" autocomplete="off" type="radio" name="tab" id="t4" checked tabindex="-1" aria-hidden="true">
+<span class="tgt2" id="go-iv"></span>
+<span class="tgt2" id="go-pr"></span>
+<span class="tgt2" id="go-coh"></span>
+<div class="st-main">
+  <section class="wrap pane" id="p-coh">
+    <div class="sh sh-row">
+      <div><p class="sh-k">기수별 이모저모</p><h2>입교식부터 수료식까지, 기수마다 이런 일이 있었어요</h2></div>
+    </div>
+    <div class="cv3" id="cv3">
+      <div class="cv3-chips" role="tablist" aria-label="기수 고르기"></div>
+      <div class="cv3-ig">
+        <div class="cv3-prof"></div>
+        <div class="cv3-diff" hidden><div class="cv3-dt"></div></div>
+        <div class="cv3-hl" role="group" aria-label="달별로 보기"></div>
+        <p class="cv3-gt"></p>
+        <div class="cv3-grid"></div>
+      </div>
+      <nav class="cv3-pg" aria-label="기수 기록 페이지"></nav>
+      <template id="cv3-diff7"><table>
+              <tr><th scope="row">수업 방식</th><td class="old">준비·성장 일부 온라인 병행</td><td class="new">AI 준비과정(VOD) 외 전 과정 오프라인</td></tr>
+              <tr><th scope="row">프로젝트</th><td class="old">520시간</td><td class="new">720시간 — 기업연계·실증·창업 중 택 1</td></tr>
+              <tr><th scope="row">해커톤</th><td class="old">전 직군 통합 2박 3일</td><td class="new">폐지</td></tr>
+              <tr><th scope="row">트랙 구성</th><td class="old">7개 트랙</td><td class="new">직군별 심화 + 산업 도메인 2층 구조</td></tr>
+              <tr><th scope="row">전형</th><td class="old">서류 → 인터뷰 → Pre-Training → 퀴즈</td><td class="new">서류 → 코딩테스트 → 면접·인적성</td></tr>
+              <tr><th scope="row">지원금</th><td class="old">생활지원금</td><td class="new">생활지원금 + 프로젝트 지원금 200만원 신설</td></tr>
+              <tr><th scope="row">지원 대상</th><td class="old">4학년·졸업예정·졸업유예자 중심</td><td class="new">졸업생·스타트업 재직자까지 확대</td></tr>
+            </table></template>
+      <template id="cv3-data">
+<a class="st c7 g6" href="#" style="--c:#10203D">
+            <div class="ph"><img class="illu" src="assets/lobby-laptops-sm.jpg" alt="로비 테이블에서 노트북을 펴고 함께 작업하는 교육생들" loading="lazy" decoding="async" width="880" height="550" data-field="thumbnail"></div>
+            <h3 data-field="title">AI카페에서 시작된 팀</h3>
+            <p data-field="summary">도시락 데우다 만난 사람들과 그대로 한 팀이 됐습니다. 프로젝트룸 예약 전쟁의 서막.</p>
+            <div class="mt"><span class="cg" data-field="cohort">7기</span><span class="dt" data-field="date">2026. 08. 20</span></div>
+          </a>
+<a class="st c7 g2" href="#" style="--c:#10203D">
+            <div class="ph">
+              <svg class="illu" viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#2457F5"/>
+   <rect x="54" y="44" width="212" height="132" rx="12" fill="#fff"/>
+   <rect x="76" y="68" width="120" height="12" rx="6" fill="#2457F5"/>
+   <rect x="76" y="94" width="168" height="8" rx="4" fill="#D7DEF4"/>
+   <rect x="76" y="112" width="140" height="8" rx="4" fill="#D7DEF4"/>
+   <rect x="76" y="136" width="76" height="20" rx="10" fill="#FFE600"/>
+   <path d="M286 92h76a14 14 0 0 1 14 14v46a14 14 0 0 1-14 14h-30l-14 18v-18h-32a14 14 0 0 1-14-14v-46a14 14 0 0 1 14-14z" fill="#22D3EE"/>
+   <rect x="296" y="112" width="52" height="7" rx="3.5" fill="#fff"/>
+   <rect x="296" y="128" width="36" height="7" rx="3.5" fill="#fff" opacity=".66"/>
+   <rect x="92" y="204" width="216" height="16" rx="8" fill="#15368F"/></svg>
+            </div>
+            <h3>도메인 선택의 날</h3>
+            <p>헬스케어부터 기획까지 여섯 갈래. 반쯤은 흥미로, 반쯤은 취업 시장을 보고 골랐습니다.</p>
+            <div class="mt"><span class="cg">7기</span><span class="dt">2026. 07. 11</span></div>
+          </a>
+<a class="st c7 g1" href="#" data-yt="https://www.youtube.com/watch?v=asfChHljIC0" style="--c:#10203D">
+            <div class="ph">
+              <img class="illu" src="assets/monitor-briefing.jpg" alt="" loading="lazy" decoding="async" width="880" height="495">
+              <span class="play"><i></i></span>
+              <span class="dur">5:40</span>
+            </div>
+            <h3>AI카페·프로젝트룸 둘러보기</h3>
+            <p>수업 말고 나머지 시간을 보내는 공간들을 한 바퀴 돌았습니다.</p>
+            <div class="mt"><span class="cg">7기</span><span class="dt">2026. 06. 10</span></div>
+          </a>
+<a class="st c7 g0 g1" href="#" style="--c:#10203D">
+            <div class="ph"><img class="illu" src="assets/classroom-laptops-sm.jpg" alt="강의실에서 노트북으로 실습하는 교육생들" loading="lazy" decoding="async" width="880" height="550"></div>
+            <h3>전면 오프라인으로 바뀐 첫 학기</h3>
+            <p>준비과정만 VOD로 남고 나머지가 전부 강의장으로 들어왔습니다. 출석과 팀 작업의 리듬이 어떻게 달라졌는지.</p>
+            <div class="mt"><span class="cg">7기</span><span class="dt">2026. 06. 02</span></div>
+          </a>
+<a class="st c7 g0" href="#" data-yt="https://www.youtube.com/watch?v=47e6pa3Z-Mg" style="--c:#10203D">
+            <div class="ph">
+              <img class="illu" src="assets/event-hall.jpg" alt="" loading="lazy" decoding="async" width="880" height="495">
+              <span class="play"><i></i></span>
+              <span class="dur">3:12</span>
+            </div>
+            <h3>7기 입교식 하이라이트</h3>
+            <p>테이프를 끊고 여덟 달이 시작된 날을 3분으로 담았습니다.</p>
+            <div class="mt"><span class="cg">7기</span><span class="dt">2026. 05. 29</span></div>
+          </a>
+<a class="st c6 g9 g7" href="#" style="--c:#2457F5">
+            <div class="ph"><img class="illu" src="assets/table-team-sm.jpg" alt="책상에 둘러앉아 이야기를 나누는 교육생들" loading="lazy" decoding="async" width="880" height="550"></div>
+            <h3>AI커리어 빌드업 &amp; 동문 네트워크</h3>
+            <p>김대중컨벤션센터에서 선배 기수들과 처음 마주 앉은 날.</p>
+            <div class="mt"><span class="cg">6기</span><span class="dt">2025. 11. 26</span></div>
+          </a>
+<a class="st c6 g4 g6" href="#" data-yt="https://www.youtube.com/watch?v=Ye5XEwUNUxk" style="--c:#2457F5">
+            <div class="ph">
+              <img class="illu" src="assets/presentation-books.jpg" alt="" loading="lazy" decoding="async" width="880" height="495">
+              <span class="play"><i></i></span>
+              <span class="dur">4:47</span>
+            </div>
+            <h3>도약과정 중간발표회 현장</h3>
+            <p>절반쯤 온 팀들이 무엇을 보여줬는지 기록했습니다.</p>
+            <div class="mt"><span class="cg">6기</span><span class="dt">2025. 10. 22</span></div>
+          </a>
+<a class="st c6 g5" href="#" style="--c:#2457F5">
+            <div class="ph"><img class="illu" src="assets/team-pointing.jpg" alt="화면을 가리키며 함께 문제를 푸는 팀" loading="lazy" decoding="async" width="1000" height="562"></div>
+            <h3>마지막 해커톤, 소노벨 변산 2박 3일</h3>
+            <p>전 직군이 한자리에 모인 마지막 기수. 밤새 만들고 아침에 발표했습니다.</p>
+            <div class="mt"><span class="cg">6기</span><span class="dt">2025. 10. 18</span></div>
+          </a>
+<a class="st c6 g3" href="#" data-yt="https://www.youtube.com/watch?v=o8zNKqk8riA" style="--c:#2457F5"><div class="ph"><img class="illu" src="assets/exhibition-booth.jpg" alt="" loading="lazy" decoding="async" width="880" height="495"><span class="play"><i></i></span><span class="dur">6:22</span></div>
+            <h3>기업탐방 브이로그 — 네이버·AWS</h3>
+            <p>하루에 두 곳을 돌며 실무자에게 직접 들은 이야기입니다.</p>
+            <div class="mt"><span class="cg">6기</span><span class="dt">2025. 09. 19</span></div></a>
+<a class="st c6 g0" href="#" style="--c:#2457F5"><div class="ph"><img class="illu" src="assets/event-hall.jpg" alt="행사장을 가득 채운 교육생들" loading="lazy" decoding="async" width="880" height="495"></div>
+            <h3>1,551명이 지원한 해</h3>
+            <p>10개 반, 7개 트랙. 입교생 열에 여덟이 비전공자였습니다.</p>
+            <div class="mt"><span class="cg">6기</span><span class="dt">2025. 05. 12</span></div></a>
+<a class="st c5 g4 g6" href="#" style="--c:#2457F5">
+            <div class="ph"><img class="illu" src="assets/presentation-books.jpg" alt="책상 위에 쌓인 발표 자료집" loading="lazy" decoding="async" width="880" height="495"></div>
+            <h3>중간발표회에서 갈린 팀들</h3>
+            <p>절반은 방향을 틀었고, 절반은 그대로 갔습니다. 돌아보면 둘 다 맞았습니다.</p>
+            <div class="mt"><span class="cg">5기</span><span class="dt">2024. 10. 22</span></div>
+          </a>
+<a class="st c5 g3" href="#" style="--c:#2457F5">
+            <div class="ph"><img class="illu" src="assets/monitor-briefing.jpg" alt="모니터 앞에서 설명을 듣는 교육생들" loading="lazy" decoding="async" width="880" height="495"></div>
+            <h3>기업탐방 — 이스트소프트·네이버·AWS</h3>
+            <p>회사가 실제로 어떻게 굴러가는지 처음 본 3일.</p>
+            <div class="mt"><span class="cg">5기</span><span class="dt">2024. 09. 05</span></div>
+          </a>
+<a class="st c4 g8" href="#" style="--c:#6E97F2">
+            <div class="ph"><img class="illu" src="assets/award-team.jpg" alt="성과공유회에서 상장을 든 수상 팀" loading="lazy" decoding="async" width="880" height="495"></div>
+            <h3>첫 성과공유회</h3>
+            <p>강당을 빌려 한 해를 정리했습니다. 발표 10분, 준비 2주.</p>
+            <div class="mt"><span class="cg">4기</span><span class="dt">2023. 12. 14</span></div>
+          </a>
+<a class="st c4 g7" href="#" style="--c:#6E97F2">
+            <div class="ph"><img class="illu" src="assets/exhibition-booth.jpg" alt="전시 부스를 둘러보는 참가자들" loading="lazy" decoding="async" width="880" height="495"></div>
+            <h3>취업박람회 부스를 돌던 하루</h3>
+            <p>이력서 30부를 들고 갔는데 마지막 한 장까지 돌렸습니다.</p>
+            <div class="mt"><span class="cg">4기</span><span class="dt">2023. 11. 30</span></div>
+          </a>
+<a class="st c3 g8" href="#" style="--c:#8FA8D8">
+            <div class="ph">
+              <svg class="illu" viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#FFE600"/>
+   <path d="M150 54h100v56c0 30-22 52-50 52s-50-22-50-52z" fill="#fff"/>
+   <path d="M150 66h-28a24 24 0 0 0 28 42zM250 66h28a24 24 0 0 1-28 42z" fill="#fff" opacity=".7"/>
+   <rect x="186" y="162" width="28" height="28" fill="#15368F"/>
+   <rect x="152" y="190" width="96" height="20" rx="7" fill="#15368F"/>
+   <circle cx="200" cy="90" r="20" fill="#FFE600"/>
+   <path d="M60 220h280" stroke="#8A6B14" stroke-width="8" stroke-linecap="round" opacity=".35"/></svg>
+            </div>
+            <h3>성과공유회 및 수료식</h3>
+            <p>여덟 달을 함께 보낸 사람들이 마지막으로 모였습니다.</p>
+            <div class="mt"><span class="cg">3기</span><span class="dt">2022. 12. 15</span></div>
+          </a>
+<a class="st c3 g8" href="#" data-yt="https://www.youtube.com/watch?v=5eW1KVnAvlY" style="--c:#8FA8D8">
+            <div class="ph">
+              <img class="illu" src="assets/award-team.jpg" alt="" loading="lazy" decoding="async" width="880" height="495">
+              <span class="play"><i></i></span>
+              <span class="dur">11:30</span>
+            </div>
+            <h3>3기 성과공유회 및 수료식</h3>
+            <p>성과 발표부터 수료증 수여까지, 하루를 통째로 담았습니다.</p>
+            <div class="mt"><span class="cg">3기</span><span class="dt">2022. 12. 15</span></div>
+          </a>
+<a class="st c3 g0" href="#" style="--c:#8FA8D8">
+            <div class="ph"><img class="illu" src="assets/event-hall.jpg" alt="입교식 행사장 모습" loading="lazy" decoding="async" width="880" height="495"></div>
+            <h3>3기 입교식 — 테이프를 끊던 날</h3>
+            <p>광주 동구 제봉로 92에 처음 모인 날의 기록.</p>
+            <div class="mt"><span class="cg">3기</span><span class="dt">2022. 06. 15</span></div>
+          </a>
+      </template>
+    </div>
+  </section>
+</div>
+<div class="cv3-m" role="dialog" aria-modal="true" aria-labelledby="cv3m-t" hidden>
+  <div class="cv3-m-bg"></div>
+  <div class="cv3-m-box">
+    <div class="cv3-m-media"></div>
+    <div class="cv3-m-side">
+      <div class="cv3-m-hd"><span class="cv3-av"></span><b class="cv3-m-acc"></b><button class="cv3-m-x" type="button" aria-label="닫기">&times;</button></div>
+      <div class="cv3-m-body"><h3 id="cv3m-t"></h3><p></p></div>
+      <div class="cv3-m-ft"><div class="cv3-m-act"><button type="button" class="cv3-like" aria-pressed="false" aria-label="좋아요"><svg viewBox="0 0 24 24"><path d="M12 20.3s-8-4.9-9.4-10C1.6 6.6 4 3.7 7.2 3.7c2.2 0 3.7 1.2 4.8 3 1.1-1.8 2.6-3 4.8-3 3.2 0 5.6 2.9 4.6 6.6C20 15.4 12 20.3 12 20.3z"/></svg></button><button type="button" class="cv3-save" aria-pressed="false" aria-label="저장"><svg viewBox="0 0 24 24"><polygon points="20 21 12 13.44 4 21 4 3 20 3 20 21"/></svg></button></div><time></time></div>
+    </div>
+  </div>
+  <div class="cv3-m-nav"><button type="button" class="pv">← 이전</button><b class="no"></b><button type="button" class="nx">다음 →</button></div>
+</div>
+</div>
+</main>
+<footer class="site-footer" id="siteFooter" data-note="본 사이트는 카테고리·콘텐츠 구성안을 확인하기 위한 시안이며, 표시된 수치·일정·혜택은 모두 더미 데이터입니다."></footer>
+</body>
+</html>

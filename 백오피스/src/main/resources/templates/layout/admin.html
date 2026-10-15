@@ -10,6 +10,7 @@
   <link rel="stylesheet" th:href="@{/css/admin.css}">
   <link rel="stylesheet" th:if="${menu == 'dashboard' or menu == 'stats'}" th:href="@{/css/dashboard.css}">
   <link rel="stylesheet" th:if="${menu == 'life-photos'}" th:href="@{/css/page/life-photos.css}">
+  <link rel="stylesheet" th:if="${menu == 'faq'}" th:href="@{/css/page/faq.css}">
 </head>
 <body>
 
@@ -21,9 +22,6 @@
     </a>
     <div class="gnb-right" th:if="${me != null}">
       <a class="btn-write" th:href="@{/admin/posts/new}">글쓰기</a>
-      <a class="gnb-icon" th:href="@{/admin/posts(status='PENDING')}" title="답변대기 게시물">
-        <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-      </a>
       <details class="gnb-user">
         <summary><span class="avatar" th:text="${#strings.substring(me.name, 0, 1)}">홍</span></summary>
         <div class="gnb-drop">
@@ -95,7 +93,10 @@
           <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 13h8M8 16h5"/></svg>
           카테고리 페이지 관리
         </div>
-        <a th:each="p : ${categoryPages}" th:classappend="${menu == 'page-' + p.id} ? 'on'"
+        <!--/* 하위 페이지(parent — 선배들의 이야기 › 후기 · 인터뷰 · 프로젝트 · 기수별 이모저모)는 따로 두지 않고 위 페이지 하나로(인사교 라이프처럼).
+               하위 화면은 편집 화면 안의 페이지 옆 메뉴로 오가요 */-->
+        <a th:each="p : ${categoryPages.?[parent == null]}"
+           th:classappend="${menu == 'page-' + p.id or #strings.startsWith(menu ?: '', 'page-' + p.id + '-')} ? 'on'"
            th:href="@{/admin/pages/{id}/edit(id=${p.id})}" th:text="${p.title}">인사교 알아보기</a>
       </div>
 
@@ -133,7 +134,7 @@
             <a th:classappend="${menu == 'life-photos' and lifeSection == 'fun'} ? 'on'" data-life-section="fun" th:href="@{/admin/pages/life-photos(section='fun')}">수업 끝나고, 바람 쐬러 가요</a>
           </div>
         </div>
-        <a th:classappend="${menu == 'faq'} ? 'on'" th:href="@{/admin/faq}">지원 전 Check FAQ 관리</a>
+        <a th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'faq'} ? 'on'" th:href="@{/admin/faq}">지원 전 Check FAQ 관리</a>
       </div>
 
       <div class="lnb-group">
@@ -170,7 +171,8 @@
 
 <footer class="foot">Copyright © 2026 AICA</footer>
 
-<script th:src="@{/js/admin.js}"></script>
+<script th:src="@{/js/admin.js(v='20261014c')}"></script>
+<script th:src="@{/js/preview-modal.js}"></script>
 <th:block th:replace="${scripts}"></th:block>
 </body>
 </html>

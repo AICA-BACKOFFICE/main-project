@@ -140,6 +140,23 @@ public class CategoryPageService {
         return Files.isRegularFile(draftHtml(page));
     }
 
+    /**
+     * 아직 반영하지 않은 임시저장본이 사이트 파일과 어디가 다른지(사람이 읽을 말로, 앞의 몇 곳만)와 임시저장한 때. 임시저장이 없으면 null.
+     * FAQ 관리 · 인사교 라이프 게시물 관리가 '임시저장이 있어 저장할 수 없어요' 안내에 함께 보여 준다.
+     */
+    public Map<String, Object> draftSummary(CategoryPage page) {
+        if (!hasDraft(page)) {
+            return null;
+        }
+        DraftMeta meta = readMeta(page);
+        List<Map<String, String>> all = DraftChanges.between(published(page), read(draftHtml(page)));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("savedAt", meta == null ? null : meta.savedAt());
+        out.put("changes", all.size() > DraftChanges.MAX ? new ArrayList<>(all.subList(0, DraftChanges.MAX)) : all);
+        out.put("more", Math.max(0, all.size() - DraftChanges.MAX));
+        return out;
+    }
+
     /** 사이트에 반영되어 있는 파일 */
     public String published(CategoryPage page) {
         if (!exists(page)) {
@@ -165,6 +182,8 @@ public class CategoryPageService {
         state.put("draftSavedAt", meta == null ? null : meta.savedAt());
         // 임시저장한 뒤에 사이트 파일이 다른 곳에서 바뀌었으면 알려 준다(반영하면 그 변경을 덮어쓰게 되므로)
         state.put("conflict", hasDraft && meta != null && !Objects.equals(meta.baseHash(), sha1(published)));
+        // 편집기가 연 사이트 파일의 지문: 임시저장 · 반영할 때 '그사이 다른 곳(FAQ 관리 등)에서 바뀌었는지' 보는 기준
+        state.put("publishedHash", sha1(published));
         state.put("publishedAt", lastModified(page.path()));
         return state;
     }
@@ -172,6 +191,11 @@ public class CategoryPageService {
     // ── 임시저장 · 반영 ──
 
     public Map<String, Object> saveDraft(CategoryPage page, String html) {
+        return saveDraft(page, html, null);
+    }
+
+    /** base: 편집기가 처음 연 사이트 파일의 지문. 첫 임시저장 전에 다른 곳에서 사이트 파일이 바뀌었으면 그 차이가 '바뀜'으로 남는다 */
+    public Map<String, Object> saveDraft(CategoryPage page, String html, String base) {
         requirePage(html);
         synchronized (lock(page)) {
             String published = published(page);
@@ -179,7 +203,8 @@ public class CategoryPageService {
                 removeDraft(page);
             } else {
                 DraftMeta previous = hasDraft(page) ? readMeta(page) : null;
-                String baseHash = previous != null && previous.baseHash() != null ? previous.baseHash() : sha1(published);
+                String baseHash = previous != null && previous.baseHash() != null ? previous.baseHash()
+                        : base != null && HASH.matcher(base).matches() ? base : sha1(published);
                 writeAtomic(draftHtml(page), html.getBytes(UTF_8));
                 writeAtomic(draftMeta(page), toJsonBytes(new DraftMeta(baseHash, Instant.now().toString())));
             }
@@ -191,6 +216,25 @@ public class CategoryPageService {
         synchronized (lock(page)) {
             removeDraft(page);
             return state(page);
+        }
+    }
+
+    /**
+     * 편집기의 '사이트에 반영': 편집기가 연 뒤 사이트 파일이 다른 곳(FAQ 관리 · 인사교 라이프 게시물 관리 등)에서 바뀌었으면
+     * 그 변경을 몰래 덮어쓰지 않게 멈춘다(force 면 알고 덮어씀). 기준은 임시저장본의 기준, 없으면 편집기가 보낸 base.
+     */
+    public Map<String, Object> publishEdited(CategoryPage page, String html, String base, boolean force) {
+        requirePage(html);
+        synchronized (lock(page)) {
+            String published = published(page);
+            if (!force && !html.equals(published)) {
+                DraftMeta meta = hasDraft(page) ? readMeta(page) : null;
+                String from = meta != null && meta.baseHash() != null ? meta.baseHash() : base;
+                if (from != null && HASH.matcher(from).matches() && !from.equals(sha1(published))) {
+                    throw new PageConflictException("편집을 시작한 뒤에 사이트 파일이 다른 곳(FAQ 관리 · 인사교 라이프 게시물 관리 등)에서 바뀌었어요.");
+                }
+            }
+            return publish(page, html);
         }
     }
 
@@ -304,6 +348,26 @@ public class CategoryPageService {
         return found;
     }
 
+    /**
+     * 미디어 관리의 그림을 이 페이지에서 쓰도록 페이지 폴더의 assets/uploads 에 복사한다(사이트는 사이트 폴더 안의 파일만 쓰므로).
+     * 같은 그림을 이미 가져왔으면 그 파일을 그대로 쓴다.
+     */
+    public String importImage(CategoryPage page, String name, byte[] data) {
+        Path dir = page.dir().resolve("assets").resolve("uploads");
+        if (data != null && Files.isDirectory(dir)) {
+            try (var files = Files.list(dir)) {
+                for (Path file : files.filter(Files::isRegularFile).toList()) {
+                    if (Files.size(file) == data.length && java.util.Arrays.equals(Files.readAllBytes(file), data)) {
+                        return "assets/uploads/" + file.getFileName();
+                    }
+                }
+            } catch (IOException e) {
+                throw storageError("그림을 가져오지 못했어요.", e);
+            }
+        }
+        return upload(page, name, data);
+    }
+
     /** 올린 그림은 편집 중인 페이지 폴더의 assets/uploads 에 둔다(페이지에서 assets/uploads/… 로 바로 씀). */
     public String upload(CategoryPage page, String originalName, byte[] data) {
         String name = safeUploadName(originalName);
@@ -395,8 +459,17 @@ public class CategoryPageService {
         config.put("frontMode", "static");
         config.put("initialPage", current.id());
         config.put("pageUrl", contextPath + "/admin/pages/{id}/edit");
+        // 이미지 바꾸기 창에서 미디어 관리의 그림도 고를 수 있게(올린 그림은 미디어 관리에도 함께 남아요)
+        config.put("media", Map.of("label", "미디어 관리", "url", contextPath + "/admin/media"));
         if (csrf != null) {
             config.put("csrf", Map.of("header", csrf.getHeaderName(), "token", csrf.getToken()));
+        }
+        // 하위 페이지(선배들의 이야기 › 후기 등)는 parent 로 묶어, 편집기 목록에는 위 페이지 하나만 보여요(페이지 안 옆 메뉴로 오감)
+        Map<String, String> parents = new LinkedHashMap<>();
+        for (BackofficeProperties.Item item : this.config.getItems()) {
+            if (item.getParent() != null && !item.getParent().isBlank()) {
+                parents.put(item.getId(), item.getParent());
+            }
         }
         List<Map<String, Object>> list = new ArrayList<>();
         for (CategoryPage page : pages) {
@@ -406,6 +479,9 @@ public class CategoryPageService {
             item.put("file", page.file());
             item.put("url", siteUrl(contextPath, page.file()));
             item.put("path", page.file());
+            if (parents.containsKey(page.id())) {
+                item.put("parent", parents.get(page.id()));
+            }
             list.add(item);
         }
         config.put("pages", list);
@@ -512,9 +588,13 @@ public class CategoryPageService {
                     }
                     return;
                 } catch (FileSystemException e) {
-                    if (attempt >= 10 || e instanceof NoSuchFileException) {
+                    if (e instanceof NoSuchFileException) {
                         Files.deleteIfExists(temp);
                         throw e;
+                    }
+                    if (attempt >= 6) {
+                        overwriteInPlace(target, bytes, temp, e);
+                        return;
                     }
                     sleep(attempt * 100L);
                 }
@@ -522,6 +602,19 @@ public class CategoryPageService {
         } catch (IOException e) {
             throw storageError("파일을 저장하지 못했어요.", e);
         }
+    }
+
+    /** 이름 바꾸기가 끝내 막히면(다른 프로그램이 파일을 열어 둔 채 놓지 않을 때) 그 자리에 덮어쓴다. 그것도 안 되면 처음 오류를 그대로 */
+    private static void overwriteInPlace(Path target, byte[] bytes, Path temp, FileSystemException cause) throws IOException {
+        try {
+            Files.write(target, bytes);
+        } catch (IOException e) {
+            cause.addSuppressed(e);
+            Files.deleteIfExists(temp);
+            throw cause;
+        }
+        Files.deleteIfExists(temp);
+        log.warn("{} 파일을 다른 프로그램이 잡고 있어 그 자리에 덮어썼습니다({}).", target.getFileName(), cause.getClass().getSimpleName());
     }
 
     private static void sleep(long millis) {
@@ -581,6 +674,8 @@ public class CategoryPageService {
             throw new IllegalStateException(e);
         }
     }
+
+    private static final Pattern HASH = Pattern.compile("[0-9a-f]{40}");
 
     static String sha1(String text) {
         try {
@@ -678,6 +773,13 @@ public class CategoryPageService {
     }
 
     /** 파일 저장·읽기 실패(디스크·잠금 등). API 는 500 으로 메시지를 돌려준다. */
+    /** 편집기가 연 뒤 사이트 파일이 바뀌어 반영을 멈춤(409) */
+    public static class PageConflictException extends RuntimeException {
+        public PageConflictException(String message) {
+            super(message);
+        }
+    }
+
     public static class PageStorageException extends RuntimeException {
         public PageStorageException(String message, Throwable cause) {
             super(message, cause);

@@ -7,6 +7,7 @@ const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 const { exec } = require('node:child_process');
+const { pipeline } = require('node:stream');
 
 const APP_ID = 'insagyo-frontoffice';
 const LIVE_SCRIPT = path.join(__dirname, 'live.js');
@@ -151,7 +152,8 @@ function start({ port = 4181, distRoot = path.resolve(__dirname, '..', 'dist'), 
     }
     res.writeHead(200, { ...headers, 'Content-Length': stat.size });
     if (req.method === 'HEAD') return res.end();
-    fs.createReadStream(target).on('error', () => res.destroy()).pipe(res);
+    // 받는 쪽이 중간에 끊겨도 파일을 꼭 닫아요(안 닫으면 윈도우에서 백오피스가 이 파일을 다시 쓰지 못해요)
+    pipeline(fs.createReadStream(target), res, () => {});
   }
 
   const server = http.createServer(async (req, res) => {

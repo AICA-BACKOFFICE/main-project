@@ -1,20 +1,20 @@
 /* =========================================================
    선배들의 이야기 — 디자이너 시안 '선배들의이야기(히어로변경+지학사)'(2026-10-07)의 본문 스타일
-   시안 style.css에서 본문(표지 · 후기 · 인터뷰 · 프로젝트 · 기수별 모아보기 · 글 창 · 쓰기 창 · 기수 기록 창)에
+   시안 style.css에서 본문(표지 · 후기 · 인터뷰 · 프로젝트 · 기수별 이모저모 · 글 창 · 쓰기 창 · 기수 기록 창)에
    쓰이는 규칙만 원래 순서 · @media 그대로 옮기고 모든 선택자 앞에 .stories-page(우리 <main>)를 붙임.
    - 시안 <main> → div.st-main (선택자는 div:where(.st-main): main과 같은 특이도)
    - 시안 html · body로 시작하는 선택자는 그 뒤에 .stories-page를 넣어 특이도 관계를 그대로 둠
    - 시안 :root 변수 · body 기본값은 아래 .stories-page에. 공통 :root 토큰과 이름 · 값이 같은 --paper · --ink · --line · --graphite · --blue는
      다시 정하지 않고 공통 tokens.css 값을 씀(공통 값이 바뀌면 이 페이지도 따라 바뀜. .cover 안 --paper · --ink · --line은 표지 자체 값)
-   - 글꼴: 시안 "Paperlogy" → 공통 "Paperlogy Text"(같은 굵기 구간), "Giants Title" → "Giants", base64 글꼴은 버림
+   - 글꼴: 시안 "Paperlogy" → 공통 "Paperlogy"(같은 굵기 구간), "Giants Title" → "Giants", base64 글꼴은 버림
    - 버린 것: 자체 헤더 · GNB · 검색 패널 · 푸터 · 플로팅 버튼 규칙
    정리(2026-10-07, 화면 그대로): 시안이 뒤에서 덮어쓰던 층 중 결과가 같은 것을 걷어 냄 — 어떤 폭 · 상태에서도 이기지 못하던 선언,
    떼도 같은 !important와 html body · body 접두, 같은 선택자로 흩어진 규칙(사이 규칙과 겹치지 않을 때만 합침), 쓰는 곳이 없는 변수 27개 ·
    늘 숨은 흐르는 글띠(.lbig). 남은 !important · body 접두는 떼면 화면이 바뀌는 것(시안 층끼리의 우선순위)
    ========================================================= */
 .stories-page{
-  --g900:#14233F; --g800:#1C2D4D; --g700:#3C4A63; --g600:#566175; --g500:#7A8597; --g300:#D3D9E1; --g200:#DFE4EA; --g100:#E9EEF3; --g50:#F5F7F6; --pri:#1F4ED8; --f:"Paperlogy Text","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-  --edge:#D3D9E1; --disp:"Giants","Paperlogy Title","Paperlogy Text",sans-serif; --num:"Anton","Giants",Impact,sans-serif; --ease:all .2s cubic-bezier(.22,.61,.36,1);
+  --g900:#14233F; --g800:#1C2D4D; --g700:#3C4A63; --g600:#566175; --g500:var(--muted); --g300:#D3D9E1; --g200:#DFE4EA; --g100:#E9EEF3; --g50:#F5F7F6; --pri:var(--primary); --f:"Paperlogy","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --edge:#D3D9E1; --disp:"Giants","Paperlogy","Paperlogy",sans-serif; --num:"Anton","Giants",Impact,sans-serif; --ease:all .2s cubic-bezier(.22,.61,.36,1);
   --l-blue:#009dff;--l-eb:#2b75ff;--l-yel:#fdd000;--l-cream:#ffeeb2; --l-ink:#101116;--l-soft:#6f7480;--l-line:rgba(16,17,22,.13);--l-card:#bfc4cd;
   /* 시안 body 기본값 */
   font-family:var(--f);background:var(--paper);
@@ -22,10 +22,9 @@
   font-synthesis-weight:auto; /* 공통 html은 none — 시안은 Anton 700 등을 굵게 합성해 보임 */
   container-type:inline-size; /* 표지 글 시작 · 꽉 찬 띠를 본문 폭(cqw)으로 계산하는 기준 — 아래 '정렬 · 여백 기준' */}
 /* 공통 base.css와 시안 기본값 차이 되돌리기: 시안은 버튼 글꼴 · 색이 브라우저 기본, 의사 요소는 content-box */
-.stories-page button{font:revert;color:revert}
+.stories-page button{font:revert;font-family:inherit;color:revert}   /* 10-13: 글꼴은 물려받기(전에는 Arial) */
 .stories-page ::before,.stories-page ::after{box-sizing:content-box}
 /* 기수 기록 창이 열린 동안 바탕 스크롤 잠금(stories.js가 body에 붙임) */
-body.cm-lock{overflow:hidden}
 
 .stories-page *{margin:0;padding:0}
 .stories-page a{text-decoration:none}
@@ -59,12 +58,6 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
   line-height:1.12;letter-spacing:-.02em}
 .stories-page .sh p{font-size:17px;line-height:27.2px;color:var(--graphite)}
 /* ───────── 기수별 스토리 — 좌 레일 필터 + 2열 ───────── */
-.stories-page .arch{display:grid;align-items:start;grid-template-columns:1fr;gap:0}
-.stories-page .rail h3{margin-bottom:10px;font-size:13px;font-weight:600;line-height:19px;color:var(--g500);display:none}
-.stories-page .rail h3+div{margin-bottom:28px}
-.stories-page .rail label::before{position:absolute;left:0;top:7px;bottom:7px;width:2px;
-  border-radius:2px;transition:var(--ease);display:none}
-.stories-page .rail label b{font-weight:400}
 .stories-page .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 .stories-page .st h3{
   transition:var(--ease);display:-webkit-box;
@@ -76,25 +69,9 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
   background:var(--c);color:#fff;font-size:12px;font-weight:600;line-height:24px;border-radius:999px}
 .stories-page .st .mt .dt{margin-left:auto;font-size:13px;line-height:19px;color:var(--g500)}
 /* 두 축을 각각 숨기는 규칙으로 겹쳐 쓴다 — AND 필터가 공짜로 나온다 */
-@media (max-width:1100px){
-.stories-page .arch:has(#fc_all:checked) .rail label[for=fc_all] em{color:rgba(255,255,255,.7)}
-}
-@media (max-width:1100px){
-.stories-page .arch:has(#fc_7:checked) .rail label[for=fc_7] em{color:rgba(255,255,255,.7)}
-}
-@media (max-width:1100px){
-.stories-page .arch:has(#fc_6:checked) .rail label[for=fc_6] em{color:rgba(255,255,255,.7)}
-}
-@media (max-width:1100px){
-.stories-page .arch:has(#fc_mid:checked) .rail label[for=fc_mid] em{color:rgba(255,255,255,.7)}
-}
-.stories-page .arch:has(#fc_all:checked) .diff,
-.stories-page .arch:has(#fc_7:checked) .diff{display:block}
 /* 7기 변경점 */
 .stories-page .diff{display:none;margin-bottom:40px;
   break-inside:avoid}
-.stories-page .diff .lb{display:inline-flex;align-items:center;height:24px;padding:0 9px;
-  font-size:12px;font-weight:600;line-height:24px}
 .stories-page .diff h3{margin-top:10px}
 .stories-page .diff table{width:100%;border-collapse:collapse;margin-top:14px}
 .stories-page .diff th,
@@ -106,46 +83,8 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .diff tr:last-child th,
 .stories-page .diff tr:last-child td{border-bottom:0}
 /* ───────── 우수 프로젝트 — 라디오 캐러셀 ───────── */
-.stories-page .pr{position:relative}
 /* 양옆 56px 는 화살표 자리 — 내용은 그 안쪽에서 시작한다 */
-.stories-page .pr .stage{
-  display:flex;flex-direction:column;justify-content:center;padding:24px 72px 0}
-.stories-page .pr .pp{display:none;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:6%;align-items:center}
-.stories-page .pr .tags{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
-.stories-page .pr .tags span{display:inline-flex;align-items:center;height:26px;padding:0 10px;
-  font-size:13px;line-height:26px;border-radius:999px;border:1px solid var(--l-line);color:var(--l-eb);font-weight:700}
-.stories-page .pr .sum{max-width:560px;margin-top:18px;font-size:17px;line-height:1.7;color:#55595f}
-.stories-page .pr .info{flex-wrap:wrap;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-top:28px;padding-top:22px;border-top:1px solid var(--l-line)}
-.stories-page .pr .info dt{line-height:17px;font-family:var(--num);font-size:15px;letter-spacing:.06em;color:var(--l-eb)}
-.stories-page .pr .info dd{margin-top:4px;line-height:22px;font-weight:700;color:var(--l-ink)}
 /* 좌우 화살표 — 보이는 칸 안에만 있으니 라디오가 바뀌면 같이 바뀐다 */
-.stories-page .pr .arw{position:absolute;top:50%;transform:translateY(-50%);z-index:3;
-  cursor:pointer;
-  display:grid;place-items:center;
-  box-shadow:0 4px 14px rgba(0,27,55,.14);transition:var(--ease);width:52px;height:52px;border:1.5px solid #1c1c1c;border-radius:50%;background:#fff;color:var(--l-ink)}
-.stories-page .pr .arw:hover{box-shadow:0 6px 18px rgba(0,27,55,.2);
-  transform:translateY(-50%) scale(1.06);background:var(--l-blue);border-color:var(--l-blue);color:#fff}
-.stories-page .pr .arw svg{width:16px;height:16px}
-.stories-page .pr .strip{display:flex;flex-wrap:wrap;gap:12px;margin-top:64px;padding-top:28px;border-top:1px solid var(--l-line)}
-.stories-page .pr .strip label{position:relative;overflow:hidden;cursor:pointer;
-  opacity:.5;width:150px;border-radius:14px;outline:2px solid transparent;outline-offset:3px;transition:transform .2s,outline-color .2s}
-.stories-page .pr .strip label .illu{aspect-ratio:16/10}
-.stories-page #pr0:checked~.pr .pp0{display:grid}
-.stories-page #pr0:checked~.pr .strip label[for=pr0]{opacity:1;outline-color:var(--pri)}
-.stories-page #pr1:checked~.pr .pp1{display:grid}
-.stories-page #pr1:checked~.pr .strip label[for=pr1]{opacity:1;outline-color:var(--pri)}
-.stories-page #pr2:checked~.pr .pp2{display:grid}
-.stories-page #pr2:checked~.pr .strip label[for=pr2]{opacity:1;outline-color:var(--pri)}
-.stories-page #pr3:checked~.pr .pp3{display:grid}
-.stories-page #pr3:checked~.pr .strip label[for=pr3]{opacity:1;outline-color:var(--pri)}
-.stories-page #pr4:checked~.pr .pp4{display:grid}
-.stories-page #pr4:checked~.pr .strip label[for=pr4]{opacity:1;outline-color:var(--pri)}
-.stories-page #pr5:checked~.pr .pp5{display:grid}
-.stories-page #pr5:checked~.pr .strip label[for=pr5]{opacity:1;outline-color:var(--pri)}
-@media (max-width:900px){
-.stories-page .pr .arw svg{width:14px;height:14px}
-.stories-page .pr .pp .ph{width:220px}
-}
 /* ───────── 후기 카드 ───────── */
 .stories-page .idgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
 /* 색면은 카드 위쪽 띠 하나로. 갈래를 고르면 같은 색이 열두 장 반복되므로
@@ -197,7 +136,7 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .chips label::before{content:"";flex:none;width:9px;height:9px;border-radius:50%;
   background:var(--dot,var(--g300));transition:var(--ease)}
 .stories-page .chips label[for=rc_all]::before{background:conic-gradient(
-  #22D3EE 0 25%,#FFE600 0 50%,#8CFF3F 0 75%,#1F4ED8 0)}
+  #22D3EE 0 25%,var(--yellow) 0 50%,#8CFF3F 0 75%,var(--primary) 0)}
 .stories-page .rev:has(#rc_all:checked) .chips label[for=rc_all]::before{background:#fff}
 .stories-page .drawers{display:flex;gap:8px;flex-wrap:wrap}
 .stories-page .dw{position:relative}
@@ -228,19 +167,15 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .rev:has(#rc_life:checked) .chips label[for=rc_life]{background:#22D3EE;color:#06323B}
 .stories-page .rev:has(#rc_life:checked) .idc:not(.cat-life),
 .stories-page .rev:has(#rc_life:checked) .rvr:not(.cat-life){display:none}
-.stories-page .chips label[for=rc_class]{--dot:#FFE600}
-.stories-page .rev:has(#rc_class:checked) .chips label[for=rc_class]{background:#FFE600;color:#3F3800}
+.stories-page .chips label[for=rc_class]{--dot:var(--yellow)}
+.stories-page .rev:has(#rc_class:checked) .chips label[for=rc_class]{background:var(--yellow);color:#3F3800}
 .stories-page .rev:has(#rc_class:checked) .idc:not(.cat-class),
 .stories-page .rev:has(#rc_class:checked) .rvr:not(.cat-class){display:none}
 .stories-page .chips label[for=rc_proj]{--dot:#8CFF3F}
 .stories-page .rev:has(#rc_proj:checked) .chips label[for=rc_proj]{background:#8CFF3F;color:#1F4A08}
 .stories-page .rev:has(#rc_proj:checked) .idc:not(.cat-proj),
 .stories-page .rev:has(#rc_proj:checked) .rvr:not(.cat-proj){display:none}
-.stories-page .chips label[for=rc_career]{--dot:#1F4ED8}
-.stories-page .rev:has(#rc_career:checked) .chips label[for=rc_career]{background:#1F4ED8;color:#fff}
-.stories-page .rev:has(#rc_career:checked) .chips label[for=rc_career]::before{background:#fff}
-.stories-page .rev:has(#rc_career:checked) .idc:not(.cat-career),
-.stories-page .rev:has(#rc_career:checked) .rvr:not(.cat-career){display:none}
+.stories-page .chips label[for=rc_career]{--dot:var(--primary)}
 .stories-page .rev:has(#fco_0:checked) .dw-fco summary b{display:none}
 .stories-page .rev:has(#fco_0:checked) .dw-fco summary u::after{content:"7기"}
 .stories-page .rev:has(#fco_0:checked) .idc:not(.coh7),
@@ -347,11 +282,6 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .rev:has(#rc_all:checked):has(#fco_all:checked):not(:has(.tgt:target)):has(#pgn5:checked) .idc:not(.pg5),
 .stories-page .rev:has(#rc_all:checked):has(#fco_all:checked):not(:has(.tgt:target)):has(#pgn5:checked) .rvr:not(.pg5){display:none}
 .stories-page .rev:has(#pgn5:checked) .pager label[for=pgn5]{background:var(--g900);color:#fff}
-.stories-page .rev:has(#rc_all:checked):has(#fco_all:checked):not(:has(.tgt:target)):has(#pgn6:checked) .idc:not(.pg6),
-.stories-page .rev:has(#rc_all:checked):has(#fco_all:checked):not(:has(.tgt:target)):has(#pgn6:checked) .rvr:not(.pg6){display:none}
-.stories-page .rev:has(#pgn6:checked) .pager label[for=pgn6]{background:var(--g900);color:#fff}
-.stories-page .rev:has(#rc_all:checked):has(#fco_all:checked):not(:has(.tgt:target)):has(#pgn7:checked) .idc:not(.pg7),
-.stories-page .rev:has(#rc_all:checked):has(#fco_all:checked):not(:has(.tgt:target)):has(#pgn7:checked) .rvr:not(.pg7){display:none}
 .stories-page .rev:not(:has(#rc_all:checked)) .pager,
 .stories-page .rev:not(:has(#fco_all:checked)) .pager,
 .stories-page .rev:has(.tgt:target) .pager{display:none}
@@ -467,7 +397,6 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
   font-size:14px;line-height:22px;color:var(--g500)}
 @media (max-width:1100px){
 /* 세로로 쌓이면 목록이 너무 길어진다 — 칩 줄로 바꾼다 */
-.stories-page .rail h3+div{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0}
 }
 @media (max-width:560px){
 /* 좁은 화면에서 3열 표는 글자가 한 글자씩 접힌다 — 줄로 푼다 */
@@ -486,12 +415,12 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .g2{grid-template-columns:minmax(0,1fr)}
 .stories-page .ivd h2{font-size:26px;line-height:38px}
 }
-.stories-page .wrap{max-width:100%;margin:0 auto;width:1240px;padding-left:clamp(20px,4vw,48px);
+.stories-page .wrap{max-width:100%;margin:0 auto;width:var(--wrap,1376px);padding-left:clamp(20px,4vw,48px);
   padding-right:clamp(20px,4vw,48px)}
 /* 주제별 — 형광 면 위 글자색을 각자 정한다 */
 .stories-page .rev:has(#rc_life:checked) .chips label[for=rc_life]::before,
 .stories-page .rev:has(#rc_class:checked) .chips label[for=rc_class]::before,
-.stories-page .rev:has(#rc_proj:checked) .chips label[for=rc_proj]::before{background:#111}
+.stories-page .rev:has(#rc_proj:checked) .chips label[for=rc_proj]::before{background:var(--ink)}
 /* 카드·면 — 종이 위 흰 판 */
 .stories-page .idc,
 .stories-page .iv,
@@ -500,7 +429,6 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .vtoggle,
 .stories-page .dwin,
 .stories-page .dw summary,
-.stories-page .pr,
 .stories-page .ov .sheet{background:#fff}
 /* 떠 있는 바 높이가 바뀌었으니 앵커 여백도 맞춘다
    (시안의 하위 메뉴 막대 자리는 공통 하위 메뉴 바 — 공통 base.css scroll-padding이 헤더 + 바 높이 + 8px를 이미 뺌) */
@@ -510,13 +438,13 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .idc h3::after{display:none}
 .stories-page .idc .who::after{content:"→";flex:none;padding-left:12px;font-size:18px;line-height:1;
   color:var(--graphite);transition:color .2s,transform .25s cubic-bezier(.22,.61,.36,1)}
-.stories-page .idc:hover .who::after{color:var(--blue);transform:translateX(3px)}
+.stories-page .idc:hover .who::after{color:var(--primary);transform:translateX(3px)}
 /* 인터뷰 카드 — 화살표를 제목에서 떼어 맨 아랫줄 고정 자리로 */
 .stories-page .iv h3::after{display:none}
 .stories-page .iv .by::after{content:"→";margin-left:auto;flex:none;padding-left:14px;
   font-size:19px;line-height:1;color:var(--graphite);
   transition:color .2s,transform .25s cubic-bezier(.22,.61,.36,1)}
-.stories-page .iv:hover .by::after{color:var(--blue);transform:translateX(3px)}
+.stories-page .iv:hover .by::after{color:var(--primary);transform:translateX(3px)}
 @keyframes paneIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 /* 움직임 줄이기 설정: 탭 내용 · 인터뷰 상세가 들어오는 움직임 끔 */
 @media (prefers-reduced-motion:reduce){
@@ -530,8 +458,7 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .iv,
 .stories-page .st,
 .stories-page .diff,
-.stories-page .ov .sheet,
-.stories-page .pr{border-radius:0}
+.stories-page .ov .sheet{border-radius:0}
 .stories-page .idc .cbar span i{font-style:normal;font-family:var(--f);font-weight:600;font-size:12px}
 /* 취업·진로의 파랑만 검정 위에서 어둡다 — 띠에서는 한 단계 밝게 */
 .stories-page .chips label,
@@ -558,7 +485,6 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .st .mt .cg,
 .stories-page .st .mt .dt{flex:none;white-space:nowrap}
 /* 숫자는 랜딩과 같은 Anton */
-.stories-page .pr .strip label b,
 .stories-page .ph .dur{font-family:var(--num);font-weight:400;letter-spacing:.02em}
 /* ── 인터뷰 상세 사진 = 아카이브 인화판 ── */
 .stories-page .ivhero{position:relative;border:1px solid var(--l-line);border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 12px 32px rgba(33,43,71,.08)}
@@ -576,32 +502,12 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .pager label:hover{background:#F2F5F9;color:#0B3C7B}
 .stories-page div:where(.st-main){padding-top:var(--sec-y-first);background:#fff}   /* 표지 다음 첫 섹션 제목 위: 공통 --sec-y-first(2026-10-07, 시안 64px + 제목 위 24px) */
 /* ═══ 기수 — 후기 칩과 똑같은 모양 ═══ */
-.stories-page .rail{display:flex;gap:8px;flex-wrap:wrap;align-items:center;
-  margin:0 0 34px}
-.stories-page .rail div{display:contents}
-.stories-page .rail label:hover{color:var(--ink)}
-.stories-page .rail label em{font-style:normal;font-family:var(--num);font-weight:400;font-size:13px;
-  line-height:1;opacity:.6}   /* 앞 규칙의 연회색(--g300)에 반투명이 겹쳐 숫자가 거의 안 보여 글자색(흑연)의 60%로 */
-.stories-page .rail label[for=fc_all]{--dot:#0F1729}
-.stories-page .rail label[for=fc_7]{--dot:#FF3EA5}
-.stories-page .rail label[for=fc_6]{--dot:#22D3EE}
-.stories-page .rail label[for=fc_mid]{--dot:#8CFF3F}
-.stories-page .arch:has(#fc_all:checked) .rail label[for=fc_all],
-.stories-page .arch:has(#fc_7:checked) .rail label[for=fc_7],
-.stories-page .arch:has(#fc_6:checked) .rail label[for=fc_6],
-.stories-page .arch:has(#fc_mid:checked) .rail label[for=fc_mid]{background:var(--ink);border-color:var(--ink);color:#fff}
-.stories-page .arch:has(#fc_all:checked) .rail label[for=fc_all]::before,
-.stories-page .arch:has(#fc_7:checked) .rail label[for=fc_7]::before,
-.stories-page .arch:has(#fc_6:checked) .rail label[for=fc_6]::before,
-.stories-page .arch:has(#fc_mid:checked) .rail label[for=fc_mid]::before{background:#fff}
-@media (max-width:860px){
-.stories-page .rail{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
-}
+/* 앞 규칙의 연회색(--g300)에 반투명이 겹쳐 숫자가 거의 안 보여 글자색(흑연)의 60%로 */
 @media (max-width:760px){
 .stories-page .sh-row{flex-direction:column;align-items:flex-start;gap:16px}
 }
 /* ---- 공통 컨트롤: 둥근 알약 ---- */
-.stories-page .chips label, .stories-page .dw summary, .stories-page .vtoggle, .stories-page .pager label, .stories-page .ivback, .stories-page .rail label{border-radius:999px}
+.stories-page .chips label, .stories-page .dw summary, .stories-page .vtoggle, .stories-page .pager label, .stories-page .ivback{border-radius:999px}
 .stories-page .chips label, .stories-page .dw summary{border:1px solid var(--l-line);background:#fff}
 .stories-page .pager label{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;color:#0F1729;font-size:15px;
   transition:background .15s,color .15s,box-shadow .18s;width:44px;min-width:44px;height:44px;background:#fff;font-family:var(--num)}
@@ -609,12 +515,8 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .rev:has(#pgn2:checked) .pager label[for=pgn2],
 .stories-page .rev:has(#pgn3:checked) .pager label[for=pgn3],
 .stories-page .rev:has(#pgn4:checked) .pager label[for=pgn4],
-.stories-page .rev:has(#pgn5:checked) .pager label[for=pgn5],
-.stories-page .rev:has(#pgn6:checked) .pager label[for=pgn6],
-.stories-page .rev:has(#pgn7:checked) .pager label[for=pgn7]{background:var(--l-blue);color:#fff}
+.stories-page .rev:has(#pgn5:checked) .pager label[for=pgn5]{background:var(--l-blue);color:#fff}
 /* ================= 후기: 기능 카드 마퀴 + 카드 ================= */
-.stories-page .lmq{position:relative}
-@keyframes lmq{to{transform:translateX(-50%)}}
 .stories-page .idc{display:flex;flex-direction:column;border:1px solid var(--l-card);border-radius:20px;overflow:hidden;
   box-shadow:0 12px 32px rgba(33,43,71,.08);transition:transform .25s cubic-bezier(.2,.7,.2,1),border-color .2s}
 .stories-page .idc:hover{transform:translateY(-6px);border-color:var(--l-blue);box-shadow:0 18px 36px rgba(33,43,71,.14)}
@@ -625,70 +527,15 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
   padding:0 8px;background:var(--g100);font-size:12px;font-weight:600;
   line-height:22px;color:var(--g600);white-space:nowrap;border-radius:999px}
 /* ================= 인터뷰: 저자 한마디 슬라이더 ================= */
-.stories-page .lsp{position:relative;width:100cqw;margin:8px 0 72px calc(50% - 50cqw);padding:96px 0 88px;background:#F6F6F7;overflow:hidden;isolation:isolate}
 .stories-page .lsp-wave{position:absolute;left:0;right:0;top:50%;height:360px;margin-top:-180px;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 10px;z-index:-1;pointer-events:none}
 .stories-page .lsp-wave i{flex:1 1 0;min-width:3px;max-width:10px;border-radius:6px;background:#E6E8EC}
-.stories-page .lsp-rec{position:absolute;left:calc(max(0px,(100% - var(--wrap)) / 2) + var(--gutter));bottom:22px;display:flex;align-items:center;gap:10px;font:700 13px/1 var(--f);letter-spacing:.08em;color:#8A909B;pointer-events:none}
+.stories-page .lsp-rec{position:absolute;left:calc(max(0px,(100% - var(--wrap)) / 2) + var(--gutter));bottom:22px;display:flex;align-items:center;gap:10px;font:700 13px/1 var(--f);letter-spacing:.08em;color:var(--muted);pointer-events:none}
 .stories-page .lsp-rec::before{content:"";width:10px;height:10px;border-radius:50%;background:#E8553E}
 @media (max-width:767px){
 .stories-page .lsp-wave{height:220px;margin-top:-110px;gap:3px}
 .stories-page .lsp-rec{bottom:14px}
 }
-.stories-page .lsp-in{position:relative;max-width:1100px;margin:0 auto;padding:0 clamp(20px,4vw,48px)}
-.stories-page .lsp-s{display:none;flex-wrap:wrap;align-items:flex-start;gap:3.25%;position:relative}
-.stories-page .lsp:has(#spv0:checked) .lsp-s0,
-.stories-page .lsp:has(#spv1:checked) .lsp-s1,
-.stories-page .lsp:has(#spv2:checked) .lsp-s2,
-.stories-page .lsp:has(#spv3:checked) .lsp-s3{display:flex;animation:lspIn .5s cubic-bezier(.22,.61,.36,1)}
-@keyframes lspIn{from{opacity:.2;transform:translateX(4%)}to{opacity:1;transform:none}}
-.stories-page .lsp-card{min-width:0;min-height:414px;padding:54px;border:1.5px solid #1c1c1c;border-radius:32px;
-  background:#FFFCF3;box-shadow:0 12px 32px rgba(58,58,58,.12)}
-.stories-page .lsp-eb{font-size:17px;font-weight:700;letter-spacing:.04em;color:#E5197F}
-.stories-page .lsp-nm{margin-top:16px;padding-left:10px;border-left:4px solid #E5197F;font-size:22px;font-weight:700;color:var(--l-ink)}
-.stories-page .lsp-nm em{margin-left:8px;font-style:normal;font-size:15px;font-weight:500;color:var(--l-soft)}
-.stories-page .lsp-qm{font-family:var(--disp);color:#E5197F;margin-top:30px;font-size:0;line-height:0}
-.stories-page .lsp-card blockquote{font-size:25px;font-weight:500;line-height:1.5;letter-spacing:-.03em;color:#171719;margin-top:18px}
-.stories-page .lsp-go{display:inline-block;margin-top:26px;font-weight:700;color:var(--l-blue)}
-.stories-page .lsp-go:hover{text-decoration:underline;text-underline-offset:4px}
-.stories-page .lsp-ph i{position:absolute}
-.stories-page .lsp-head{left:26%;top:16%;width:48%;aspect-ratio:1;border-radius:50%}
-.stories-page .lsp-body{left:12%;top:56%;width:76%;height:44%;border-radius:200px 200px 0 0;background:#fff}
-.stories-page .lsp-arw{position:absolute;top:180px;z-index:2;display:flex;align-items:center;justify-content:center;width:50px;height:50px;border-radius:50%;
-  background:#fff;color:var(--l-blue);font-size:20px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.1);transition:background .18s,color .18s}
-.stories-page .lsp-arw:hover{background:var(--l-blue);color:#fff}
-.stories-page .lsp-arw.l{left:-70px}
-.stories-page .lsp-arw.r{right:-70px}
-.stories-page .lsp-dots{display:flex;justify-content:center;gap:6px;margin-top:36px}
-.stories-page .lsp-dots label{width:10px;height:10px;border-radius:999px;background:rgba(16,17,22,.18);cursor:pointer;transition:width .25s,background .25s}
-.stories-page .lsp:has(#spv0:checked) .lsp-dots label[for=spv0],
-.stories-page .lsp:has(#spv1:checked) .lsp-dots label[for=spv1],
-.stories-page .lsp:has(#spv2:checked) .lsp-dots label[for=spv2],
-.stories-page .lsp:has(#spv3:checked) .lsp-dots label[for=spv3]{width:30px;background:#E5197F}
-@media (max-width:1240px){
-.stories-page .lsp-arw.l{left:-8px}
-.stories-page .lsp-arw.r{right:-8px}
-}
-@media (max-width:767px){
-.stories-page .lsp{padding:56px 0 52px}
-.stories-page .lsp-card{padding:26px;min-height:0;border-radius:22px}
-.stories-page .lsp-card blockquote{font-size:18px}
-.stories-page .lsp-arw{display:none}
-}
 /* 인터뷰 슬라이더 — 따옴표는 둥근 그림으로, 사진은 카드 안 오른쪽에 작게 */
-.stories-page .lsp-qm svg{display:block;width:50px;height:38px;fill:#E5197F}
-.stories-page .lsp-card{flex:1 1 100%;padding-right:calc(54px + 240px + 48px)}
-.stories-page .lsp-ph{max-width:100%;overflow:hidden;position:absolute;right:54px;top:50%;width:240px;flex:none;aspect-ratio:4/5;border-radius:20px;transform:translateY(-50%)}
-@media (max-width:1000px){
-.stories-page .lsp-card{padding-right:calc(40px + 180px + 32px)}
-.stories-page .lsp-ph{right:40px;width:180px}
-}
-@media (max-width:767px){
-.stories-page .lsp-card{padding-right:26px}
-.stories-page .lsp-eb,
-.stories-page .lsp-nm{margin-right:76px}
-.stories-page .lsp-ph{right:22px;top:22px;width:60px;aspect-ratio:1;border-radius:50%;transform:none}
-.stories-page .lsp-qm svg{width:38px;height:29px}
-}
 .stories-page .iv{
   display:flex;flex-direction:column;border:1px solid var(--l-line);border-radius:20px;overflow:hidden}
 .stories-page .iv:hover{border-color:var(--l-blue)}
@@ -700,22 +547,8 @@ body:not(:has(#t1:checked)):not(:has(#t3:checked)):not(:has(#t4:checked)):has(:i
 .stories-page .proj{position:relative;isolation:isolate}
 .stories-page .proj::before{content:"";position:absolute;z-index:-1;top:-65px;bottom:0;left:calc(50% - 50vw);right:calc(50% - 50vw);
   background:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px) 0 0/174px 174px,linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px) 0 0/174px 174px,#2B2D31}
-.stories-page section.proj .pr{border-radius:28px;padding:44px 20px 36px}
-.stories-page section.proj .pr .strip{justify-content:flex-end}
-.stories-page section.proj .pr .no{font-size:40px;-webkit-text-stroke:1.5px #1c1c1c}
 /* v2 히어로 — 버튼·숫자·멈춤·사진 캡션 없애고, 넘김은 점 네 개로 */
-.stories-page .cover .go, .stories-page .cover .cnt, .stories-page .cover .ply, .stories-page .cover .cap{display:none}
-.stories-page .cover .segs{flex:none;display:flex;align-items:center;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.stories-page .cover .seg{flex:none;gap:0;padding:6px 0;border:0;background:none;cursor:pointer;text-align:left;display:flex;flex-direction:column;min-width:0}
-.stories-page .cover .seg span{position:absolute;width:1px;height:1px;clip:rect(0 0 0 0);font-size:12.5px;font-weight:600;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .2s}
-.stories-page .cover .seg i{width:10px;height:10px;border-radius:999px;transition:width .3s,background .2s;position:relative;overflow:hidden;background:#C9D1DC}
-.stories-page .cover .seg[aria-current=true] i{width:30px}
-.stories-page section.proj .pr .arw.l{left:28px}
-.stories-page section.proj .pr .arw.r{right:28px}
-@media (max-width:980px){
-body .stories-page section.proj .pr .no{font-size:32px}
-.stories-page section.proj .pr{padding:28px 20px;border-radius:20px}
-}
+.stories-page .cover .go{display:none}
 /* ================= v2 인터뷰: 녹음 파형 위, 가운데 카드가 크고 양옆이 겹쳐 보이는 넘김 ================= */
 .stories-page .ivband{position:relative;width:100cqw;margin:-64px 0 36px calc(50% - 50cqw);padding:24px 0 40px;background:#fff;overflow:hidden;isolation:isolate}
 .stories-page .ivcar{position:relative;max-width:1200px;margin:0 auto;padding:0 clamp(16px,4vw,48px);--w:400px}
@@ -756,50 +589,14 @@ body .stories-page .ivtag{left:12px;top:12px;height:28px;font-size:13px;line-hei
 body .stories-page .ivhero::after{height:42px;line-height:42px;padding-left:32px;background:radial-gradient(circle at 18px 50%,var(--l-blue) 4px,transparent 4.5px),#fff}
 }
 /* ================= 프로젝트: T-SOLUTION 2단 ================= */
-.stories-page .pr .pp>.ph{order:2;transform:rotate(-2.97deg);border-radius:18px;padding-top:40px;background:#eef0f3;
-  filter:drop-shadow(0 40px 56px rgba(16,17,22,.24))}
-.stories-page .pr .pp>.ph::before{content:"";position:absolute;left:18px;top:15px;width:11px;height:11px;border-radius:50%;background:#d6d9de;
-  box-shadow:18px 0 0 #d6d9de,36px 0 0 #d6d9de}
-.stories-page .pr .pp>.ph .illu{aspect-ratio:16/10}
-.stories-page .pr .no{font-family:var(--num);line-height:1;color:var(--l-yel)}
-.stories-page .pr h3{margin-top:16px;font-family:var(--disp);font-size:38px;line-height:1.22;letter-spacing:-.02em;color:var(--l-ink)}
-.stories-page .pr .info>div{padding:0 14px}
-.stories-page .pr .info>div:first-child{padding-left:0}
-.stories-page .pr .info>div+div{border-left:1px solid var(--l-line)}
-.stories-page .pr .strip label:hover{transform:translateY(-4px);opacity:1}
-.stories-page .pr .strip label b{position:absolute;left:6px;top:4px;z-index:2;
-  color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);font-size:15px}
-@media (max-width:980px){
-body .stories-page .pr .stage{padding:0}
-body .stories-page .pr .pp{grid-template-columns:1fr}
-body .stories-page .pr .pp>.ph{order:0;margin:10px 6px 24px}
-body .stories-page .pr h3{font-size:28px}
-body .stories-page .pr .strip label{width:calc(33.33% - 8px)}
-}
-/* ================= 기수별 모아보기: 기수별 순간들 ================= */
-.stories-page .rail label{position:relative;display:inline-flex;align-items:center;gap:7px;height:40px;
-  padding:0 14px;
-  cursor:pointer;font-weight:600;
-  line-height:40px;color:var(--graphite);white-space:nowrap;transition:var(--ease);border:1px solid var(--l-line);background:#fff;font-size:17px}
-.stories-page .arch .g2:not(.st){grid-template-columns:repeat(4,minmax(0,1fr));gap:52px 26px}
-.stories-page .arch .diff{grid-column:1/-1;padding:38px 42px 22px;border:1.5px solid #1c1c1c;border-radius:28px;
-  background:var(--l-cream);box-shadow:0 12px 32px rgba(58,58,58,.1)}
-.stories-page .arch .diff .lb{border-radius:999px;background:var(--l-ink);color:var(--l-yel)}
-.stories-page .arch .diff h3{font-family:var(--disp);font-size:30px;line-height:1.3}
-body .stories-page .arch .diff th,
-body .stories-page .arch .diff td{border-bottom-color:rgba(16,17,22,.12)}
+/* ================= 기수별 이모저모: 기수별 순간들 ================= */
 .stories-page .st .ph, .stories-page .st .ph .illu{aspect-ratio:241.9/300}
 .stories-page .st .ph .illu{position:absolute;inset:0;aspect-ratio:auto;object-fit:cover}
 .stories-page .st .ph::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
   background:linear-gradient(90deg,rgba(0,0,0,.24) 0%,rgba(0,0,0,.07) 2.4%,rgba(0,0,0,0) 3.6%),linear-gradient(118deg,rgba(255,255,255,.3) 0%,rgba(255,255,255,0) 34%)}
 .stories-page .st:hover .ph{transform:translateY(-10px) scale(1.02);box-shadow:inset 7px 0 10px rgba(0,0,0,.08),0 32px 46px rgba(30,34,40,.22)}
 .stories-page .st:hover h3{color:var(--l-blue)}
-@media (max-width:1100px){
-.stories-page .arch .g2:not(.st){grid-template-columns:repeat(3,minmax(0,1fr))}
-}
 @media (max-width:760px){
-body .stories-page .arch .g2:not(.st){grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:32px 14px}
-body .stories-page .arch .diff{padding:24px 20px 10px}
 body .stories-page .st h3{font-size:16px}
 }
 /* 보기 전환: 필터 줄 맨 오른쪽, 알약 높이 맞춤 */
@@ -809,148 +606,47 @@ body .stories-page .st h3{font-size:16px}
 /* ───────── 표지(#cover) — 시안 v2 히어로 ───────── */
 .stories-page .cover{
  --gut:var(--gutter);line-height:1.6;letter-spacing:-.015em;position:relative;--inset:var(--gut);
-  --mg:#FF3EA5;
+  --mg:var(--primary-bright);
   isolation:isolate;--hin:calc(max(0px,(100cqw - var(--wrap)) / 2) + var(--gutter));--hin-r:clamp(var(--gutter),calc((50cqw - 540px) / 2),90px);--paper:#FCE6F1;--ink:#14233F;--body:#3C4A63;--mute:#566175;--line:rgba(20,35,63,.14)}
 .stories-page .cover button{font:inherit;color:inherit}
 .stories-page .cover :focus-visible{outline:2px solid var(--mg);outline-offset:3px}
 .stories-page .cover .track{position:relative}
-.stories-page .cover .sl{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,46fr) minmax(0,54fr);
-  opacity:0;visibility:hidden;transition:opacity .7s ease,visibility 0s .7s}
-.stories-page .cover .sl.on{opacity:1;visibility:visible;transition:opacity .7s ease}
-.stories-page .cover .txt{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:64px 56px 112px var(--inset)}
-.stories-page .cover .kick{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--mute)}
-.stories-page .cover .kick .tag{height:28px;padding:0 12px;border-radius:999px;align-items:center;font-weight:700;background:#FFE600;color:#111;display:none}
-.stories-page .cover .sl h2{margin-top:18px;font-size:clamp(28px,2.9vw,42px);line-height:1.28;letter-spacing:-.035em;text-wrap:balance}
-.stories-page .cover .lede{margin-top:16px;max-width:30em;font-size:16.5px;line-height:1.8;color:var(--body)}
 .stories-page .cover .by{margin-top:28px;padding-top:22px;border-top:1px solid var(--line);display:flex;align-items:center;gap:12px}
 .stories-page .cover .av{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:700}
-.stories-page .cover .by .nm{display:flex;flex-direction:column;min-width:0;line-height:1.35}
-.stories-page .cover .by .nm b{font-size:15px}
-.stories-page .cover .by .nm span{font-size:13px;color:var(--mute)}
 .stories-page .cover .go{margin-left:auto;flex:none;height:42px;padding:0 18px;align-items:center;gap:8px;border-radius:999px;
   border:1px solid var(--ink);font-size:14.5px;font-weight:700;transition:background .2s,color .2s,border-color .2s,gap .2s}
-.stories-page .cover .go:hover{gap:12px;background:#FF3EA5;border-color:#FF3EA5;color:#111}
-.stories-page .cover .scene{position:relative;min-width:0;overflow:hidden;background:#1C1D20;border-radius:0 0 0 0}
-.stories-page .cover .scene img,
-.stories-page .cover .scene svg{display:block;width:100%;height:100%;object-fit:cover;transform:scale(1.05);transition:transform 7s ease-out}
-.stories-page .cover .sl.on .scene img,
-.stories-page .cover .sl.on .scene svg{transform:scale(1)}
-.stories-page .cover .cap{position:absolute;left:0;right:0;bottom:0;align-items:center;gap:22px;height:58px;padding:0 28px;
-  background:linear-gradient(transparent,rgba(12,12,14,.62));font-size:14px;color:rgba(255,255,255,.88);white-space:nowrap;overflow:hidden}
-.stories-page .cover .cap b{color:#fff}
-.stories-page .cover .cap em{font-style:normal;color:#fff;font-weight:700}
-.stories-page .cover .arw{position:absolute;top:calc(50% - 28px);z-index:3;width:56px;height:56px;display:grid;place-items:center;border:0;background:none;cursor:pointer;transition:opacity .2s}
-.stories-page .cover .arw svg{width:22px;height:44px;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
-.stories-page .cover .arw.next svg{stroke:#fff}
-.stories-page .cover .arw:hover{opacity:.6}
+.stories-page .cover .go:hover{gap:12px;background:var(--primary-bright);border-color:var(--primary-bright);color:var(--ink)}
 .stories-page .cover .pg{position:absolute;left:var(--inset);z-index:3;width:min(calc(46% - var(--inset) - 56px),480px);display:flex;align-items:flex-end;gap:16px}
-.stories-page .cover .seg i::after{content:"";position:absolute;inset:0;width:0;background:var(--ink)}
-.stories-page .cover .seg:hover span{color:var(--ink)}
-.stories-page .cover .seg[aria-current=true] span{color:var(--ink)}
-.stories-page .cover .seg[aria-current=true] i::after{width:100%;background:var(--mg)}
-.stories-page .cover.playing .seg[aria-current=true] i::after{width:0;animation:cvfill var(--dur) linear forwards}
-@keyframes cvfill{to{width:100%}}
-.stories-page .cover .ply{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);cursor:pointer;place-items:center;background:transparent}
-.stories-page .cover .ply svg{width:10px;height:10px;fill:var(--ink)}
-.stories-page .cover .cnt{flex:none;font-size:13px;font-weight:600;color:var(--mute);font-variant-numeric:tabular-nums;padding-bottom:6px}
-.stories-page .cover .cnt b{color:var(--ink)}
-@media (max-width:1080px){
-.stories-page .cover .txt{padding-right:36px}
-.stories-page .cover .sl h2{font-size:30px}
-.stories-page .cover .lede{font-size:15.5px}
-}
 @media (max-width:860px){
 .stories-page .cover .track{display:grid}
-.stories-page .cover .sl{position:relative;grid-area:1 / 1;grid-template-columns:1fr}
-.stories-page .cover .scene{order:-1;aspect-ratio:4 / 3}
-.stories-page .cover .txt{justify-content:flex-start;padding:28px var(--gut) 104px}
-.stories-page .cover .sl h2{font-size:26px}
 .stories-page .cover .by{flex-wrap:wrap}
-.stories-page .cover .arw{top:calc((100cqw * .75) / 2 - 28px)}
 .stories-page .cover .pg{right:var(--gut);width:auto}
-.stories-page .cover .cap{gap:14px;font-size:13px;padding:0 18px}
 }
 @media (prefers-reduced-motion:reduce){
 /* .sl.on까지 적어야 위 .sl.on의 0.7초 페이드를 이김(시안은 우선 표시로 눌렀음) */
-.stories-page .cover .sl,
-.stories-page .cover .sl.on,
-.stories-page .cover .scene img,
-.stories-page .cover .scene svg{transition:none;transform:none!important}
 }
 /* 랜딩판 맞춤: 히어로를 본문 폭(1240+여백) 안에 가운데 정렬 */
-.stories-page .cover .arw.prev{right:calc(var(--hin) + 64px)}
-.stories-page .cover .arw.next{right:calc(var(--hin) + 12px)}
-.stories-page .cover .arw.prev svg{stroke:#fff}
 /* ↑ 2026-10-07 정렬: 두 화살표를 헤더 오른쪽 정렬선 기준으로(1240px 이하 화면에서는 전과 같은 자리). 1401px 이상에서 left:-64px로 화면 밖에 있던 이전 화살표도 다음 화살표 옆으로 */
-@media (max-width:860px){
-.stories-page .cover .arw.next{right:12px}
-.stories-page .cover .arw.prev{left:4px;right:auto}
-}
 /* 표지 바탕 면(::before): 카테고리 색(분홍)을 연하게(2026-10-07 후보 B — 시안의 차콜 격자 대신) */
 .stories-page .cover::before{content:"";position:absolute;z-index:-1;top:0;bottom:0;left:0;right:0;background-color:#FCE6F1}
-.stories-page .arch .st.pg-off{display:none}
 .stories-page .cpager{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:44px}
-.stories-page .cpager button{min-width:40px;height:40px;padding:0 6px;border:1px solid #DDE0E5;border-radius:999px;background:#fff;color:#4A4F59;font:700 14px/1 var(--f);cursor:pointer;font-variant-numeric:tabular-nums;transition:border-color .15s,background .15s,color .15s}
-.stories-page .cpager button:hover{border-color:#2B2D31;color:#16171A}
+.stories-page .cpager button{min-width:40px;height:40px;padding:0 6px;border:1px solid #DDE0E5;border-radius:999px;background:#fff;color:var(--graphite);font:700 14px/1 var(--f);cursor:pointer;font-variant-numeric:tabular-nums;transition:border-color .15s,background .15s,color .15s}
+.stories-page .cpager button:hover{border-color:#2B2D31;color:var(--ink)}
 .stories-page .cpager button[aria-current="page"]{background:#2B2D31;border-color:#2B2D31;color:#fff}
 .stories-page .cpager button:disabled{opacity:.35;pointer-events:none}
-.stories-page .cpager button:focus-visible{outline:3px solid #E5197F;outline-offset:2px}
+.stories-page .cpager button:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
 .stories-page .cpager[hidden]{display:none}
 .stories-page #p-rev .idgrid{align-items:stretch}
-.stories-page #p-rev .lmq{margin-bottom:24px}
 /* v2 기수 기록 상세 모달 */
-.stories-page .cmodal{position:fixed;inset:0;z-index:130;display:none;align-items:flex-start;justify-content:center;padding:48px 20px;overflow-y:auto}
-.stories-page .cmodal.on{display:flex}
-.stories-page .cmodal .bg{position:fixed;inset:0;background:rgba(20,21,24,.6);backdrop-filter:blur(4px)}
-.stories-page .cmodal .sheet{position:relative;width:min(760px,100%);background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 40px 80px -24px rgba(0,0,0,.5);animation:cmIn .3s cubic-bezier(.22,.61,.36,1)}
-@keyframes cmIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
-.stories-page .cmodal .media{position:relative;aspect-ratio:16/9;background:#EEF0F3;overflow:hidden}
-.stories-page .cmodal .media .dur{position:absolute;right:14px;bottom:14px;padding:4px 9px;border-radius:7px;background:rgba(0,0,0,.72);color:#fff;font:700 13px/1 "Anton",Impact,sans-serif;letter-spacing:.03em}
-.stories-page .cmodal .x{position:absolute;right:16px;top:16px;z-index:2;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.92);color:#16171A;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.15)}
-.stories-page .cmodal .x:hover{background:#2B2D31;color:#fff}
-.stories-page .cmodal .x:focus-visible{outline:3px solid #E5197F;outline-offset:2px}
-.stories-page .cmodal .body{padding:28px 32px 32px}
-.stories-page .cmodal .meta{display:flex;align-items:center;gap:10px;font-size:13px;color:#8A909B}
-.stories-page .cmodal .meta .cg{display:inline-flex;align-items:center;height:26px;padding:0 11px;border-radius:999px;background:var(--c,#2B2D31);color:#fff;font-weight:700;font-size:12.5px}
-.stories-page .cmodal .meta .kind{padding:4px 10px;border-radius:999px;background:#FDE8F3;color:#E5197F;font-weight:700;font-size:12px}
-.stories-page .cmodal h3{margin:14px 0 0;font-family:var(--disp);font-size:clamp(24px,3vw,30px);line-height:1.3;letter-spacing:-.02em;color:#16171A;text-wrap:balance}
-.stories-page .cmodal .lead{margin:14px 0 0;font-size:17px;line-height:1.75;color:#3F4450}
-.stories-page .cmodal .note{margin:22px 0 0;padding:16px 18px;border-radius:14px;background:#F6F7F9;font-size:14px;line-height:1.7;color:#6B7180}
-.stories-page .cmodal .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
-.stories-page .cmodal .acts a,
-.stories-page .cmodal .acts button{display:inline-flex;align-items:center;gap:8px;height:46px;padding:0 20px;border-radius:999px;font:700 14.5px/1 var(--f);cursor:pointer}
-.stories-page .cmodal .acts .go{color:#fff}
-.stories-page .cmodal .acts .go:hover{background:#E5197F}
-.stories-page .cmodal .acts .ghost{background:#fff;color:#16171A;border:1px solid #DDE0E5}
-.stories-page .cmodal .acts .ghost:hover{border-color:#2B2D31}
-@media (max-width:640px){
-.stories-page .cmodal{padding:0}
-.stories-page .cmodal .sheet{border-radius:0;min-height:100%}
-.stories-page .cmodal .body{padding:22px 20px 28px}
-}
 /* v2 후기 카드 — 회색 바탕 위에서 더 또렷하게 */
 .stories-page section#p-rev{position:relative;isolation:isolate}
 .stories-page section#p-rev::before{display:none}
 /* v2 후기 흐르는 띠 — 카드 없이 한 문장 인용 */
-.stories-page .lq{width:100cqw;margin:4px 0 40px calc(50% - 50cqw);padding-block:26px 30px}
-.stories-page .lq-rail{overflow:hidden}
-.stories-page .lq-t{display:flex;width:max-content;animation:lmq 110s linear infinite}
-.stories-page .lq-rail:hover .lq-t{animation-play-state:paused}
-.stories-page .lq-c{flex:none;display:flex;align-items:baseline;gap:14px;padding-right:56px;color:#16171A}
-.stories-page .lq-c .t{font-size:clamp(20px,2.1vw,26px);font-weight:600;line-height:1.4;letter-spacing:-.02em;white-space:nowrap}
-.stories-page .lq-c .t::before{content:"“";color:var(--c);font-weight:800;margin-right:2px}
-.stories-page .lq-c .t::after{content:"”";color:var(--c);font-weight:800;margin-left:2px}
-.stories-page .lq-c .a{font-size:13px;color:#8A909B;white-space:nowrap}
-.stories-page .lq-c:hover .t{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:6px}
-.stories-page .lq-c:focus-visible{outline:3px solid #E5197F;outline-offset:4px}
-@media (prefers-reduced-motion:reduce){
-.stories-page .lq-t{animation:none}
-}
 /* v2 후기 모달 — 후기 카드처럼 연한 갈래색 머리, 둥근 흰 판 */
 .stories-page .ov .back{background:rgba(20,21,24,.55);backdrop-filter:blur(4px)}
 .stories-page .ov .sheet{border-radius:24px;overflow:hidden;box-shadow:0 40px 80px -24px rgba(0,0,0,.45)}
 .stories-page .ov .sheet::before, .stories-page .ov .sheet::after{display:none}
-.stories-page .ov .mtop{background:var(--bg);color:#16171A;padding:30px 34px 26px}
+.stories-page .ov .mtop{background:var(--bg);color:var(--ink);padding:30px 34px 26px}
 .stories-page .ov .mcat{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:var(--dk);letter-spacing:.02em}
 .stories-page .ov .mcat::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--c)}
 .stories-page .ov .mtop h3{margin-top:12px;font-size:clamp(22px,2.6vw,28px);line-height:1.35;letter-spacing:-.02em}
@@ -958,56 +654,40 @@ body .stories-page .st h3{font-size:16px}
 .stories-page .ov .mav i{font-family:var(--f);font-style:normal;font-size:12px;font-weight:700;margin-left:2px}
 .stories-page .ov .mby{margin-top:18px;gap:12px;align-items:center;padding-top:16px;border-top:1px solid rgba(16,17,22,.08)}
 .stories-page .ov .mby b{font-size:15px}
-.stories-page .ov .mby em{color:#5B6070;font-size:13px}
-.stories-page .ov .x{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.85);color:#16171A;display:inline-flex;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.stories-page .ov .mby em{color:var(--graphite);font-size:13px}
+.stories-page .ov .x{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.85);color:var(--ink);display:inline-flex;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .stories-page .ov .x:hover{background:#2B2D31;color:#fff}
 .stories-page .ov .mbody{padding:28px 34px 30px}
-.stories-page .ov .mbody .lead{font-size:18px;font-weight:700;line-height:1.6;color:#16171A}
-.stories-page .ov .mbody p{line-height:1.8;color:#4A4F59}
+.stories-page .ov .mbody .lead{font-size:18px;font-weight:700;line-height:1.6;color:var(--ink)}
+.stories-page .ov .mbody p{line-height:1.8;color:var(--graphite)}
 .stories-page .ov .mtags{margin-top:24px;padding-top:20px;border-top:1px solid #ECEEF1;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.stories-page .ov .mtags .t{height:30px;padding:0 12px;border-radius:999px;background:#F1F2F4;color:#4A4F59;font-size:13px;font-weight:700;display:inline-flex;align-items:center}
+.stories-page .ov .mtags .t{height:30px;padding:0 12px;border-radius:999px;background:#F1F2F4;color:var(--graphite);font-size:13px;font-weight:700;display:inline-flex;align-items:center}
 .stories-page .ov .mtags .t:hover{background:#2B2D31;color:#fff}
-.stories-page .ov .mtags .hint{font-size:12.5px;color:#8A909B}
+.stories-page .ov .mtags .hint{font-size:12.5px;color:var(--muted)}
 @media (max-width:640px){
 .stories-page .ov .sheet{border-radius:0}
 .stories-page .ov .mtop, .stories-page .ov .mbody{padding-left:20px;padding-right:20px}
 }
-html body .stories-page .ssul-b{font-family:"Giants","Paperlogy Text",sans-serif}
-.stories-page .ssul-b i{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#FF3EA5;color:#111;font-style:normal;width:48px;height:48px;font-size:21px}
 .stories-page section.proj::before{display:none}
-.stories-page section.proj .pr{box-shadow:0 4px 10px rgba(16,17,22,.05),0 30px 60px -24px rgba(16,17,22,.30);border:1px solid #ECEEF1;background:#F4F5F7}
-.stories-page section.proj .pr .tags span{background:#fff}
 /* 표지 왼쪽 위 머리표 '02 먼저 다녀온 선배들의 SSUL' */
-.stories-page .ssul-b{position:absolute;z-index:5;left:var(--hin);display:flex;align-items:center;font:700 15px/1 var(--f);letter-spacing:-.01em;font-size:24px;gap:14px;top:var(--hero-y)}
-.stories-page .ssul-b b{color:#FF3EA5}
-.stories-page .ssul-b::after{content:"";height:1px;margin-left:6px;width:72px;background:rgba(20,35,63,.25)}
-.stories-page .cover .txt{padding-top:calc(var(--hero-y) + 84px)}   /* '02 SSUL'(위 --hero-y, 높이 48) + 36px 아래에서 글 시작 — 모든 폭 같은 식(2026-10-07, 시안 92 · 124 · 64px) */
+/* '02 SSUL'(위 --hero-y, 높이 48) + 36px 아래에서 글 시작 — 모든 폭 같은 식(2026-10-07, 시안 92 · 124 · 64px) */
 /* v2 히어로 — 좌우 끝까지 꽉 차게, 글은 원래 시작선 유지 */
 /* 2026-10-07 정렬: --hin(위 표지 .cover 규칙) = 헤더 정렬선(본문 폭 기준, 스크롤바 있어도 같은 선). 시안은 (50vw - 540px) / 2(1440에서 90px)였음.
    사진과의 틈 --hin-r(같은 곳)은 시안 식에 90px(1440 값) 상한 — 상한이 없으면 1920 이상에서 글 칸이 362px까지 좁아져 제목이 3 · 4줄로 넘침. 1440 이상은 글 칸 482px 그대로 */
 @media (min-width:1001px){
-.stories-page .cover .sl{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-.stories-page .cover .txt{padding-left:var(--hin);padding-right:var(--hin-r);justify-content:flex-start;padding-bottom:calc(var(--hero-y) + 40px)}
 .stories-page .cover .track{height:calc(484px + 2 * var(--hero-y))}   /* 글 자리 360px는 시안 그대로, 위아래 여백만 --hero-y(시안 40 · 36px, 높이 560) */
 .stories-page .cover .pg{bottom:var(--hero-y);left:var(--hin)}
 }
-@media (max-width:760px){
-.stories-page .ssul-b::after{display:none}
-}
 
 /* ---------- 사이트 연결(시안에 없던 것) ---------- */
-/* 2뎁스(후기 · 인터뷰 · 프로젝트 · 기수별 모아보기)는 헤더 밑 공통 하위 메뉴 바. 시안의 표지 아래 탭 막대(.tabbar)는 뺌 — 시안 막대도 공통 바와 같은 모양이었음 */
+/* 2뎁스(후기 · 인터뷰 · 프로젝트 · 기수별 이모저모)는 헤더 밑 공통 하위 메뉴 바. 시안의 표지 아래 탭 막대(.tabbar)는 뺌 — 시안 막대도 공통 바와 같은 모양이었음 */
 /* 표지: 2026-10-07 사용자 결정(후보 B) — 차콜 대신 카테고리 색(분홍)을 연하게. 글자는 잉크 · 그래파이트, 사진 위 화살표는 시안대로 흰색 */
 .stories-page .cover .av{background:var(--ink);color:#fff}
 .stories-page .cover .go{border-color:rgba(20,35,63,.45)}
-.stories-page .cover .ply{border-color:rgba(20,35,63,.3)}
-.stories-page .cover .ply:hover{border-color:var(--ink)}
-.stories-page .cover .seg:hover i{background:#A9B3C1}
 
 /* 키보드 초점(2026-10-07): 숨은 라디오(.tr)로 고르는 칩 · 필터 · 보기 방식 · 쪽 번호 · 넘김은 짝 라벨에 테두리(stories.js가 .kb-focus를 붙임).
    흐르는 인용 띠는 안 링크에 초점이 있으면 멈춤 */
-.stories-page label.kb-focus{outline:3px solid #E5197F;outline-offset:2px}
-.stories-page .lq-rail:focus-within .lq-t{animation-play-state:paused}
+.stories-page label.kb-focus{outline:3px solid var(--primary);outline-offset:2px}
 
 /* ---------- 정렬 · 여백 기준(2026-10-07) ---------- */
 /* 본문(main)을 크기 기준 상자로 — 표지 글 시작(--hin) · 꽉 찬 띠(.lq · .lsp · .ivband)를 100vw 대신 본문 폭(cqw)으로 계산해
@@ -1015,33 +695,25 @@ html body .stories-page .ssul-b{font-family:"Giants","Paperlogy Text",sans-serif
    고친 자리는 위 각 규칙에 '2026-10-07' 주석 */
 /* 표지 위아래 여백 = 공통 --hero-y(글 쪽 기준). 1001px 이상은 위 'v2 히어로' 묶음에서 고침 */
 @media (min-width:861px) and (max-width:1000px){
-.stories-page .cover .txt{padding-bottom:calc(var(--hero-y) + 72px)}   /* 넘김 점(높이 22) 위 50px까지가 글 자리 — 시안 112 = 40 + 72 */
+/* 넘김 점(높이 22) 위 50px까지가 글 자리 — 시안 112 = 40 + 72 */
 .stories-page .cover .pg{bottom:var(--hero-y)}
 .stories-page .cover .track{height:calc(512px + 2 * var(--hero-y))}   /* 글을 가운데 두는 칸(시안 356px) 그대로 — 높이 560이면 861 · 940에서 글 상자가 4 · 7px 넘침 */
 }
 @media (max-width:860px){
 /* 사진이 위로 꽉 차는 모바일: '02 SSUL'이 사진 위에 겹쳐 글자가 안 보이고, 사진 아래엔 빈 분홍 띠(64 · 92px)가 남던 것 →
    라벨을 사진 아래 --hero-y 자리로(사진 높이 = 본문 폭 × 3/4). 글은 그 아래 36px(위 .txt padding-top 식), 넘김 점은 아래 --hero-y */
-.stories-page .ssul-b{top:calc(100cqw * .75 + var(--hero-y))}
-.stories-page .cover .sl{align-content:start}   /* 짧은 슬라이드도 글이 사진 바로 아래에서 시작(남는 높이는 글 아래로) — 전에는 슬라이드마다 사진 아래 틈이 0 ~ 44px로 달랐음 */
-.stories-page .cover .txt{padding-bottom:calc(var(--hero-y) + 72px)}   /* 가장 긴 슬라이드의 작성자 줄 ↔ 넘김 점 50px 그대로(시안 104 = 32 + 72) */
+/* 짧은 슬라이드도 글이 사진 바로 아래에서 시작(남는 높이는 글 아래로) — 전에는 슬라이드마다 사진 아래 틈이 0 ~ 44px로 달랐음 */
+/* 가장 긴 슬라이드의 작성자 줄 ↔ 넘김 점 50px 그대로(시안 104 = 32 + 72) */
 .stories-page .cover .pg{bottom:var(--hero-y)}
 }
 @media (max-width:760px){
 /* 좁은 폰(375 이하)에서 '02 먼저 다녀온 선배들의 SSUL'(24px)이 정렬선 밖으로 나가고 360에서는 두 줄로 꺾여 SSUL이 오른쪽 끝에 떨어지던 것 →
    한 줄 유지, 글 폭(동그라미 48 + 틈 14 뺀 나머지)에 맞을 때까지만 글자를 줄임. 390 이상은 24px 그대로 */
-.stories-page .ssul-b{white-space:nowrap;font-size:min(24px,calc((100cqw - 2 * var(--gutter) - 62px) / 12))}
 }
 /* 표지 화살표: 흰 선이 연한 일러스트(첫 슬라이드 종이 · 라벤더 바탕) 위에서 안 보이던 것 → 모양 · 색은 그대로, 그림자를 잉크색 테두리처럼 진하게 */
-.stories-page .cover .arw.prev svg, .stories-page .cover .arw.next svg{filter:drop-shadow(0 0 1px rgba(20,35,63,.95)) drop-shadow(0 0 1px rgba(20,35,63,.7)) drop-shadow(0 1px 4px rgba(20,35,63,.4))}
 /* 프로젝트 카드 화살표(980px 이하, 한 줄로 쌓일 때): 카드 세로 가운데가 제목 · 설명 · TEAM 글자 위라 글을 가렸음 → 사진 세로 가운데로.
    화살표를 사진 칸(격자 1행)에 걸어 그 칸 가운데에 둠 — 사진은 칸 안 가운데 정렬이고 바깥 여백이 위 10 · 아래 24px라 사진 가운데는 칸 가운데보다 7px 위. 가로 자리(카드 끝에서 28px)는 그대로 */
 @media (max-width:980px){
-html body .stories-page section.proj .pr .pp{position:relative}
-.stories-page section.proj .pr .arw{grid-area:1 / 1 / 2 / 2;top:calc(50% - 7px)}   /* 끝 줄까지 적어야 함(절대 위치 자식은 auto면 격자 전체가 기준) */
-html body .stories-page section.proj .pr .arw.l{left:8px}
-html body .stories-page section.proj .pr .arw.r{right:8px}
+/* 끝 줄까지 적어야 함(절대 위치 자식은 auto면 격자 전체가 기준) */
 }
-/* 기수별 모아보기 카드: 같은 줄 카드 높이를 맞추고 기수 · 날짜 줄을 카드 맨 아래로(설명이 3줄인 카드만 줄이 23px 내려가 있던 것). 설명과의 간격 14px은 그대로 */
-.stories-page .arch .g2:not(.st){align-items:stretch}
-.stories-page .arch .st .mt{margin-top:auto;padding-top:14px}
+/* 기수별 이모저모 카드: 같은 줄 카드 높이를 맞추고 기수 · 날짜 줄을 카드 맨 아래로(설명이 3줄인 카드만 줄이 23px 내려가 있던 것). 설명과의 간격 14px은 그대로 */

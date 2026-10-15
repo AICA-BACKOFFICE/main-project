@@ -34,6 +34,8 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/css/**", "/js/**", "/img/**", "/favicon.ico", "/error").permitAll()
+                // 실행 파일이 브라우저를 열지 묻는 곳(LauncherController)
+                .requestMatchers("/launcher/**").permitAll()
                 .requestMatchers("/uploads/**", "/api/public/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/admin/users/**").hasRole(AdminRole.SUPER_ADMIN.name())
@@ -54,8 +56,8 @@ public class SecurityConfig {
                 // 미디어 관리: 업로드·보기는 전원, 분류 이동·이름 변경·삭제는 관리자 이상
                 .requestMatchers("/admin/media/*/move", "/admin/media/*/rename", "/admin/media/*/delete").hasAnyRole(
                         AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
-                // 카테고리 페이지 관리(사이트 페이지 편집·반영): 관리자 이상
-                .requestMatchers("/admin/pages/**").hasAnyRole(AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
+                // 카테고리 페이지 관리(사이트 페이지 편집·반영) · 지원 전 Check FAQ 관리(사이트 질문 목록 반영): 관리자 이상
+                .requestMatchers("/admin/pages/**", "/admin/faq", "/admin/faq/**").hasAnyRole(AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
                 .anyRequest().authenticated())
             // 카테고리 페이지 편집 화면의 저장 API 는 로그인이 끝났을 때 로그인 화면 대신 401 을 돌려준다(화면이 편집 내용을 보관한 채 안내).
             // 그 밖의 요청은 지금처럼 로그인 화면으로 보낸다.
@@ -82,6 +84,11 @@ public class SecurityConfig {
     private static AuthenticationEntryPoint authenticationEntryPoint() {
         LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> entryPoints = new LinkedHashMap<>();
         entryPoints.put(new AntPathRequestMatcher("/admin/pages/api/**"), new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
+        // FAQ 관리 · 인사교 라이프 게시물 관리 화면의 API 도 같이(로그인 화면 HTML을 받아 화면이 깨지지 않고 '다시 로그인' 안내가 나오게)
+        entryPoints.put(new AntPathRequestMatcher("/admin/pages/faq/api/**"), new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
+        entryPoints.put(new AntPathRequestMatcher("/admin/pages/life-photos/api/**"), new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
+        // 열어 둔 화면의 로그인 확인(SessionController)
+        entryPoints.put(new AntPathRequestMatcher("/admin/session"), new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
         DelegatingAuthenticationEntryPoint entryPoint = new DelegatingAuthenticationEntryPoint(entryPoints);
         entryPoint.setDefaultEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"));
         return entryPoint;

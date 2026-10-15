@@ -10,6 +10,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2315171c'/%3E%3Cpath d='M18 44 32 18l14 26' fill='none' stroke='%235b7cff' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/__bo/admin.css">
   <script src="/__bo/icons.js" defer></script>
+  <script src="/__bo/photo-editor.js" defer></script>
   <script src="/__bo/admin.js" defer></script>
 </head>
 <body>
@@ -53,15 +54,16 @@
     </div>
   </header>
 
+  <!-- ===== 편집 도구 막대: 고른 것에 맞는 도구(색 · 위치 · 설명 등은 눌러서 펼쳐요). admin.js 가 그린다 ===== -->
+  <div class="toolbar" id="panel" role="region" aria-label="편집 도구">
+    <div class="toolbar-inner" id="panel-body"></div>
+  </div>
   <div class="workspace">
     <main class="stage" id="stage">
       <div class="frame-wrap" id="frame-wrap" data-device="pc">
         <div class="frame-loading" id="frame-loading"><span></span>페이지를 불러오는 중…</div>
       </div>
     </main>
-    <aside class="panel" id="panel" aria-label="속성">
-      <div class="panel-scroll" id="panel-body"></div>
-    </aside>
   </div>
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
@@ -127,8 +129,12 @@
         <span>클릭하거나 파일을 여기로 끌어다 놓으세요 · PNG, JPG, WEBP, GIF, SVG</span>
       </label>
       <div class="library-toolbar">
-        <h3>사이트에 있는 이미지</h3>
-        <input type="search" id="library-search" placeholder="파일 이름으로 찾기" aria-label="파일 이름으로 찾기">
+        <h3 id="library-source-title">사이트에 있는 이미지</h3>
+        <div class="segmented library-sources" id="library-sources" role="group" aria-label="이미지를 가져올 곳" hidden>
+          <button type="button" data-lib-source="site" aria-pressed="true">사이트에 있는 이미지</button>
+          <button type="button" data-lib-source="media" aria-pressed="false">미디어 관리</button>
+        </div>
+        <input type="search" id="library-search" placeholder="이름으로 찾기" aria-label="이름으로 찾기">
       </div>
       <div class="library-grid" id="library-grid"></div>
     </div>

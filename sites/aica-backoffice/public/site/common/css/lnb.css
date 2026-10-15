@@ -1,0 +1,74 @@
+/* =========================================================
+   왼쪽 하위 메뉴(10-13 사본, 사용자 결정 '섞어서': 한눈에 보기 허브는 넓게 · 후기 · 인터뷰 · 프로젝트 · 이모저모 페이지는 왼쪽 메뉴)
+   페이지가 <html data-nav="side">면 site.js가 위쪽 바를 그리지 않고(data-subnav="off" → --sub 0) main 맨 앞에 nav.lnb#siteLnb를 그림.
+   1200px 이상: 본문 왼쪽 세로 메뉴(스크롤해도 헤더 아래 붙어 있음, 낮은 창은 제목 빼고 링크만) · 미만: 본문 위 가로 알약 줄
+   (1024 근처는 본문 칸이 730px까지 줄어 후기 판 · 격자가 답답해 알약 줄로. 10-13)
+   셀렉터는 html[data-nav="side"] #siteLnb 아래로 묶음 — 라이프의 .life-page .lnb와 이름이 같아 섞이지 않게.
+   ========================================================= */
+
+/* 왼쪽 메뉴 공통: 본문(.stories-page) 글꼴 · 줄 간격(16px 고정)과 * 초기화를 이어받지 않게 값을 다 적음 */
+html[data-nav="side"] #siteLnb{font-family:var(--ff-text);line-height:1.4;letter-spacing:-.01em}
+html[data-nav="side"] #siteLnb .lnb-list{list-style:none;margin:0}
+html[data-nav="side"] #siteLnb .lnb-list a{text-decoration:none;color:var(--graphite);transition:color .2s,background-color .2s,border-color .2s}
+html[data-nav="side"] #siteLnb .lnb-list a:hover{color:var(--ink)}
+/* 바탕: 탭 내용(.st-main)이 흰 면이라 main도 흰색 — 메뉴 칸 · 오른쪽 여백(좁은 화면은 알약 줄)만 회색으로 남지 않게 */
+html[data-nav="side"] .stories-page:has(> .st-main){background:#fff}
+
+/* ---------- 1200px 이상: 왼쪽 세로 메뉴 ----------
+   본문은 헤더와 같은 정렬선(--wrap · --gutter)에서 [메뉴 | 본문] 두 칸. main 안쪽 여백으로 본문 칸을 만들어
+   main(크기 기준 상자, stories.css)의 폭 = 본문 칸 → 꽉 찬 띠(100cqw · 50cqw)가 본문 칸 안에서 끝남.
+   메뉴는 main 높이만큼의 왼쪽 레일(absolute) 안에서 sticky — 본문 칸을 차지하지 않고, 본문이 끝나면 같이 멈춤 */
+@media (min-width:1200px){
+  html[data-nav="side"]{
+    --lnb-x:max(var(--gutter),calc((100% - var(--wrap)) / 2 + var(--gutter)));   /* 헤더 로고 시작선(.wrap 식). 100%는 쓰는 곳의 기준 폭 = 화면 폭 */
+    --lnb-w:clamp(176px,14vw,200px);
+    --lnb-gap:clamp(36px,3.4vw,48px)}
+  html[data-nav="side"] main#main{position:relative;padding-left:calc(var(--lnb-x) + var(--lnb-w) + var(--lnb-gap));padding-right:var(--lnb-x)}
+  html[data-nav="side"] #siteLnb{position:absolute;top:calc(var(--hdr) + var(--sub));bottom:0;left:var(--lnb-x);width:var(--lnb-w)}
+  /* 첫 줄(STORIES)이 본문 첫 섹션 머리(— 후기)와 같은 높이에서 시작, 스크롤하면 헤더 아래 32px에 붙음 */
+  html[data-nav="side"] #siteLnb .lnb-in{position:sticky;top:calc(var(--hdr) + 32px);margin-top:var(--lnb-top,calc(var(--sec-y-first) + 4px))}   /* 탭 내용(.st-main) 위 여백과 같은 식. 머리 여백이 다른 페이지는 main에 --lnb-top */
+  html[data-nav="side"] #siteLnb .lnb-head{display:flex;flex-direction:column;gap:10px;margin:0;padding:0 0 20px}
+  html[data-nav="side"] #siteLnb .lnb-title{font:700 24px/1.2 var(--ff-title);color:var(--ink);word-break:keep-all}
+  html[data-nav="side"] #siteLnb .lnb-list{padding:0;border-top:2px solid var(--ink)}   /* 제목 아래 굵은 선은 목록 쪽에 — 낮은 창에서 제목을 빼도 선이 남게 */
+  html[data-nav="side"] #siteLnb .lnb-list a{display:flex;align-items:center;gap:10px;padding:15px 2px;border-bottom:1px solid var(--line);font-size:16px;font-weight:500}
+  /* 지금 항목: 메인 색 · 굵게 + 섹션 머리(— 후기)와 같은 짧은 선 */
+  html[data-nav="side"] #siteLnb .lnb-list a[aria-current]{color:var(--primary);font-weight:700}
+  html[data-nav="side"] #siteLnb .lnb-list a[aria-current]::before{content:"";flex:none;width:14px;height:2px;background:currentColor}
+  html[data-nav="side"] #siteLnb .lnb-list a:focus-visible{outline:2px solid var(--primary);outline-offset:-2px;border-radius:2px}
+
+  /* 본문 칸 안: 탭 내용(.wrap)의 최대 폭 · 좌우 여백은 main 안쪽 여백이 대신함(겹치면 본문이 두 번 들어감) */
+  html[data-nav="side"] .stories-page .wrap{width:auto;max-width:none;padding-left:0;padding-right:0}
+  /* 프로젝트 차콜 바탕: 원래 화면 폭(50vw)으로 퍼져 왼쪽 메뉴를 덮음 → 본문 칸 폭으로, 칸 안의 판처럼 모서리를 둥글게 */
+  html[data-nav="side"] .stories-page .proj::before{left:calc(50% - 50cqw);right:calc(50% - 50cqw);border-radius:var(--r-card)}
+}
+/* 낮은 창(10-13 검토): 페이지 맨 끝에서 sticky 메뉴는 본문 끝(= 푸터 위)에 밀려 같이 올라감. 헤더 + 메뉴(약 340) + 푸터가 한 화면에 안 들어가면
+   메뉴 윗부분(STORIES · 제목)이 고정 헤더 뒤로 들어가 잘려 보임 → 이때는 제목을 빼고 링크 사이를 줄여(한 줄 44px) 링크 목록만 붙임. 1200 미만 알약 줄과 같은 판단.
+   기준 높이: 1080 넘는 폭의 푸터 293px → 72 + 340 + 293 ≈ 705 → 720 */
+@media (min-width:1200px) and (max-height:719.98px){
+  html[data-nav="side"] #siteLnb .lnb-head{position:absolute;visibility:hidden}   /* 흐름에서 빼고 숨김: 목록 위 선이 본문 첫 머리(— 후기)와 같은 높이에서 시작 */
+  html[data-nav="side"] #siteLnb .lnb-list a{padding-top:11px;padding-bottom:11px}
+}
+/* 링크 목록(229)도 못 들어가는 아주 낮은 창(600 미만): 따라오지 않고 본문 맨 위에 그대로 둠.
+   붙여 두면 페이지 끝에서 첫 링크가 헤더 뒤로 들어감. 이동은 헤더 메뉴로 */
+@media (min-width:1200px) and (max-height:599.98px){
+  html[data-nav="side"] #siteLnb .lnb-in{position:static}
+}
+
+/* ---------- 1200px 미만: 본문 위 가로 알약 줄(위쪽 하위 메뉴 바 자리) ----------
+   제목은 헤더 메뉴 · 페이지 머리와 겹쳐 뺌. 줄은 화면 끝까지 스크롤, 첫 알약은 본문 정렬선(--gutter)에서 시작 */
+@media (max-width:1199.98px){
+  html[data-nav="side"] #siteLnb .lnb-head{display:none}
+  html[data-nav="side"] #siteLnb .lnb-list{position:relative;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:17px var(--gutter) 0;scroll-padding-inline:var(--gutter)}   /* 위 17 = 알약 모양 위 20 − 누르는 자리 여분 3 */
+  html[data-nav="side"] #siteLnb .lnb-list::-webkit-scrollbar{display:none}
+  html[data-nav="side"] #siteLnb .lnb-list li{flex:none}
+  /* 누르는 자리(a)는 44px(10-13 검토: 38px은 터치 권장 44 미달), 보이는 알약 모양은 ::before로 38px 그대로 — 후기 칩(40px)보다 커 보이지 않게. 좌우 17 = 여백 16 + 옛 테두리 1 */
+  html[data-nav="side"] #siteLnb .lnb-list a{position:relative;z-index:0;display:flex;align-items:center;height:44px;padding:0 17px;border-radius:999px;font-size:14.5px;font-weight:500;white-space:nowrap}
+  html[data-nav="side"] #siteLnb .lnb-list a::before{content:"";position:absolute;inset:3px 0;z-index:-1;border:1px solid var(--line);border-radius:inherit;background:var(--surface);transition:border-color .2s}
+  html[data-nav="side"] #siteLnb .lnb-list a:hover::before{border-color:var(--line-ui)}
+  html[data-nav="side"] #siteLnb .lnb-list a[aria-current]{color:var(--primary);font-weight:700}
+  html[data-nav="side"] #siteLnb .lnb-list a[aria-current]::before{border-color:var(--primary)}
+  html[data-nav="side"] #siteLnb .lnb-list a:focus-visible{outline:none}
+  html[data-nav="side"] #siteLnb .lnb-list a:focus-visible::before{outline:2px solid var(--primary);outline-offset:1px}   /* 링 바깥 끝이 a 안(3px)에 들어가 가로 스크롤 줄에 잘리지 않음 */
+}
+
+html[data-nav="side"] #siteLnb .lnb-title{font-family:var(--ff-text);font-weight:700;font-size:21px;letter-spacing:-.02em}   /* 10-13: 왼쪽 메뉴 제목 Paperlogy */

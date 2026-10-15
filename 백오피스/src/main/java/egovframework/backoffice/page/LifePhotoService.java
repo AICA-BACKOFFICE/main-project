@@ -105,6 +105,7 @@ public class LifePhotoService {
         Map<String, Object> model = new LinkedHashMap<>();
         model.put("hash", hash(html));
         model.put("hasDraft", pages.hasDraft(page));
+        model.put("draft", pages.draftSummary(page));   // 임시저장이 있으면 무엇이 바뀌었는지(안내에 보여 줌)
         model.put("defaultFloor", root.attr("data-g"));
         model.put("floors", floors);
         model.put("maxPhotos", MAX_PHOTOS);

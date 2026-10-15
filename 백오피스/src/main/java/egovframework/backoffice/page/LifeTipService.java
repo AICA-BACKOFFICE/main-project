@@ -34,6 +34,8 @@ public class LifeTipService {
     private static final int[] ROTATE = {-5, 3, -2, 4, -3};
     private static final Pattern IM_CLASS = Pattern.compile("im-[A-Za-z0-9_-]+");
     private static final Pattern UPLOAD_SRC = Pattern.compile("assets/uploads/[A-Za-z0-9_.-]+\\.(?:webp|png|jpe?g|gif|avif)", Pattern.CASE_INSENSITIVE);
+    /** 사이트에 원래 있던 먹거리 그림(assets/food/f01.webp 등)도 그대로 다시 쓸 수 있게 */
+    private static final Pattern SITE_SRC = Pattern.compile("assets/[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*/?[A-Za-z0-9_.-]+\\.(?:webp|png|jpe?g|gif|avif)", Pattern.CASE_INSENSITIVE);
     private static final Pattern BG_URL = Pattern.compile("background-image\\s*:\\s*url\\(\\s*[\"']?([^\"')]+)[\"']?\\s*\\)");
     private static final String PHOTO_PENDING = "<span class=\"fdc-pht\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 8h3l1.6-2h6.8L17 8h3v11H4z\"></path>"
             + "<circle cx=\"12\" cy=\"13.5\" r=\"3.4\"></circle></svg>사진 준비 중</span>";
@@ -63,7 +65,8 @@ public class LifeTipService {
             f.put("review", text(li.selectFirst(".fdc-r blockquote")));
             f.put("example", li.selectFirst(".fdc-r .bdg.ex") != null);
             Element ph = li.selectFirst(".fdc-ph");
-            String src = ph == null ? "" : bgUrl(ph.attr("style"));
+            Element img = ph == null ? null : ph.selectFirst("> img");
+            String src = img != null ? img.attr("src") : ph == null ? "" : bgUrl(ph.attr("style"));
             f.put("src", src);
             f.put("url", src.isEmpty() ? "" : contextPath + "/admin/pages/site/life/" + src);
             foods.add(f);
@@ -183,19 +186,20 @@ public class LifeTipService {
         List<String> l = new ArrayList<>();
         String n = LifePhotoService.esc(f.name());
         l.add("<li class=\"fdc\" data-t=\"" + f.t() + "\" data-g=\"" + f.g() + "\" data-w=\"" + f.w() + "\"" + ("cafe".equals(f.t()) ? " hidden" : "") + ">");
+        // 사이트(2026-10-14 새 시안) 모양: 사진은 카드 위 칸 안의 <img>(has-img), 걸어서 몇 분은 혼밥/여럿이 줄 오른쪽(.fdc-gw)
         if (f.src().isEmpty()) {
             l.add("  <div class=\"fdc-ph\" role=\"img\" aria-label=\"" + n + " 사진 자리(사진 준비 중)\" data-field=\"photo\">");
         } else {
-            l.add("  <div class=\"fdc-ph\" role=\"img\" aria-label=\"" + n + " 사진\" data-field=\"photo\" style=\"background-image:url(" + f.src()
-                    + ");background-size:cover;background-position:center\">");
+            l.add("  <div class=\"fdc-ph has-img\" role=\"img\" aria-label=\"" + n + " 대표 메뉴 그림\" data-field=\"photo\"><img src=\"" + LifePhotoService.esc(f.src()) + "\" alt=\"\" loading=\"lazy\">");
         }
-        l.add("    <span class=\"fdc-cat\" data-field=\"category\">" + html(f.category()) + "</span><span class=\"fdc-wk\" data-field=\"walk\">도보 약 " + f.w() + "분</span>");
+        l.add("    <span class=\"fdc-cat\" data-field=\"category\">" + html(f.category()) + "</span>");
         if (f.src().isEmpty()) {
             l.add("    " + PHOTO_PENDING);
         }
         l.add("  </div>");
         l.add("  <div class=\"fdc-b\">");
-        l.add("    <p class=\"fdc-g " + f.g() + "\">" + ("group".equals(f.g()) ? "여럿이 가기 좋아요" : "cafe".equals(f.t()) ? "혼자 가기 편해요" : "혼밥하기 편해요") + "</p>");
+        l.add("    <div class=\"fdc-gw\"><p class=\"fdc-g " + f.g() + "\">" + ("group".equals(f.g()) ? "여럿이 가기 좋아요" : "cafe".equals(f.t()) ? "혼자 가기 편해요" : "혼밥하기 편해요") + "</p>"
+                + "<span class=\"fdc-wk\" data-field=\"walk\">도보 약 " + f.w() + "분</span></div>");
         l.add("    <h3 data-field=\"name\">" + html(f.name()) + "</h3>");
         l.add("    <p class=\"fdc-m\" data-field=\"menu\">" + html(f.menu()) + "</p>");
         l.add("  </div>");
@@ -304,7 +308,7 @@ public class LifeTipService {
             return "";
         }
         Path file = page.dir().resolve(src).normalize();
-        if (!UPLOAD_SRC.matcher(src).matches() || !file.startsWith(page.dir()) || !Files.isRegularFile(file)) {
+        if (!(UPLOAD_SRC.matcher(src).matches() || SITE_SRC.matcher(src).matches()) || src.contains("..") || !file.startsWith(page.dir()) || !Files.isRegularFile(file)) {
             throw new BusinessException("올린 사진 파일을 찾지 못했어요. 사진을 다시 올려 주세요.");
         }
         return src;

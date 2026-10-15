@@ -113,11 +113,11 @@ class LifePhotoWebTest {
             "        <ul class=\"fdg\" id=\"fdList\" aria-labelledby=\"fdk-food\">",
             "          <li class=\"fdc\" data-t=\"food\" data-g=\"solo\" data-w=\"4\">",
             "            <div class=\"fdc-ph\" role=\"img\" aria-label=\"국밥집 사진 자리(사진 준비 중)\" data-field=\"photo\">",
-            "              <span class=\"fdc-cat\" data-field=\"category\">한식</span><span class=\"fdc-wk\" data-field=\"walk\">도보 약 4분</span>",
+            "              <span class=\"fdc-cat\" data-field=\"category\">한식</span>",
             "              <span class=\"fdc-pht\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 8h3l1.6-2h6.8L17 8h3v11H4z\"></path><circle cx=\"12\" cy=\"13.5\" r=\"3.4\"></circle></svg>사진 준비 중</span>",
             "            </div>",
             "            <div class=\"fdc-b\">",
-            "              <p class=\"fdc-g solo\">혼밥하기 편해요</p>",
+            "              <div class=\"fdc-gw\"><p class=\"fdc-g solo\">혼밥하기 편해요</p><span class=\"fdc-wk\" data-field=\"walk\">도보 약 4분</span></div>",
             "              <h3 data-field=\"name\">국밥집</h3>",
             "              <p class=\"fdc-m\" data-field=\"menu\">국밥&nbsp;· 동명동</p>",
             "            </div>",
@@ -128,11 +128,11 @@ class LifePhotoWebTest {
             "          </li>",
             "          <li class=\"fdc\" data-t=\"food\" data-g=\"group\" data-w=\"7\">",
             "            <div class=\"fdc-ph\" role=\"img\" aria-label=\"고깃집 사진 자리(사진 준비 중)\" data-field=\"photo\">",
-            "              <span class=\"fdc-cat\" data-field=\"category\">고기</span><span class=\"fdc-wk\" data-field=\"walk\">도보 약 7분</span>",
+            "              <span class=\"fdc-cat\" data-field=\"category\">고기</span>",
             "              <span class=\"fdc-pht\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 8h3l1.6-2h6.8L17 8h3v11H4z\"></path><circle cx=\"12\" cy=\"13.5\" r=\"3.4\"></circle></svg>사진 준비 중</span>",
             "            </div>",
             "            <div class=\"fdc-b\">",
-            "              <p class=\"fdc-g group\">여럿이 가기 좋아요</p>",
+            "              <div class=\"fdc-gw\"><p class=\"fdc-g group\">여럿이 가기 좋아요</p><span class=\"fdc-wk\" data-field=\"walk\">도보 약 7분</span></div>",
             "              <h3 data-field=\"name\">고깃집</h3>",
             "              <p class=\"fdc-m\" data-field=\"menu\">삼겹살&nbsp;· 동명동</p>",
             "            </div>",
@@ -143,11 +143,11 @@ class LifePhotoWebTest {
             "          </li>",
             "          <li class=\"fdc\" data-t=\"cafe\" data-g=\"solo\" data-w=\"10\" hidden>",
             "            <div class=\"fdc-ph\" role=\"img\" aria-label=\"카페 하나 사진 자리(사진 준비 중)\" data-field=\"photo\">",
-            "              <span class=\"fdc-cat\" data-field=\"category\">카페</span><span class=\"fdc-wk\" data-field=\"walk\">도보 약 10분</span>",
+            "              <span class=\"fdc-cat\" data-field=\"category\">카페</span>",
             "              <span class=\"fdc-pht\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 8h3l1.6-2h6.8L17 8h3v11H4z\"></path><circle cx=\"12\" cy=\"13.5\" r=\"3.4\"></circle></svg>사진 준비 중</span>",
             "            </div>",
             "            <div class=\"fdc-b\">",
-            "              <p class=\"fdc-g solo\">혼자 가기 편해요</p>",
+            "              <div class=\"fdc-gw\"><p class=\"fdc-g solo\">혼자 가기 편해요</p><span class=\"fdc-wk\" data-field=\"walk\">도보 약 10분</span></div>",
             "              <h3 data-field=\"name\">카페 하나</h3>",
             "              <p class=\"fdc-m\" data-field=\"menu\">커피&nbsp;· 동명동</p>",
             "            </div>",
@@ -355,9 +355,17 @@ class LifePhotoWebTest {
         // 식당이 먼저, 카페는 처음에 숨김
         assertThat(out.indexOf("새 중국집")).isLessThan(out.indexOf("새 카페 &amp; 빵"));
         assertThat(out).contains("<li class=\"fdc\" data-t=\"cafe\" data-g=\"group\" data-w=\"3\" hidden>");
-        assertThat(out).contains("<div class=\"fdc-ph\" role=\"img\" aria-label=\"새 카페 &amp; 빵 사진\" data-field=\"photo\" style=\"background-image:url(" + path + ");background-size:cover;background-position:center\">");
+        assertThat(out).contains("<div class=\"fdc-ph has-img\" role=\"img\" aria-label=\"새 카페 &amp; 빵 대표 메뉴 그림\" data-field=\"photo\"><img src=\"" + path + "\" alt=\"\" loading=\"lazy\">");
         assertThat(out).contains("<p class=\"fdc-m\" data-field=\"menu\">라떼&nbsp;· 소금빵&nbsp;· 충장동</p>");
-        assertThat(out).contains("<p class=\"fdc-g group\">여럿이 가기 좋아요</p>\r\n              <h3 data-field=\"name\">새 카페 &amp; 빵</h3>");
+        assertThat(out).contains("<div class=\"fdc-gw\"><p class=\"fdc-g group\">여럿이 가기 좋아요</p><span class=\"fdc-wk\" data-field=\"walk\">도보 약 3분</span></div>\r\n              <h3 data-field=\"name\">새 카페 &amp; 빵</h3>");
+        // 사진을 올린 카드는 사진 칸 안 그림(has-img), 다시 읽으면 그 그림 주소
+        String readBack = null;
+        for (JsonNode f : model(session).get("food")) {
+            if ("새 카페 & 빵".equals(f.get("name").asText())) {
+                readBack = f.get("src").asText();
+            }
+        }
+        assertThat(readBack).isEqualTo(path);
         // 고친 후기는 '예시' 표시 없음, 그대로인 후기는 그대로
         assertThat(out).contains("<figcaption><b>선배 후기</b></figcaption>\r\n              <blockquote data-field=\"review\">진짜 후기예요.</blockquote>");
         assertThat(out).contains("<figcaption><b>선배 후기</b><span class=\"bdg ex\">예시</span></figcaption>\r\n              <blockquote data-field=\"review\">조용해요.</blockquote>");

@@ -16,11 +16,14 @@ import org.springframework.web.util.HtmlUtils;
 /**
  * 선배들의 이야기 고정 양식 값(story_json) — 정리 · 확인 · 본문 블록 만들기.
  * <pre>
- * 후기     { cat, cohort, author, track, summary, body[], tags[], ticker }        cat: life · class · proj · career, tags: 0~6
- * 인터뷰   { cohort, author, track, summary, quote, img, video{yt,dur}, qa[{q,a,toc}] }
- * 프로젝트 { summary, tags[], team, type, term, img, sections[{h,p}], links[{label,url}] }
- * 기수 기록 { cohort, date, summary, tags[], img, video{url,dur}, body[] }                tags: 0~9
- * 공통     img { src, alt, w, h } — src 는 /uploads/… (관리자 업로드) 또는 assets/… (사이트에 원래 있던 그림)
+ * 후기     { cat, cohort, author, track, summary, body[], tags[], ticker, hub, photos[], cover, img }   cat: life · class · proj · job · path (예전 career), tags: 0~6
+ * 인터뷰   { cohort, author, track, summary, quote, kicker, photos[], cover, img, video{yt,dur}, qa[{q,a,toc}] }
+ * 프로젝트 { summary, headline, cardSummary, tags[], team, type, term, photos[], cover, img, sections[{h,p}], links[{label,url}] }
+ *          hub: 한눈에 보기 포스트잇에 보이기 · kicker: 한눈에 보기 큰 인터뷰의 작은 꼬리표 · headline/cardSummary: 프로젝트 카드의 한 줄 제목과 짧은 요약
+ * 기수 기록 { cohort, date, summary, tags[], photos[], cover, img, video{url,dur}, body[] }            tags: 0~9
+ * 공통     img { src, alt, w, h, fit{x,y,z} } — src 는 /uploads/… (관리자 업로드) 또는 assets/… (사이트에 원래 있던 그림)
+ *          photos 는 사진 여러 장(최대 12장, 글을 열면 넘겨 봄), cover 는 그중 대표(카드 썸네일) 번호. img 는 늘 대표 사진과 같다
+ *          fit 은 썸네일 맞추기: 카드 틀 안에서 보일 위치(x · y, 0~100%)와 확대(z, 1~3배). 사진 파일은 그대로
  *          anchor · heroImg · imgLarge · art · heroArt 는 사이트에서 가져온 글이 원래 모양을 지키려고 그대로 들고 있는 값
  * </pre>
  * 사이트는 이 값을 글자로만 넣는다(stories-render.js 가 이스케이프). 그림 SVG(art)만 마크업이라 위험한 내용이 있으면 버린다.
@@ -30,11 +33,13 @@ public class StoryContent {
 
     public static final List<String> REVIEW_TAGS = List.of("#비전공자", "#타지출신", "#직장인출신", "#졸업생", "#적응", "#팀활동", "#취업연계");
     public static final List<String> COHORT_TAGS = List.of("입교식", "OT", "특강", "기업탐방", "중간발표회", "해커톤", "프로젝트", "취업박람회", "수료식", "동문회");
-    public static final Map<String, String> REVIEW_CATS = linked("life", "생활", "class", "수업", "proj", "프로젝트", "career", "취업·진로");
+    /** 후기 분야(2026-10-14 시안: 취업·진로 → 취업 성공 · 진로 고민). career 는 예전 글을 위해 남겨 둠(사이트에서는 취업 성공으로 보임) */
+    public static final Map<String, String> REVIEW_CATS = linked("life", "생활", "class", "수업", "proj", "프로젝트", "job", "취업 성공", "path", "진로 고민", "career", "취업·진로");
 
     private static final Pattern ANCHOR = Pattern.compile("[a-z][a-z0-9-]{0,40}");
     private static final Pattern UPLOAD = Pattern.compile("/uploads/[\\w\\-./]+");
     private static final Pattern SITE_ASSET = Pattern.compile("assets/[\\w\\-./]+");
+    private static final int MAX_PHOTOS = 12;
     private static final Pattern YT_ID = Pattern.compile("[\\w-]{6,20}");
     private static final Pattern YT_IN_URL = Pattern.compile("(?:youtube\\.com/(?:watch\\?(?:.*&)?v=|embed/|shorts/|live/)|youtu\\.be/)([\\w-]{6,20})");
     private static final Pattern DURATION = Pattern.compile("\\d{1,3}:\\d{2}");
@@ -92,9 +97,13 @@ public class StoryContent {
                 put(out, "track", text(in.get("track"), 40));
                 put(out, "tags", indexes(in.get("tags"), REVIEW_TAGS.size()));
                 put(out, "ticker", text(in.get("ticker"), 80));
+                if (Boolean.TRUE.equals(in.get("hub"))) {
+                    out.put("hub", true);
+                }
+                photos(out, in);
                 put(out, "heroImg", image(in.get("heroImg")));
                 if (publishing) {
-                    require(out, "cat", "후기 분야(생활·수업·프로젝트·취업·진로)를 골라 주세요.");
+                    require(out, "cat", "후기 분야(생활·수업·프로젝트·취업 성공·진로 고민)를 골라 주세요.");
                     require(out, "cohort", "기수를 입력해 주세요.");
                     require(out, "author", "이름을 입력해 주세요.");
                     require(out, "track", "직군(트랙)을 입력해 주세요.");
@@ -104,11 +113,12 @@ public class StoryContent {
             }
             case INTERVIEW -> {
                 put(out, "quote", text(in.get("quote"), 300));
+                put(out, "kicker", text(in.get("kicker"), 30));
                 put(out, "summary", text(in.get("summary"), 1000));
                 put(out, "cohort", cohort(in.get("cohort")));
                 put(out, "author", text(in.get("author"), 30));
                 put(out, "track", text(in.get("track"), 40));
-                put(out, "img", image(in.get("img")));
+                photos(out, in);
                 put(out, "imgLarge", image(in.get("imgLarge")));
                 put(out, "art", art(in.get("art")));
                 put(out, "video", video(in.get("video"), false));
@@ -126,10 +136,12 @@ public class StoryContent {
             case PROJECT -> {
                 put(out, "tags", hashtags(in.get("tags")));
                 put(out, "summary", text(in.get("summary"), 1000));
+                put(out, "headline", text(in.get("headline"), 120));
+                put(out, "cardSummary", text(in.get("cardSummary"), 200));
                 put(out, "team", text(in.get("team"), 60));
                 put(out, "type", text(in.get("type"), 30));
                 put(out, "term", text(in.get("term"), 40));
-                put(out, "img", image(in.get("img")));
+                photos(out, in);
                 put(out, "art", art(in.get("art")));
                 put(out, "heroArt", art(in.get("heroArt")));
                 put(out, "sections", sections(in.get("sections")));
@@ -146,7 +158,7 @@ public class StoryContent {
                 put(out, "tags", indexes(in.get("tags"), COHORT_TAGS.size()));
                 put(out, "summary", text(in.get("summary"), 1000));
                 put(out, "date", text(in.get("date"), 20));
-                put(out, "img", image(in.get("img")));
+                photos(out, in);
                 put(out, "art", art(in.get("art")));
                 put(out, "video", video(in.get("video"), true));
                 put(out, "body", paragraphs(in.get("body"), 40, 4000));
@@ -171,7 +183,7 @@ public class StoryContent {
     public String subCategorySlug(StoryKind kind, Map<String, Object> story) {
         if (kind == StoryKind.REVIEW) {
             String cat = text(story.get("cat"), 10);
-            return cat.isEmpty() ? null : "review-" + ("proj".equals(cat) ? "project" : cat);
+            return cat.isEmpty() ? null : "review-" + ("proj".equals(cat) ? "project" : cat);   // review-life · class · project · job · path (예전 career)
         }
         if (kind == StoryKind.COHORT && story.get("cohort") instanceof Number n) {
             int c = n.intValue();
@@ -196,7 +208,7 @@ public class StoryContent {
         String who = join(" · ", s.get("cohort") instanceof Number n ? n + "기" : "", text(s.get("author"), 30), text(s.get("track"), 40));
         switch (kind) {
             case REVIEW -> {
-                image(b, s.get("heroImg"));
+                images(b, s);
                 paragraph(b, join(" · ", REVIEW_CATS.getOrDefault(text(s.get("cat"), 10), ""), who), true);
                 paragraph(b, text(s.get("summary"), 1000), true);
                 for (Object p : list(s.get("body"))) {
@@ -205,7 +217,7 @@ public class StoryContent {
                 paragraph(b, String.join(" ", names(s.get("tags"), REVIEW_TAGS)), false);
             }
             case INTERVIEW -> {
-                image(b, s.get("img"));
+                images(b, s);
                 paragraph(b, who, true);
                 if (!text(s.get("quote"), 300).isEmpty()) {
                     b.add(block("quote", "html", esc(text(s.get("quote"), 300))));
@@ -225,7 +237,8 @@ public class StoryContent {
                 }
             }
             case PROJECT -> {
-                image(b, s.get("img"));
+                images(b, s);
+                paragraph(b, text(s.get("headline"), 120), true);
                 paragraph(b, join(" · ", text(s.get("team"), 60), text(s.get("type"), 30), text(s.get("term"), 40)), true);
                 paragraph(b, text(s.get("summary"), 1000), true);
                 paragraph(b, String.join(" ", strings(s.get("tags"))), false);
@@ -244,7 +257,7 @@ public class StoryContent {
                 }
             }
             case COHORT -> {
-                image(b, s.get("img"));
+                images(b, s);
                 paragraph(b, join(" · ", s.get("cohort") instanceof Number n ? n + "기" : "", text(s.get("date"), 20),
                         String.join(" ", names(s.get("tags"), COHORT_TAGS))), true);
                 paragraph(b, text(s.get("summary"), 1000), true);
@@ -380,7 +393,65 @@ public class StoryContent {
             img.put("w", w);
             img.put("h", h);
         }
+        Map<String, Object> fit = fit(m.get("fit"));
+        if (fit != null) {
+            img.put("fit", fit);
+        }
         return img;
+    }
+
+    /** 사진 여러 장(photos)과 대표(cover → img). 여러 장이 없으면 예전처럼 img 하나만 */
+    private static void photos(Map<String, Object> out, Map<String, Object> in) {
+        List<Map<String, Object>> photos = new ArrayList<>();
+        int wanted = in.get("cover") instanceof Number n ? n.intValue() : -1, cover = -1, i = 0;
+        for (Object o : list(in.get("photos"))) {
+            Map<String, Object> img = image(o);
+            if (img != null && photos.size() < MAX_PHOTOS) {
+                if (i == wanted) {
+                    cover = photos.size();   // 앞의 잘못된 사진이 빠져도 고른 대표 사진 그대로
+                }
+                photos.add(img);
+            }
+            i++;
+        }
+        if (photos.isEmpty()) {
+            put(out, "img", image(in.get("img")));
+            return;
+        }
+        if (cover < 0 && in.get("img") instanceof Map<?, ?> m && m.get("src") instanceof String src) {
+            // 대표 번호가 없거나 맞지 않으면 대표 사진(img)과 같은 사진으로
+            for (int k = 0; k < photos.size() && cover < 0; k++) {
+                if (src.equals(photos.get(k).get("src"))) {
+                    cover = k;
+                }
+            }
+        }
+        cover = Math.max(0, cover);
+        out.put("img", new LinkedHashMap<>(photos.get(cover)));
+        out.put("photos", photos);
+        out.put("cover", cover);
+    }
+
+    /** 썸네일 맞추기: 보일 위치 x · y(0~100%), 확대 z(1~3배). 가운데 · 확대 없음이면 null */
+    private static Map<String, Object> fit(Object v) {
+        if (!(v instanceof Map<?, ?> m)) {
+            return null;
+        }
+        long x = Math.round(number(m.get("x"), 50, 0, 100)), y = Math.round(number(m.get("y"), 50, 0, 100));
+        double z = Math.round(number(m.get("z"), 1, 1, 3) * 100) / 100.0;
+        if (x == 50 && y == 50 && z == 1) {
+            return null;
+        }
+        Map<String, Object> fit = new LinkedHashMap<>();
+        fit.put("x", x);
+        fit.put("y", y);
+        fit.put("z", z);
+        return fit;
+    }
+
+    private static double number(Object v, double fallback, double min, double max) {
+        double d = v instanceof Number n ? n.doubleValue() : fallback;
+        return Double.isFinite(d) ? Math.max(min, Math.min(max, d)) : fallback;
     }
 
     private static Integer size(Object v) {
@@ -512,6 +583,16 @@ public class StoryContent {
             return;
         }
         b.add(block("paragraph", "html", bold ? "<b>" + esc(text) + "</b>" : esc(text)));
+    }
+
+    /** 사진 여러 장이면 모두, 아니면 대표 사진(예전 후기는 사이트에서 가져온 heroImg) */
+    private static void images(List<Map<String, Object>> b, Map<String, Object> s) {
+        List<?> photos = list(s.get("photos"));
+        if (!photos.isEmpty()) {
+            photos.forEach(p -> image(b, p));
+            return;
+        }
+        image(b, s.get("img") != null ? s.get("img") : s.get("heroImg"));
     }
 
     private static void image(List<Map<String, Object>> b, Object img) {

@@ -11,12 +11,13 @@
        th:data-site-base="@{/admin/pages/site/life/}"
        th:data-front="${frontLink}"
        th:data-editor="@{/admin/pages/life/edit}"
-       th:data-section="${lifeSection}">
+       th:data-section="${lifeSection}"
+       th:data-draft-api="@{/admin/pages/api/draft(page='life')}">
     <div class="card lp-loading">사진을 불러오는 중이에요…</div>
   </div>
 </main>
 <th:block th:fragment="scripts">
-  <script th:src="@{/js/page/life-photos.js}"></script>
+  <script th:src="@{/js/page/life-photos.js(v='20261014c')}"></script>
 </th:block>
 </body>
 </html>

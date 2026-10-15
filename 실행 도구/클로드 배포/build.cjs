@@ -1,6 +1,6 @@
 'use strict';
 // 인사교 사이트 시안(Claude 배포 링크) 빌드: 사이트(프론트오피스)와 편집 화면(백오피스)을 한 폴더로 모읍니다.
-// 실행: node "실행 도구/클로드 배포/build.cjs" <출력 폴더>   (백오피스 프로젝트 폴더에서)
+// 실행: node "실행 도구/클로드 배포/build.cjs" <출력 폴더> [사이트 폴더]   (백오피스 프로젝트 폴더에서. 사이트 폴더를 비우면 프론트오피스)
 //   - 사이트 폴더(백오피스 프로젝트/프론트오피스)의 페이지를 복사하고, 각 페이지 <head> 바로 뒤에 common/js/aica-artifact.js를 넣어요.
 //   - 편집 화면(이 폴더의 편집기/ — 백오피스의 static/js/page · css/page와 같은 편집기)을 admin/에 넣고, 저장·반영은 배포 링크의 틀(entry.html)이 맡도록 설정해요.
 //   - entry.html(틀)에 편집할 페이지 · 편집기 옵션 · 그림 목록을 채워 넣어요.
@@ -10,7 +10,7 @@ const path = require('node:path');
 
 const OUT = path.resolve(process.argv[2] || '');
 if (!process.argv[2]) throw new Error('출력 폴더를 알려 주세요: node "실행 도구/클로드 배포/build.cjs" <출력 폴더>');
-const SITE = path.resolve(__dirname, '..', '..', '프론트오피스');
+const SITE = path.resolve(process.argv[3] || path.resolve(__dirname, '..', '..', '프론트오피스'));
 const SITE_CONFIG = path.join(__dirname, 'site.config.json');
 const BO_PUBLIC = path.join(__dirname, '편집기');
 const SITE_DIRS = ['about', 'check', 'common', 'home', 'life', 'stories'];
@@ -47,19 +47,14 @@ for (const file of htmlFiles) {
 // 3. 편집 화면(백오피스)
 const admin = path.join(OUT, 'admin');
 fs.mkdirSync(admin, { recursive: true });
-for (const name of ['admin.js', 'icons.js', 'canvas.js', 'canvas.css']) fs.copyFileSync(path.join(BO_PUBLIC, name), path.join(admin, name));
+for (const name of ['admin.js', 'icons.js', 'photo-editor.js', 'canvas.js', 'canvas.css']) fs.copyFileSync(path.join(BO_PUBLIC, name), path.join(admin, name));
 // 관리 화면 글꼴은 사이트에 들어 있는 프리텐다드를 써요(배포 링크 안의 상대 주소로).
 const adminCss = fs.readFileSync(path.join(BO_PUBLIC, 'admin.css'), 'utf8')
   .replace(/url\('\/assets\/fonts\/([^']+)'\) format\('woff2'\), url\('\/common\/assets\/fonts\/[^']+'\) format\('woff2'\)/g, "url('../common/assets/fonts/$1') format('woff2')");
 if (!adminCss.includes("url('../common/assets/fonts/")) throw new Error('관리 화면 글꼴 주소를 바꾸지 못했어요.');
 fs.writeFileSync(path.join(admin, 'admin.css'), adminCss);
-// 편집할 페이지: 관리자 페이지(카테고리 페이지 관리)와 같은 네 카테고리
-const pages = [
-  { id: 'about', title: '인사교 알아보기', file: 'about/index.html' },
-  { id: 'stories', title: '선배들의 이야기', file: 'stories/index.html' },
-  { id: 'life', title: '인사교 라이프', file: 'life/index.html' },
-  { id: 'check', title: '지원 전 체크', file: 'check/index.html' }
-];
+// 편집할 페이지: 관리자 페이지(카테고리 페이지 관리)와 같은 목록(site.config.json — 2026-10-14부터 이야기 하위 페이지 4개 포함)
+const pages = config.pages.map(({ id, title, file, parent }) => (parent ? { id, title, file, parent } : { id, title, file }));
 const pageOptions = {
   locked: config.locked || [], inert: config.inert || [], inertNotice: config.inertNotice || null, inertNotices: config.inertNotices || [],
   pageLevel: config.pageLevel || [], controlText: config.controlText || [],

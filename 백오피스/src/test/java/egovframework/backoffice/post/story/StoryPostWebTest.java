@@ -206,6 +206,10 @@ class StoryPostWebTest {
                 .doesNotContainPattern("<a[^>]*class=\"on\"[^>]*>선배들의 이야기 게시물 관리</a>")
                 .containsPattern("<option value=\"" + categoryId("interview") + "\" selected=\"selected\">")
                 .contains("영상 인터뷰");
+        // 제목 · 사진을 누르면 사이트 모습이 미리보기 창으로(새 탭 대신), 신규 등록은 보던 종류 양식으로
+        assertThat(page).containsPattern("<a class=\"t\" href=\"/admin/posts/\\d+/preview\"[^>]*data-preview")
+                .doesNotContain("pv-label")
+                .contains("data-preview").contains("preview-modal.js").contains("/admin/posts/new?kind=interview");
         // 상단 메뉴(게시물 · 미디어 · FAQ · 통계) · 임시 비밀번호 안내 · 운영진 공지 메뉴는 없음
         assertThat(page).doesNotContain("gnb-menu").doesNotContain("임시 비밀번호를 사용 중입니다").doesNotContain(">운영진 공지<");
     }
@@ -246,5 +250,152 @@ class StoryPostWebTest {
         // 휴지통으로 옮기면 복사한 사진도 사이트에서 정리
         mvc.perform(post("/admin/posts/" + id + "/delete").session(session).with(csrf())).andExpect(status().is3xxRedirection());
         assertThat(Files.exists(SITE.resolve("stories").resolve(src))).isFalse();
+    }
+
+    @Test
+    @Order(5)
+    void newPostsStartWithAFormAndSeveralPhotosPickTheirThumbnail() throws Exception {
+        MockHttpSession session = login();
+        // 새 글은 미분류 없이 후기 양식으로(목록에서 고른 종류가 있으면 그 종류로) 열린다
+        String blank = mvc.perform(get("/admin/posts/new").session(session)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(UTF_8);
+        assertThat(blank).containsPattern("<option value=\"" + categoryId("review") + "\"[^>]*selected=\"selected\"")
+                .doesNotContain("미분류").contains("photo-editor.js");
+        assertThat(mvc.perform(get("/admin/posts/new").param("kind", "project").session(session)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(UTF_8))
+                .containsPattern("<option value=\"" + categoryId("project") + "\"[^>]*selected=\"selected\"");
+
+        // 사진 두 장 중 둘째를 대표로, 썸네일 맞추기 값은 범위 안으로 정리
+        String first = upload(session, "a.png", "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==");
+        String second = upload(session, "b.png", "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==");
+        String story = "{\"cohort\":9,\"author\":\"박사진\",\"track\":\"비전\",\"summary\":\"사진 여러 장\",\"qa\":[{\"q\":\"질문\",\"a\":\"답\"}],"
+                + "\"photos\":[{\"src\":\"" + first + "\",\"alt\":\"하나\",\"fit\":{\"x\":50,\"y\":50,\"z\":1}},"
+                + "{\"src\":\"" + second + "\",\"alt\":\"둘\",\"fit\":{\"x\":30.4,\"y\":180,\"z\":7}},{\"src\":\"https://evil.example/x.png\"}],\"cover\":1}";
+        long id = save(session, null, "interview", "사진 많은 인터뷰", "PUBLISHED", story);
+        JsonNode saved = json.readTree(jdbc.queryForObject("SELECT story_json FROM posts WHERE id = " + id, String.class));
+        assertThat(saved.get("photos")).hasSize(2);
+        assertThat(saved.get("photos").get(0).has("fit")).isFalse();
+        assertThat(saved.get("cover").asInt()).isEqualTo(1);
+        assertThat(saved.get("img").get("src").asText()).isEqualTo(second);
+        assertThat(saved.get("img").get("fit").toString()).isEqualTo("{\"x\":30,\"y\":100,\"z\":3.0}");
+        assertThat(jdbc.queryForObject("SELECT thumbnail_url FROM posts WHERE id = " + id, String.class)).isEqualTo(second);
+
+        // 사이트: 사진 두 장 모두 사이트로 복사, 대표 사진(img)은 둘째, 대표 번호(cover)는 사이트에 안 보냄
+        JsonNode item = null;
+        for (JsonNode iv : site().get("interviews")) {
+            if (iv.get("id").asLong() == id) {
+                item = iv;
+            }
+        }
+        assertThat(item).isNotNull();
+        assertThat(item.get("photos")).hasSize(2);
+        assertThat(item.get("photos").get(0).get("src").asText()).startsWith("assets/uploads/post-");
+        assertThat(item.get("img").get("src").asText()).isEqualTo(item.get("photos").get(1).get("src").asText());
+        assertThat(item.get("img").get("fit").get("z").asDouble()).isEqualTo(3.0);
+        assertThat(item.has("cover")).isFalse();
+        for (JsonNode p : item.get("photos")) {
+            assertThat(Files.exists(SITE.resolve("stories").resolve(p.get("src").asText()))).isTrue();
+        }
+
+        // 버전 이력의 '편집기에 불러오기'가 양식 칸(사진 · 대표)까지 채울 수 있게 버전 내용에 양식 값이 들어 있다
+        JsonNode versions = json.readTree(mvc.perform(get("/admin/posts/" + id + "/versions").session(session))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(UTF_8));
+        JsonNode detail = json.readTree(mvc.perform(get("/admin/posts/" + id + "/versions/" + versions.get(0).get("id").asLong()).session(session))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(UTF_8));
+        assertThat(json.readTree(detail.get("storyJson").asText()).get("photos")).hasSize(2);
+
+        // 앞의 잘못된 사진이 빠져도 고른 대표 사진(셋째 → 정리 뒤 둘째)이 그대로
+        long mapped = save(session, null, "cohort", "대표 번호 맞추기", "DRAFT", "{\"photos\":[{\"src\":\"https://evil.example/x.png\"},"
+                + "{\"src\":\"" + first + "\"},{\"src\":\"" + second + "\"}],\"cover\":2}");
+        JsonNode m = json.readTree(jdbc.queryForObject("SELECT story_json FROM posts WHERE id = " + mapped, String.class));
+        assertThat(m.get("cover").asInt()).isEqualTo(1);
+        assertThat(m.get("img").get("src").asText()).isEqualTo(second);
+
+        // 숨긴 카테고리에 있는 예전 글은 후기로 몰래 바뀌지 않고 그 카테고리 그대로 열린다(본문 블록 편집기 유지)
+        jdbc.update("INSERT INTO categories (name, slug, sort_order, active) VALUES ('옛 분류', 'old-hidden', 99, FALSE)");
+        String hidden = categoryId("old-hidden");
+        jdbc.update("UPDATE posts SET category_id = " + hidden + ", story_json = NULL WHERE id = " + mapped);
+        assertThat(mvc.perform(get("/admin/posts/" + mapped + "/edit").session(session)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(UTF_8))
+                .containsPattern("<option value=\"" + hidden + "\"[^>]*selected=\"selected\"[^>]*>숨긴 카테고리 \\(예전 글\\)</option>");
+    }
+
+    @Test
+    @Order(6)
+    void newSiteDesignFieldsAndPerKindPreviewPages() throws Exception {
+        MockHttpSession session = login();
+        // 2026-10-14 새 시안: 후기 분야 '취업 성공' · '진로 고민', 한눈에 보기 포스트잇(hub)
+        long rv = save(session, null, "review", "취업 성공 후기", "PUBLISHED", "{\"cat\":\"job\",\"cohort\":7,\"author\":\"김ㅇㅇ\",\"track\":\"AI 모델개발\","
+                + "\"summary\":\"요약.\",\"body\":[\"본문\"],\"hub\":true}");
+        JsonNode r = json.readTree(jdbc.queryForObject("SELECT story_json FROM posts WHERE id = " + rv, String.class));
+        assertThat(r.get("cat").asText()).isEqualTo("job");
+        assertThat(r.get("hub").asBoolean()).isTrue();
+        assertThat(jdbc.queryForObject("SELECT sc.slug FROM posts p JOIN categories sc ON sc.id = p.sub_category_id WHERE p.id = " + rv, String.class))
+                .isEqualTo("review-job");
+        long path = save(session, null, "review", "진로 고민 후기", "DRAFT", "{\"cat\":\"path\",\"hub\":false}");
+        JsonNode pr = json.readTree(jdbc.queryForObject("SELECT story_json FROM posts WHERE id = " + path, String.class));
+        assertThat(pr.get("cat").asText()).isEqualTo("path");
+        assertThat(pr.has("hub")).isFalse();
+        // 인터뷰 꼬리표 · 프로젝트 카드 한 줄 제목 · 짧은 요약
+        long iv = save(session, null, "interview", "꼬리표 인터뷰", "DRAFT", "{\"kicker\":\"  비전공자라면  \",\"summary\":\"s\"}");
+        assertThat(json.readTree(jdbc.queryForObject("SELECT story_json FROM posts WHERE id = " + iv, String.class)).get("kicker").asText()).isEqualTo("비전공자라면");
+        long pj = save(session, null, "project", "손끝 — 보행 보조 앱", "PUBLISHED", "{\"summary\":\"긴 요약입니다.\",\"team\":\"t\",\"type\":\"실증\",\"term\":\"720H\","
+                + "\"headline\":\"카메라가 신호등을 읽어요\",\"cardSummary\":\"2주 동안 써 봤어요.\"}");
+        JsonNode p = json.readTree(jdbc.queryForObject("SELECT story_json FROM posts WHERE id = " + pj, String.class));
+        assertThat(p.get("headline").asText()).isEqualTo("카메라가 신호등을 읽어요");
+        assertThat(p.get("cardSummary").asText()).isEqualTo("2주 동안 써 봤어요.");
+        JsonNode sp = null;
+        for (JsonNode x : site().get("projects")) {
+            if (x.get("id").asLong() == pj) {
+                sp = x;
+            }
+        }
+        assertThat(sp).isNotNull();
+        assertThat(sp.get("headline").asText()).isEqualTo("카메라가 신호등을 읽어요");
+
+        // 이야기가 종류별 페이지로 나뉜 사이트면 미리보기도 그 종류의 페이지로(안내 띠는 그 페이지에)
+        Files.writeString(SITE.resolve("stories/reviews.html"), "<!doctype html>\n<html><body class=\"r\">\n<main class=\"stories-page\"></main>\n</body></html>\n", UTF_8);
+        Files.writeString(SITE.resolve("stories/cohorts.html"), "<!doctype html>\n<html><body class=\"c\">\n<main class=\"stories-page\"></main>\n</body></html>\n", UTF_8);
+        try {
+            String to = mvc.perform(get("/admin/posts/" + rv + "/preview").session(session)).andExpect(status().is3xxRedirection())
+                    .andReturn().getResponse().getRedirectedUrl();
+            assertThat(to).matches("/admin/posts/story-preview/[0-9a-f]+/stories/reviews\\.html#r-p" + rv);
+            assertThat(mvc.perform(get(to.substring(0, to.indexOf('#'))).session(session)).andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString(UTF_8)).contains("<body class=\"r\"><div data-story-preview");
+            long co = save(session, null, "cohort", "기수 기록 미리보기", "DRAFT", "{\"cohort\":9,\"date\":\"2027. 01. 01\",\"summary\":\"s\"}");
+            String toCo = mvc.perform(get("/admin/posts/" + co + "/preview").session(session)).andExpect(status().is3xxRedirection())
+                    .andReturn().getResponse().getRedirectedUrl();
+            assertThat(toCo).matches("/admin/posts/story-preview/[0-9a-f]+/stories/cohorts\\.html#st-" + co);
+            // 인터뷰 페이지는 아직 없으면 예전처럼 한 페이지로
+            assertThat(mvc.perform(get("/admin/posts/" + iv + "/preview").session(session)).andReturn().getResponse().getRedirectedUrl())
+                    .contains("/stories/index.html#");
+        } finally {
+            Files.deleteIfExists(SITE.resolve("stories/reviews.html"));
+            Files.deleteIfExists(SITE.resolve("stories/cohorts.html"));
+        }
+    }
+
+    @Test
+    @Order(7)
+    void siteDataIsWrittenEvenWhileAnotherProgramKeepsTheFileOpen() throws Exception {
+        MockHttpSession session = login();
+        // 사이트를 보여 주는 프로그램이 데이터 파일을 열어 둔 채 놓지 않아도(윈도우에서는 이름 바꿔 덮어쓰기가 막힘) 발행한 글이 사이트에 반영된다
+        try (java.nio.channels.FileChannel held = java.nio.channels.FileChannel.open(DATA, java.nio.file.StandardOpenOption.READ)) {
+            long id = save(session, null, "review", "열려 있어도 반영", "PUBLISHED", "{\"cat\":\"life\",\"cohort\":7,\"author\":\"김ㅇㅇ\","
+                    + "\"track\":\"데이터 분석\",\"summary\":\"요약.\",\"body\":[\"본문\"]}");
+            assertThat(site().get("reviews").get(0).get("id").asLong()).isEqualTo(id);
+            assertThat(site().get("reviews").get(0).get("title").asText()).isEqualTo("열려 있어도 반영");
+        }
+        try (Stream<Path> left = Files.list(DATA.getParent())) {
+            assertThat(left.filter(p -> p.getFileName().toString().endsWith(".tmp"))).isEmpty();
+        }
+    }
+
+    private String upload(MockHttpSession session, String name, String base64) throws Exception {
+        String up = mvc.perform(MockMvcRequestBuilders.multipart("/admin/images")
+                        .file(new MockMultipartFile("file", name, "image/png", java.util.Base64.getDecoder().decode(base64)))
+                        .session(session).with(csrf()))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(UTF_8);
+        return json.readTree(up).get("url").asText();
     }
 }

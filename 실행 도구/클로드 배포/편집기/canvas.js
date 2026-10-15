@@ -434,7 +434,9 @@
         const step = col.querySelector('.pf-step');
         renumber(step, index + 1);
         const card = col.querySelector('.pf-card');
-        const label = [textOf(step), textOf(col.querySelector('[data-field="title"]'))].filter(Boolean).join(' ');
+        // 카드 제목: 예전 시안은 data-field="title", 1014 시안부터는 카드 안 h3(없으면 접근성 이름을 그대로 둠 — 'STEP 01'만 남지 않게)
+        const title = col.querySelector('[data-field="title"]') || card?.querySelector('h3, h4');
+        const label = title ? [textOf(step), textOf(title)].filter(Boolean).join(' ') : '';
         if (card?.hasAttribute('aria-label') && label) setIfChanged(card, 'aria-label', label);
       });
       const label = flow.getAttribute('aria-label');
@@ -623,6 +625,36 @@
     if (!flush()) return null;
     return out.join('\n');
   }
+  // 짝 없는 끝 태그(여는 태그 없이 남은 </span> 등)의 수. 브라우저는 이런 태그를 조용히 무시해서 뜻 비교로는 못 잡으므로 따로 셉니다.
+  // (스크립트·스타일처럼 안쪽 글자를 태그로 읽지 않는 요소의 안쪽은 건너뜁니다.)
+  const OPAQUE = new Set([...RAW_TEXT, 'textarea', 'title']);
+  function strayEndTags(text) {
+    const open = [];
+    let strays = 0;
+    let rawUntil = null;
+    for (const token of tokenize(text)) {
+      if (token[0] !== '<' || token === '<' || token.startsWith('<!')) continue;
+      if (rawUntil) {
+        if (token.slice(2).replace(/[\s>].*$/s, '').toLowerCase() === rawUntil && token.startsWith('</')) rawUntil = null;
+        continue;
+      }
+      const end = token.match(/^<\/([a-zA-Z][^\s>/]*)/);
+      if (end) {
+        const at = open.lastIndexOf(end[1].toLowerCase());
+        if (at < 0) strays++;
+        else open.length = at;
+        continue;
+      }
+      const start = token.match(/^<([a-zA-Z][^\s>/]*)/);
+      if (!start) continue;
+      const name = start[1].toLowerCase();
+      if (OPAQUE.has(name)) rawUntil = name;
+      else if (!VOID.has(name) && !/\/\s*>$/.test(token)) open.push(name);
+    }
+    return strays;
+  }
+  let sourceStrays = null;
+
   // 고친 글을 다시 읽어 저장할 글과 뜻이 똑같은지 확인합니다.
   function sameDocument(candidate, expected) {
     const doc = new DOMParser().parseFromString(candidate, 'text/html');
@@ -637,6 +669,9 @@
       for (const aggressive of [true, false]) {
         const candidate = mergeSpelling(raw, SOURCE, aggressive);
         if (candidate === null || candidate === raw) continue;
+        // 옮기거나 지운 요소의 끝 태그만 원래 자리에 남는 표기는 쓰지 않습니다(원본에 원래 있던 만큼은 그대로 둠).
+        if (sourceStrays === null) sourceStrays = strayEndTags(SOURCE);
+        if (strayEndTags(candidate) > sourceStrays) continue;
         if (sameDocument(candidate, raw)) {
           out = candidate;
           break;
@@ -1310,9 +1345,19 @@
     move.temp = { zIndex: move.el.style.zIndex, position: move.el.style.position };
     if (getComputedStyle(move.el).position === 'static') move.el.style.position = 'relative';
     move.el.style.zIndex = '2147483000';
+    // 작은 아이콘·그림은 칸 밖으로 끌면 그 칸에 잘리거나 다른 칸에 가려져 사라지므로, 끄는 동안에는 본뜬 모습을 맨 위에 보여 줍니다.
+    if (move.unit || isCompact(move.el)) {
+      ui.preview(move.el);
+      move.temp.opacity = move.el.style.opacity;
+      move.el.style.opacity = '0';
+    }
   }
   function restoreTemp(state) {
     if (!state.temp) return;
+    if ('opacity' in state.temp) {
+      state.el.style.opacity = state.temp.opacity;
+      ui.preview(null);
+    }
     state.el.style.zIndex = state.temp.zIndex;
     state.el.style.position = state.temp.position;
     if (!state.el.getAttribute('style')) state.el.removeAttribute('style');
@@ -1556,7 +1601,24 @@
       const c = getComputedStyle(shape);
       return { fill: c.fill, stroke: c.stroke, 'stroke-width': c.strokeWidth };
     });
-    return { width: r.width, height: r.height, color: cs.color, zoom: parseFloat(cs.zoom) || 1, shapes };
+    const boxes = [...el.querySelectorAll('svg, img')].map(node => {
+      const box = node.getBoundingClientRect();
+      return { width: box.width, height: box.height };
+    });
+    return { width: r.width, height: r.height, color: cs.color, shapes, boxes };
+  }
+  // 새 자리에서도 같은 크기로 보이게: 보이는 크기가 달라졌으면(새 칸의 글자 크기 배율·축소된 칸 등까지 따져) 그만큼 되돌려 맞춥니다.
+  function keepSize(liveEl, before, apply) {
+    for (let round = 0; round < 2; round++) {
+      const r = liveEl.getBoundingClientRect();
+      if (!r.width || !r.height || (Math.abs(r.width - before.width) <= 0.5 && Math.abs(r.height - before.height) <= 0.5)) return;
+      const cs = getComputedStyle(liveEl);
+      const w = parseFloat(cs.width);
+      const h = parseFloat(cs.height);
+      if (!(w > 0 && h > 0)) return;
+      apply('width', `${Math.round(w * before.width / r.width * 10) / 10}px`);
+      apply('height', `${Math.round(h * before.height / r.height * 10) / 10}px`);
+    }
   }
   const cssColor = value => colorKey(value) || value;
   function fitLook(liveEl, modelEl, look, hit) {
@@ -1569,11 +1631,15 @@
     const inline = hit.inside || isInline(hit.el);
     const display = getComputedStyle(liveEl).display;
     if (inline && /^(block|flex|grid|table)$/.test(display)) apply('display', display === 'block' ? 'inline-block' : `inline-${display}`);
-    const r = liveEl.getBoundingClientRect();
-    if (Math.abs(r.width - look.width) > 0.5 || Math.abs(r.height - look.height) > 0.5) {
-      apply('width', `${Math.round(look.width / look.zoom * 10) / 10}px`);
-      apply('height', `${Math.round(look.height / look.zoom * 10) / 10}px`);
-    }
+    keepSize(liveEl, look, apply);
+    // 틀 안의 그림(svg·img)도: 원래 칸의 규칙으로 크기가 정해져 있었다면 새 칸에서 작아지거나 커질 수 있어요.
+    const liveBoxes = [...liveEl.querySelectorAll('svg, img')];
+    const modelBoxes = [...modelEl.querySelectorAll('svg, img')];
+    look.boxes.forEach((before, index) => {
+      const node = liveBoxes[index];
+      const model = modelBoxes[index];
+      if (node && model) keepSize(node, before, (prop, value) => { setStyleProp(node, prop, value); setStyleProp(model, prop, value); });
+    });
     if (getComputedStyle(liveEl).color !== look.color) apply('color', cssColor(look.color));
     const liveShapes = [...liveEl.querySelectorAll(SHAPES)];
     const modelShapes = [...modelEl.querySelectorAll(SHAPES)];
@@ -2208,6 +2274,11 @@
     if (kind === 'image') {
       info.image = { src: m.getAttribute('src') || '', alt: m.getAttribute('alt') || '', width: m.getAttribute('width'), height: m.getAttribute('height') };
     }
+    // 사진이 들어간 자리의 크기: 사진 편집에서 '이 자리 비율'로 자를 때 써요.
+    if (kind === 'image' || kind === 'bg') {
+      const rect = el.getBoundingClientRect();
+      info.frame = { w: Math.round(rect.width), h: Math.round(rect.height) };
+    }
     if (kind === 'bg') {
       const url = getComputedStyle(el).backgroundImage.match(/url\(["']?([^"')]+)["']?\)/);
       info.bg = { src: url ? url[1] : '', overridden: hasStyleProp(m, 'background-image'), iconSized: isIconSized(el) };
@@ -2324,7 +2395,9 @@
   const ui = (() => {
     const host = document.createElement('div');
     host.setAttribute('data-bo-internal', '');
-    host.style.cssText = 'all: initial !important; position: fixed !important; inset: 0 !important; pointer-events: none !important; z-index: 2147483647 !important; display: block !important;';
+    // 문서 맨 위 왼쪽에 붙인 층: 페이지에 붙은 표시(선택 상자 등)는 문서 기준 좌표로 두어 스크롤할 때 페이지와 함께 움직여요(화면 기준이면 한 박자 늦게 따라와 들썩여요).
+    // 옆으로는 화면 너비에서 잘라, 표시가 페이지 오른쪽 밖으로 나가도 가로 스크롤이 생기지 않게 합니다.
+    host.style.cssText = 'all: initial !important; position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 0 !important; overflow-x: clip !important; overflow-y: visible !important; pointer-events: none !important; z-index: 2147483647 !important; display: block !important;';
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `
       <style>
@@ -2344,6 +2417,7 @@
         .hover .tag { background: #5b7cff; }
         .hover.drop .tag { background: #12b76a; }
         .item .tag { background: #ff8a00; bottom: auto; top: calc(100% + 8px); }
+        .tag:empty { display: none; }
         .toolbar { position: absolute; display: none; flex-wrap: wrap; align-items: center; gap: 2px; max-width: calc(100vw - 16px); padding: 4px; border-radius: 10px;
           background: #15171c; color: #fff; box-shadow: 0 10px 30px rgba(10, 16, 32, .28), 0 0 0 1px rgba(255, 255, 255, .06) inset; pointer-events: auto;
           font: 500 12px/1 'School Pretendard', Pretendard, 'Malgun Gothic', sans-serif; letter-spacing: -.01em; user-select: none; }
@@ -2362,8 +2436,8 @@
         button[data-act="drag"] svg { fill: currentColor; stroke: none; }
         .toolbar .sep { width: 1px; height: 18px; background: rgba(255, 255, 255, .14); margin: 0 3px; }
         .toolbar .unit { color: #ffb366; padding: 0 4px 0 2px; white-space: nowrap; }
-        .color-mark { display: grid; justify-items: center; gap: 1px; font-weight: 800; font-size: 13px; line-height: 1; }
-        .color-mark i { display: block; width: 16px; height: 4px; border-radius: 2px; background: currentColor; }
+        .color-mark { display: grid; justify-items: center; gap: 1px; color: #fff; font-weight: 800; font-size: 13px; line-height: 1; }
+        .color-mark i { display: block; width: 16px; height: 4px; border-radius: 2px; background: var(--text-color); box-shadow: 0 0 0 1px rgba(255, 255, 255, .65); }
         .pop { position: absolute; display: none; width: 236px; padding: 10px; border-radius: 12px; background: #15171c; color: #fff; pointer-events: auto;
           box-shadow: 0 14px 40px rgba(10, 16, 32, .32), 0 0 0 1px rgba(255, 255, 255, .06) inset;
           font: 500 12px/1.3 'School Pretendard', Pretendard, 'Malgun Gothic', sans-serif; user-select: none; }
@@ -2386,7 +2460,7 @@
         .add svg { width: 15px; height: 15px; stroke-width: 2.6; }
         .dropline { position: absolute; display: none; border-radius: 3px; background: #ff8a00; box-shadow: 0 0 0 3px rgba(255, 138, 0, .25); pointer-events: none; }
         .dropline.on { display: block; }
-        .drag-tip { position: absolute; display: none; padding: 6px 9px; border-radius: 7px; background: #ff8a00; color: #fff; pointer-events: none;
+        .drag-tip { position: fixed; display: none; padding: 6px 9px; border-radius: 7px; background: #ff8a00; color: #fff; pointer-events: none;
           font: 700 12px/1 'School Pretendard', Pretendard, 'Malgun Gothic', sans-serif; white-space: nowrap; transform: translate(14px, 14px); }
         .drag-tip.on { display: block; }
         .move-handle { position: absolute; display: none; width: 30px; height: 30px; min-width: 0; padding: 0; border-radius: 50%; background: #2f5bff; color: #fff;
@@ -2395,15 +2469,12 @@
         .move-handle:hover { background: #1f46e0; transform: translate(-50%, -50%) scale(1.1); }
         .move-handle svg { width: 17px; height: 17px; stroke-width: 2.2; }
         .move-handle.moving { cursor: grabbing; }
+        .drag-preview { position: fixed; display: none; pointer-events: none; }
+        .drag-preview.on { display: block; }
+        .drag-preview > * { position: absolute !important; left: 0 !important; top: 0 !important; }
         .ghost { position: absolute; display: none; border: 1.5px dashed #8a94a8; border-radius: 4px; background: rgba(138, 148, 168, .08); pointer-events: none; }
         .ghost.on { display: block; }
         .ghost .tag { background: #8a94a8; }
-        .move-tag { position: absolute; display: none; padding: 7px 10px; border-radius: 8px; background: #15171c; color: #fff; pointer-events: none; white-space: nowrap;
-          font: 600 12px/1.45 'School Pretendard', Pretendard, 'Malgun Gothic', sans-serif; box-shadow: 0 8px 24px rgba(10, 16, 32, .25); }
-        .move-tag.on { display: block; }
-        .move-tag small { display: block; color: #aab3c5; font-weight: 500; font-size: 11px; }
-        .move-tag b { color: #7fd6a6; }
-        .move-tag em { display: block; font-style: normal; color: #ff8fb4; }
         .toolbar button[data-act="move"] { cursor: move; }
         /* 맞춤: 분홍 안내선과 기준 요소 */
         .guide { position: absolute; display: none; pointer-events: none; background: #ff2d75; box-shadow: 0 0 0 .5px rgba(255, 255, 255, .7); }
@@ -2430,7 +2501,7 @@
         /* 글자 옆에 붙이기 */
         .attach-bar { position: absolute; display: none; width: 3px; margin-left: -1.5px; border-radius: 2px; background: #ff8a00; box-shadow: 0 0 0 3px rgba(255, 138, 0, .28); pointer-events: none; }
         .attach-bar.on { display: block; }
-        .banner { position: absolute; left: 50%; top: 14px; display: none; align-items: center; gap: 10px; max-width: calc(100vw - 24px); padding: 8px 8px 8px 14px; border-radius: 12px;
+        .banner { position: fixed; left: 50%; top: 14px; display: none; align-items: center; gap: 10px; max-width: calc(100vw - 24px); padding: 8px 8px 8px 14px; border-radius: 12px;
           transform: translateX(-50%); background: #15171c; color: #fff; pointer-events: auto; box-shadow: 0 12px 34px rgba(10, 16, 32, .32);
           font: 500 12px/1.4 'School Pretendard', Pretendard, 'Malgun Gothic', sans-serif; letter-spacing: -.01em; user-select: none; }
         .banner.on { display: flex; flex-wrap: wrap; }
@@ -2455,8 +2526,8 @@
       <div class="dropline"></div>
       <div class="drag-tip"></div>
       <div class="ghost"><span class="tag">원래 위치</span></div>
+      <div class="drag-preview"></div>
       <button class="move-handle" title="끌어서 위치 옮기기 · Shift를 누르면 한 방향으로만 · 더블클릭하면 원래 위치">${icon('move')}</button>
-      <div class="move-tag"></div>
       <div class="toolbar" role="toolbar" aria-label="편집 도구"></div>
       <div class="pop" data-pop="color">
         <h5>글자 색 · 글자를 드래그해 고르면 그 부분만 바뀌어요</h5>
@@ -2484,18 +2555,74 @@
     const dragTip = root.querySelector('.drag-tip');
     const moveHandle = root.querySelector('.move-handle');
     const ghost = root.querySelector('.ghost');
-    const moveTag = root.querySelector('.move-tag');
+    const dragPreview = root.querySelector('.drag-preview');
     let toolbarKey = '';
     let openPop = null;
+    let toolbarFixed = false;
 
     const isShown = visible;
+
+    // 표시 놓기: 화면 좌표(x, y)를 받아, 페이지와 함께 스크롤될 표시는 문서 기준(absolute)으로,
+    // 화면에 붙은 요소(고정 머리말 등)의 표시나 화면 가장자리에 붙인 표시는 화면 기준(fixed)으로 둡니다.
+    function put(node, x, y, fixed = false) {
+      node.style.position = fixed ? 'fixed' : 'absolute';
+      node.style.left = `${fixed ? x : x + scrollX}px`;
+      node.style.top = `${fixed ? y : y + scrollY}px`;
+    }
+    // 화면에 붙어 스크롤해도 움직이지 않는 요소(position: fixed·sticky 안)인지. 한 화면(프레임)마다 새로 잽니다.
+    const pinCache = new Map();
+    function pinned(el) {
+      if (!el) return false;
+      if (pinCache.has(el)) return pinCache.get(el);
+      let result = false;
+      for (let node = el; node && node !== document.documentElement; node = node.parentElement) {
+        const position = getComputedStyle(node).position;
+        if (position === 'fixed' || position === 'sticky') {
+          result = true;
+          break;
+        }
+      }
+      pinCache.set(el, result);
+      return result;
+    }
+
+    // 끄는 동안 보여 줄 모습: 페이지의 규칙이 닿지 않는 이 층에 보이는 모양(크기·색·배경·도형 색)을 그대로 옮겨 그립니다.
+    const BOX_LOOK = ['display', 'align-items', 'justify-content', 'flex-direction', 'gap', 'padding', 'border', 'border-radius', 'background-color', 'background-image',
+      'background-size', 'background-position', 'background-repeat', 'box-shadow', 'color', 'font', 'line-height', 'letter-spacing', 'text-align', 'white-space',
+      'object-fit', 'object-position', 'opacity', 'overflow'];
+    const SHAPE_LOOK = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'fill-opacity', 'stroke-opacity', 'opacity', 'transform', 'transform-origin'];
+    function preview(el) {
+      if (!el) {
+        dragPreview.classList.remove('on');
+        dragPreview.replaceChildren();
+        return;
+      }
+      const copy = el.cloneNode(true);
+      const from = [el, ...el.querySelectorAll('*')];
+      const to = [copy, ...copy.querySelectorAll('*')];
+      from.forEach((src, index) => {
+        const dst = to[index];
+        if (!dst) return;
+        for (const name of ['id', 'class', 'style', 'data-bo-id', 'data-bo-grab']) dst.removeAttribute(name);
+        const cs = getComputedStyle(src);
+        const shape = src instanceof SVGElement && !(src instanceof SVGSVGElement);
+        const decl = (shape ? SHAPE_LOOK : BOX_LOOK).map(name => `${name}:${cs.getPropertyValue(name)}`);
+        if (!shape) {
+          const r = src.getBoundingClientRect();
+          decl.push('box-sizing:border-box', `width:${r.width}px`, `height:${r.height}px`, 'margin:0', 'flex:none', 'max-width:none', 'max-height:none');
+          if (index) decl.push(`transform:${cs.transform}`);
+        }
+        dst.setAttribute('style', decl.join(';'));
+      });
+      dragPreview.replaceChildren(copy);
+      dragPreview.classList.add('on');
+    }
 
     function place(box, el) {
       if (!isShown(el)) return box.classList.remove('on');
       const rect = el.getBoundingClientRect();
       if (!rect.width && !rect.height) return box.classList.remove('on');
-      box.style.left = `${rect.left}px`;
-      box.style.top = `${rect.top}px`;
+      put(box, rect.left, rect.top, pinned(el));
       box.style.width = `${rect.width}px`;
       box.style.height = `${rect.height}px`;
       box.classList.add('on');
@@ -2507,12 +2634,24 @@
       const rect = selection.el.getBoundingClientRect();
       const width = toolbar.offsetWidth;
       const height = toolbar.offsetHeight;
+      // 선택한 것 위(자리가 없으면 아래)에 붙여 함께 스크롤되고, 화면 아래 끝에 붙잡아 둘 때만 화면 기준으로 둡니다.
+      let fixed = pinned(selection.el);
       let top = rect.top - height - 30;
-      if (top < 8) top = Math.min(rect.bottom + 12, innerHeight - height - 8);
-      if (rect.bottom < 0 || rect.top > innerHeight) top = -999;
+      if (top < 8) {
+        // 낮은 항목은 '뒤에 추가(＋)'가 상자 바로 아래에 떠 있으므로 그만큼 더 내려 가리지 않게
+        top = rect.bottom + (addAfter.classList.contains('on') && rect.height < 64 ? 34 : 12);
+        if (top > innerHeight - height - 8) {
+          top = innerHeight - height - 8;
+          fixed = true;
+        }
+      }
+      if (rect.bottom < 0 || rect.top > innerHeight) {
+        top = -999;
+        fixed = true;
+      }
       const left = Math.max(8, Math.min(rect.left - 3, innerWidth - width - 8));
-      toolbar.style.left = `${left}px`;
-      toolbar.style.top = `${top}px`;
+      put(toolbar, left, top, fixed);
+      toolbarFixed = fixed;
       if (openPop) placePop();
     }
 
@@ -2527,33 +2666,24 @@
         const rect = target.getBoundingClientRect();
         // 조금 작은 요소는 손잡이가 요소를 가리지 않도록 바깥쪽으로 띄웁니다.
         const offset = rect.width < 96 || rect.height < 56 ? 20 : 0;
-        moveHandle.style.left = `${Math.min(rect.right + offset, innerWidth - 18)}px`;
-        moveHandle.style.top = `${Math.max(rect.top - offset, 18)}px`;
+        const x = rect.right + offset;
+        const y = rect.top - offset;
+        // 화면 가장자리에 붙잡아 둘 때만 화면 기준
+        const clamped = x > innerWidth - 18 || y < 18;
+        put(moveHandle, Math.min(x, innerWidth - 18), Math.max(y, 18), clamped || pinned(target));
       }
       const active = Boolean(move?.active);
       const k = move?.scale || 1;
       ghost.classList.toggle('on', active && Boolean(move.x || move.y));
-      moveTag.classList.toggle('on', active);
       if (!active) return;
       const rect = move.el.getBoundingClientRect();
-      ghost.style.left = `${rect.left - move.x * k}px`;
-      ghost.style.top = `${rect.top - move.y * k}px`;
+      put(ghost, rect.left - move.x * k, rect.top - move.y * k, pinned(move.el));
+      if (dragPreview.classList.contains('on')) {
+        dragPreview.style.left = `${rect.left}px`;
+        dragPreview.style.top = `${rect.top}px`;
+      }
       ghost.style.width = `${rect.width}px`;
       ghost.style.height = `${rect.height}px`;
-      const label = move.x || move.y
-        ? `가로 ${move.x > 0 ? '+' : ''}${move.x}px · 세로 ${move.y > 0 ? '+' : ''}${move.y}px`
-        : '<b>원래 위치</b>';
-      const snaps = [];
-      if (move.guide?.x) snaps.push(`열 맞춤 · ${escapeHTML(refName(move.guide.x.target.el))}의 ${EDGE_NAMES.x[move.guide.x.edge]}`);
-      if (move.guide?.y) snaps.push(`행 맞춤 · ${escapeHTML(refName(move.guide.y.target.el))}의 ${EDGE_NAMES.y[move.guide.y.edge]}`);
-      if (move.hidden) {
-        snaps.push(move.rehome
-          ? `다른 칸 밖이라 잘려요 · 놓으면 ‘${escapeHTML(short(move.rehome.el.textContent, 12) || move.rehome.name)}’ ${move.rehome.after ? '뒤' : '앞'}에 넣어요`
-          : '여기는 다른 칸에 가려져 보이지 않아요');
-      }
-      moveTag.innerHTML = `${label}${snaps.map(text => `<em>${text}</em>`).join('')}<small>Shift: 한 방향으로만 · Alt: 줄 맞춤 끄기 · 원래 자리 근처에서 딱 붙어요</small>`;
-      moveTag.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - moveTag.offsetWidth - 8))}px`;
-      moveTag.style.top = `${Math.min(innerHeight - moveTag.offsetHeight - 8, rect.bottom + 10)}px`;
     }
 
     // 분홍 안내선: 끌어서 옮기는 중에 줄이 맞은 곳, 또는 맞춤 버튼에 마우스를 올렸을 때 맞춰질 줄
@@ -2583,17 +2713,16 @@
         }
       }
       place(refBox, ref);
+      const fixed = pinned(move?.el || selection?.el);
       for (const [line, guide, axis] of [[guideX, gx, 'x'], [guideY, gy, 'y']]) {
         line.classList.toggle('on', Boolean(guide));
         if (!guide) continue;
         const pad = 10;
         if (axis === 'x') {
-          line.style.left = `${guide.at}px`;
-          line.style.top = `${guide.from - pad}px`;
+          put(line, guide.at, guide.from - pad, fixed);
           line.style.height = `${guide.to - guide.from + pad * 2}px`;
         } else {
-          line.style.top = `${guide.at}px`;
-          line.style.left = `${guide.from - pad}px`;
+          put(line, guide.from - pad, guide.at, fixed);
           line.style.width = `${guide.to - guide.from + pad * 2}px`;
         }
       }
@@ -2627,8 +2756,7 @@
       const hit = pendingHit();
       attachBar.classList.toggle('on', Boolean(hit));
       if (!hit) return;
-      attachBar.style.left = `${hit.bar.x - scrollX}px`;
-      attachBar.style.top = `${hit.bar.top - scrollY}px`;
+      put(attachBar, hit.bar.x - scrollX, hit.bar.top - scrollY);
       attachBar.style.height = `${hit.bar.height}px`;
     }
 
@@ -2652,16 +2780,27 @@
       if (!show) return;
       const rect = unit.getBoundingClientRect();
       const horizontal = axisOf(unit) === 'x';
-      const [bx, by, ax, ay] = horizontal
-        ? [rect.left, rect.top + rect.height / 2, rect.right, rect.top + rect.height / 2]
-        : [rect.left + rect.width / 2, rect.top, rect.left + rect.width / 2, rect.bottom];
-      addBefore.style.left = `${bx}px`;
-      addBefore.style.top = `${by}px`;
-      addAfter.style.left = `${ax}px`;
-      addAfter.style.top = `${ay}px`;
-      const name = describe(unit);
-      addBefore.title = `${name} 앞에 하나 더 추가`;
-      addAfter.title = `${name} 뒤에 하나 더 추가`;
+      // 보통은 가장자리 가운데에 붙이고, 글자 한 줄처럼 낮은(좁은) 항목은 두 버튼이 글자를 가리고 서로 겹치므로 상자 바깥에 띄웁니다.
+      // 위아래로 늘어선 항목은 오른쪽 끝 위 · 아래(왼쪽 위의 '입력 중' 표시를 피해서), 가로로 늘어선 칸은 왼쪽 · 오른쪽 바깥.
+      const OUT = 17;
+      let bx, by, ax, ay;
+      if (horizontal) {
+        const out = rect.width < 64 ? OUT : 0;
+        [bx, by, ax, ay] = [rect.left - out, rect.top + rect.height / 2, rect.right + out, rect.top + rect.height / 2];
+      } else if (rect.height < 64) {
+        const x = Math.max(rect.left + rect.width / 2, rect.right - 24);
+        [bx, by, ax, ay] = [x, rect.top - OUT, x, rect.bottom + OUT];
+      } else {
+        [bx, by, ax, ay] = [rect.left + rect.width / 2, rect.top, rect.left + rect.width / 2, rect.bottom];
+      }
+      const fixed = pinned(unit);
+      // 페이지 맨 끝 항목이면 ＋를 문서 밖에 두지 않고 상자 안쪽 아래로(밖에 두면 페이지가 잠깐 길어졌다 줄어요)
+      const pageBottom = document.body.getBoundingClientRect().bottom;
+      if (!fixed && ay + 12 > pageBottom) ay = Math.min(ay, rect.bottom - 12);
+      put(addBefore, bx, by, fixed);
+      put(addAfter, ax, ay, fixed);
+      addBefore.title = '앞에 하나 더 추가';
+      addAfter.title = '뒤에 하나 더 추가';
     }
 
     function renderToolbar() {
@@ -2679,7 +2818,6 @@
       if (key === toolbarKey) return;
       toolbarKey = key;
       closePop();
-      const unitName = describe(unit);
       const parts = [`<span class="label">${labelFor(el, kind)}</span>`];
       if (kind === 'text' && !el.matches(PLAIN)) {
         const scope = editing === el ? '(글자를 드래그하면 그 부분만)' : '(요소 전체)';
@@ -2688,7 +2826,7 @@
         parts.push(`<button data-act="underline" title="밑줄 ${scope} · Ctrl+U">${icon('underline')}</button>`);
         if (editing === el) parts.push(`<button data-act="strong" title="사이트 강조 스타일(다른 강조 글자와 같은 모양)">${icon('strong')}</button>`);
         parts.push('<span class="sep"></span>');
-        parts.push(`<button data-act="color" title="글자 색 ${scope}"><span class="color-mark" style="color:${getComputedStyle(el).color}">가<i></i></span></button>`);
+        parts.push(`<button data-act="color" title="글자 색 ${scope}"><span class="color-mark" style="--text-color:${getComputedStyle(el).color}">가<i></i></span></button>`);
         parts.push(`<button class="text" data-act="font" title="글꼴 ${scope}">글꼴<small>▾</small></button>`);
         parts.push(`<button class="text" data-act="smaller" title="글자 작게 ${scope}">가−</button>`);
         parts.push(`<button class="text" data-act="bigger" title="글자 크게 ${scope}">가+</button>`);
@@ -2709,12 +2847,11 @@
       }
       parts.push(`<button data-act="parent" title="상위 요소 선택">${icon('parent')}</button>`);
       parts.push('<span class="sep"></span>');
-      if (repeatable) parts.push(`<button data-act="drag" data-unit title="${unitName} 순서 바꾸기 (끌어서 다른 칸으로)">${icon('grip')}</button>`);
-      if (unit !== el) parts.push(`<span class="unit" title="복제·이동·삭제는 이 단위로 적용돼요">${unitName}</span>`);
-      parts.push(`<button data-act="duplicate" data-unit title="${unitName} 뒤에 복제 (Ctrl+D)">${icon('copy')}</button>`);
+      if (repeatable) parts.push(`<button data-act="drag" data-unit title="순서 바꾸기 (끌어서 다른 칸으로)">${icon('grip')}</button>`);
+      parts.push(`<button data-act="duplicate" data-unit title="뒤에 복제 (Ctrl+D)">${icon('copy')}</button>`);
       parts.push(`<button data-act="up" data-unit title="앞으로 이동">${icon(axis === 'x' ? 'left' : 'up')}</button>`);
       parts.push(`<button data-act="down" data-unit title="뒤로 이동">${icon(axis === 'x' ? 'right' : 'down')}</button>`);
-      parts.push(`<button class="danger" data-act="remove" data-unit title="${unitName} 삭제 (Delete)">${icon('trash')}</button>`);
+      parts.push(`<button class="danger" data-act="remove" data-unit title="삭제 (Delete)">${icon('trash')}</button>`);
       if (kind === 'text' && editing === el) parts.push(`<span class="sep"></span><button data-act="done" title="편집 완료 (Esc)">${icon('check')}</button>`);
       toolbar.innerHTML = parts.join('');
       toolbar.classList.add('on');
@@ -2729,8 +2866,7 @@
       const height = openPop.offsetHeight;
       let top = rect.bottom + 8;
       if (top + height > innerHeight - 8) top = Math.max(8, rect.top - height - 8);
-      openPop.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - width - 8))}px`;
-      openPop.style.top = `${top}px`;
+      put(openPop, Math.max(8, Math.min(rect.left, innerWidth - width - 8)), top, toolbarFixed);
     }
     function togglePop(name) {
       const pop = pops.find(candidate => candidate.dataset.pop === name);
@@ -2865,14 +3001,13 @@
       if (!slot || slot.same) return dropline.classList.remove('on');
       const { rect, after, horizontal } = slot;
       const gap = 6;
+      const fixed = pinned(slot.target);
       if (horizontal) {
-        dropline.style.left = `${(after ? rect.right : rect.left) - 2 + (after ? gap : -gap)}px`;
-        dropline.style.top = `${rect.top}px`;
+        put(dropline, (after ? rect.right : rect.left) - 2 + (after ? gap : -gap), rect.top, fixed);
         dropline.style.width = '4px';
         dropline.style.height = `${rect.height}px`;
       } else {
-        dropline.style.left = `${rect.left}px`;
-        dropline.style.top = `${(after ? rect.bottom : rect.top) - 2 + (after ? gap : -gap)}px`;
+        put(dropline, rect.left, (after ? rect.bottom : rect.top) - 2 + (after ? gap : -gap), fixed);
         dropline.style.width = `${rect.width}px`;
         dropline.style.height = '4px';
       }
@@ -2886,7 +3021,7 @@
       drag = { unit, slot: null, pointerId: event.pointerId };
       try { button.setPointerCapture(event.pointerId); } catch {}
       item.classList.add('strong');
-      dragTip.textContent = `${describe(unit)} 옮기는 중 · 놓을 자리로 끌어 주세요`;
+      dragTip.textContent = '놓을 자리로 끌어 주세요';
       dragTip.classList.add('on');
       const move = moveEvent => {
         const x = moveEvent.clientX;
@@ -2961,6 +3096,7 @@
     }
 
     function frame() {
+      pinCache.clear();
       if (selection && !selection.el.isConnected) {
         selection = null;
         renderToolbar();
@@ -2996,7 +3132,7 @@
         hover.querySelector('.tag').textContent = dropTarget ? '여기에 놓으면 이미지가 바뀌어요' : attach ? attachTag : hoverKind;
         const dragHint = selection && !editing && canMove(selection.el) && isCompact(selection.el) ? ' · 끌어서 이동' : '';
         sel.querySelector('.tag').textContent = selection ? (editing === selection.el ? '입력 중 · Esc로 완료' : `${labelFor(selection.el, selection.kind)}${dragHint}`) : '';
-        item.querySelector('.tag').textContent = selection ? `복제·삭제 단위: ${describe(unitOf(selection))}` : '';
+        item.querySelector('.tag').textContent = '';
         renderToolbar();
         renderBanner();
       },
@@ -3004,6 +3140,7 @@
         toolbarKey = '';
         renderToolbar();
       },
+      preview,
       closePop
     };
   })();
@@ -3151,7 +3288,20 @@
     // 공통 머리말(하위 메뉴 바 등)의 같은 페이지 #위치 링크는 편집 화면에서도 그 위치·탭으로 옮겨 줍니다(다른 페이지로는 가지 않음).
     const hash = samePageHash(event.target);
     if (hash) goToHash(hash);
+    // 다른 페이지 링크(선배들의 이야기 옆 메뉴의 후기 · 인터뷰 등)는 편집기에 알려, 그 페이지도 편집하는 페이지면 그 페이지 편집으로 넘어가요
+    else {
+      const other = otherPageLink(event.target);
+      if (other) shell?.openPage?.(other);
+    }
   }, true);
+
+  function otherPageLink(target) {
+    const link = target.closest?.('a[href]');
+    if (!link || !link.closest(LOCKED)) return null;
+    let url;
+    try { url = new URL(link.href, location.href); } catch { return null; }
+    return url.origin === location.origin && url.pathname !== location.pathname ? url.href : null;
+  }
 
   function samePageHash(target) {
     const link = target.closest?.('a[href]');
@@ -3344,7 +3494,7 @@
     duplicate: () => duplicateItem(false), duplicateBefore: () => duplicateItem(true),
     remove: removeItem, moveUp: () => moveItem(-1), moveDown: () => moveItem(1),
     parent: selectParent, pickImage,
-    // 오른쪽 패널의 서식은 요소 전체에 적용합니다.
+    // 편집 도구 막대의 서식은 요소 전체에 적용합니다.
     format: ({ props, label } = {}) => formatBlock(props || {}, label || '글자 서식'),
     clearFormat: () => clearFormat(),
     nudge: ({ dx = 0, dy = 0 } = {}) => nudge(dx, dy),

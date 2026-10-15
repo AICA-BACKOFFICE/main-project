@@ -133,9 +133,18 @@
     syncStatus();
     statusSel.addEventListener('change', function () { syncStatus(); markDirty(); });
 
+    // 보내기 전에 로그인부터 확인해요. 관리자 서버를 다시 켜 로그인이 풀린 채 보내면 쓰던 글이 사라지니,
+    // 풀렸으면 보내지 않고 화면 위에 '다시 로그인' 안내만 띄워요(다시 로그인한 뒤 저장을 한 번 더 누르면 돼요).
+    function submitChecked() {
+      if (!window.BOSession) { form.requestSubmit(); return; }
+      window.BOSession.check().then(function (ok) {
+        if (ok) form.requestSubmit();
+        else notify('로그인이 풀려 아직 저장하지 않았어요. 화면 위 안내대로 다시 로그인한 뒤 한 번 더 눌러 주세요.', true);
+      });
+    }
     document.getElementById('btnDraft').addEventListener('click', function () {
       statusSel.value = 'DRAFT'; syncStatus();
-      form.requestSubmit();
+      submitChecked();
     });
     document.getElementById('btnSave').addEventListener('click', function () {
       if (!titleEl.value.trim()) { titleEl.focus(); notify('제목을 입력하세요.', true); return; }
@@ -144,7 +153,7 @@
         if (storyError) { notify(storyError, true); return; }
       } else if (statusSel.value === 'PUBLISHED' && editor.isEmpty()) { notify('본문이 비어 있어 공개할 수 없습니다.', true); return; }
       syncStatus();
-      form.requestSubmit();
+      submitChecked();
     });
     document.addEventListener('keydown', function (e) {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); document.getElementById('btnDraft').click(); }
@@ -186,5 +195,7 @@
       setCategory: function (catId, subId) { form.querySelector('[name="categoryId"]').value = catId || ''; if (ctx_catSelect) ctx_catSelect.rebuild(subId || ''); } };
     P.ctx = ctx;
     P.modules.forEach(function (fn) { fn(ctx, cfg); });
+    // 모듈(고정 양식 등)이 처음 값을 정리해 다시 쓰므로, 손대지 않았는데 '나가기' 경고가 뜨지 않도록 그 뒤 상태를 기준으로
+    savedPrint = fingerprint();
   };
 })(window);

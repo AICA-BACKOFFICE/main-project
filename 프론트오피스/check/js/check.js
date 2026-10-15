@@ -1,16 +1,12 @@
 /* =========================================================
    지원 전 체크: 움직임만(본문은 index.html)
-   aica-prototype-v3(2026-10-08) script.js의 jumpTo · setupReveal · setupCheck를 옮김(시안의 본문 위 목차 .pg-nav 동작은 공통 하위 메뉴 바로 대신)
-   - 스크롤 등장(.rv): 움직임 줄이기면 바로 보임. 숨김은 이 스크립트가 main에 .rv-ready를 붙일 때만
-   - 위치 이동: 콘텐츠 시작(섹션 머리)이 헤더 + 공통 하위 메뉴 바 아래 32px에 오게
-     본문 #링크 · 처음 주소의 #위치 · 하위 메뉴 바 · 헤더 메뉴에서 고른 같은 페이지 #위치(hashchange)
-     (하위 메뉴 바의 지금 위치 표시는 공통 site.js)
-     브라우저가 #위치로 직접 스크롤하는 경우(처음 열 때 · 헤더 메뉴)도 같은 자리가 되게 check.css의 scroll-margin과 맞춤
-   - 모집 프로세스 단계(#procFlow): 화면에 30% 이상 보이는 동안 3.2초마다 다음 단계를 켬(.is-on). 단계에 마우스를 올리거나 누르거나
-     카드에 초점이 가면 그 단계에서 멈추고, 마우스 · 초점이 단계 밖으로 나가면 다시 돎. 움직임 줄이기면 자동으로 넘기지 않음
-   - 자주 묻는 질문: 분류 · 검색(질문 · 답 글자 하이라이트, 질문은 .faq-qt의 data-text) · 하나씩 펼치기(aria-expanded).
-     검색어를 고쳐도 고른 분류는 그대로 — 그 분류에 없고 다른 분류에 있으면 '전체 분류에서 n개' 안내 + 전체에서 보기
-   - 스스로 체크: 진행 막대(aria-valuenow) · 하나라도 고르면 '모집 프로세스 보러 가기'
+   10-13: 사용자 제공 아티팩트 '인사교 A to Z'의 #/check 화면으로 교체. 아티팩트 script의 setupSecFloat · setupCheck를 옮김
+   - 위치 이동: 섹션 제목이 헤더 + 하위 메뉴 바 아래 64px(모바일 40px)에 오게. 본문 #링크 · 처음 주소 · 하위 메뉴 바 · 오른쪽 목차(data-jump)
+   - 스크롤 등장(.rv): 화면에 들어오면 .is-in. 움직임 줄이기면 바로 보임
+   - 오른쪽 플로팅 목차(.sec-float): 화면 40% 지점을 지난 마지막 섹션을 표시, 누르면 그 섹션으로
+   - 모집 프로세스(#procFlow): 화면에 보이는 동안 3.2초마다 다음 단계. 마우스 · 초점이 올라가면 그 단계에서 멈춤
+   - 스스로 체크: 고른 개수 · 막대 · 하나라도 고르면 '모집 프로세스 보러 가기'
+   - 자주 묻는 질문: 분류 탭 · 5개씩 페이지 · 하나씩 펼치기. 목록 높이를 질문 5개 높이로 고정해 분류를 바꿔도 아래가 안 움직임
    ========================================================= */
 (() => {
   const main = document.querySelector('.check-page');
@@ -41,8 +37,8 @@
     if (!el) return;
     let y = 0;
     if (el.id !== 'overview') {
-      const pick = el.matches('.sec') ? ($('.s-head', el) || el) : el;   // 섹션은 머리(.s-head) 기준
-      y = layoutTop(pick) - ((header ? header.offsetHeight : 0) + 32);   // 헤더 높이에 하위 메뉴 바 포함
+      const pick = el.matches('.v3-sec') ? ($('.k-head, .s-head', el) || el) : el;   // 섹션은 머리(.k-head) 기준
+      y = layoutTop(pick) - ((header ? header.offsetHeight : 0) + (matchMedia('(max-width:760px)').matches ? 40 : 64));   // 10-13: 바 ↔ 제목 여백 통일(전에는 32px)   // 헤더 높이에 하위 메뉴 바 포함
     }
     scrollToY(Math.max(0, Math.round(y)), instant);
     // 접근성: 이동한 섹션 제목으로 초점
@@ -104,118 +100,95 @@
     });
   }
 
+  /* ---------- 오른쪽 플로팅 목차 ---------- */
+  const sf = $('.sec-float', main);
+  if (sf) {
+    const btns = $$('.sf-btn', sf), secs = btns.map(b => document.getElementById(b.dataset.jump));
+    const set = id => btns.forEach(b => { const on = b.dataset.jump === id; b.classList.toggle('is-active', on); if (on) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+    let raf;
+    const calc = () => {
+      const line = innerHeight * .4; let id = btns[0].dataset.jump;
+      secs.forEach((el, k) => { if (el && el.getBoundingClientRect().top <= line) id = btns[k].dataset.jump; });
+      if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) id = btns[btns.length - 1].dataset.jump;
+      set(id);
+    };
+    const onS = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(calc); };
+    addEventListener('scroll', onS, { passive: true }); addEventListener('resize', onS);
+    calc();
+    requestAnimationFrame(() => sf.classList.add('is-in'));
+  }
+  $$('[data-jump]', main).forEach(b => b.addEventListener('click', () => {
+    const el = document.getElementById(b.dataset.jump); if (!el) return;
+    history.replaceState(null, '', '#' + b.dataset.jump);
+    jumpTo(el);
+  }));
+
+  /* ---------- 자주 묻는 질문: 분류 · 페이지 · 펼치기 ---------- */
+  const fl = $('#faqList', main);
+  if (fl) {
+    const items = $$('.faq-item', fl), tabs = $$('.faq-tab', main), cnt = $('#faqCount', main);
+    const pager = $('#faqPager', main), pagesEl = $('#faqPages', main), fprev = $('#faqPrev', main), fnext = $('#faqNext', main);
+    const PER = 8; let cat = 'all', fpage = 0;
+    const apply = () => {
+      let n = 0;
+      items.forEach(li => { const ok = cat === 'all' || li.dataset.cat === cat; li._ok = ok; if (ok) n++; });
+      const list = items.filter(li => li._ok), pages = Math.max(1, Math.ceil(list.length / PER));
+      fpage = Math.min(fpage, pages - 1);
+      items.forEach(li => { const k = list.indexOf(li); li.hidden = !(k >= fpage * PER && k < (fpage + 1) * PER); });
+      pager.classList.toggle('is-off', pages <= 1); pager.setAttribute('aria-hidden', String(pages <= 1));
+      pagesEl.innerHTML = Array.from({ length: pages }, (_, k) => `<button type="button" class="faq-pn" data-p="${k}"${k === fpage ? ' aria-current="page"' : ''} aria-label="${k + 1}페이지">${k + 1}</button>`).join('');
+      fprev.disabled = fpage === 0; fnext.disabled = fpage === pages - 1;
+      cnt.textContent = cat !== 'all' ? n + '개의 질문' : '';
+    };
+    const goPage = k => {
+      fpage = k; apply();
+      const top = $('.faq-tools', main).getBoundingClientRect().top;
+      if (top < (header ? header.offsetHeight : 0) || top > innerHeight * .5) jumpTo($('#faq', main));
+    };
+    pagesEl.addEventListener('click', e => { const b = e.target.closest('.faq-pn'); if (b) goPage(+b.dataset.p); });
+    fprev.addEventListener('click', () => { if (fpage > 0) goPage(fpage - 1); });
+    fnext.addEventListener('click', () => goPage(fpage + 1));
+    tabs.forEach(t => t.addEventListener('click', () => { cat = t.dataset.cat; fpage = 0; tabs.forEach(b => b.setAttribute('aria-pressed', String(b === t))); apply(); }));
+    $$('.faq-q', fl).forEach(b => b.addEventListener('click', () => {
+      const li = b.closest('.faq-item'), open = !li.classList.contains('is-open');
+      if (open) items.forEach(o => { o.classList.remove('is-open'); $('.faq-q', o).setAttribute('aria-expanded', 'false'); });
+      li.classList.toggle('is-open', open); b.setAttribute('aria-expanded', String(open));
+    }));
+    const sizeList = () => {
+      items.forEach(li => li.hidden = false);
+      const h = Math.max(...items.map(li => $('h3', li).offsetHeight)) + 1;
+      fl.style.minHeight = (h * PER + 2) + 'px';
+      apply();
+    };
+    sizeList();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(sizeList);
+    let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(sizeList, 150); });
+  }
+
   /* ---------- 모집 프로세스: 단계 차례로 켜기 ---------- */
   const pf = $('#procFlow', main);
   if (pf) {
-    const cols = $$('.pf-col', pf);
-    let cur = 0, timer = null, inView = false, hold = false;
+    const cols = $$('.pf-col', pf); let cur = 0, auto = 0, timer = null, inView = false, hold = false;
     const set = k => { cur = k; cols.forEach((c, i) => c.classList.toggle('is-on', i === k)); };
     const stop = () => { clearInterval(timer); timer = null; };
     const start = () => { stop(); if (!reduce && inView && !hold) timer = setInterval(() => set((cur + 1) % cols.length), 3200); };
     cols.forEach((c, i) => {
-      const pick = () => { set(i); hold = true; stop(); };
-      c.addEventListener('mouseenter', pick);
-      c.addEventListener('click', pick);
-      const card = $('.pf-card', c);
-      if (card) card.addEventListener('focus', pick);
+      const pick = () => { if (!hold) auto = cur; set(i); hold = true; stop(); };
+      c.addEventListener('mouseenter', pick); c.addEventListener('click', pick);
+      const card = $('.pf-card', c); if (card) card.addEventListener('focus', pick);
     });
-    pf.addEventListener('mouseleave', () => { hold = false; start(); });
-    pf.addEventListener('focusout', e => { if (!pf.contains(e.relatedTarget)) { hold = false; start(); } });
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(es => es.forEach(e => { inView = e.isIntersecting; start(); }), { threshold: .3 }).observe(pf);
-    }
+    // 커서가 벗어나면 호버로 켠 단계를 바로 끄고, 자동 순환하던 단계로 되돌림
+    const release = () => { if (!hold) return; hold = false; set(auto); start(); };
+    pf.addEventListener('mouseleave', () => { if (pf.contains(document.activeElement)) document.activeElement.blur(); release(); });
+    pf.addEventListener('focusout', e => { if (!pf.contains(e.relatedTarget)) release(); });
+    new IntersectionObserver(es => es.forEach(e => { inView = e.isIntersecting; start(); }), { threshold: .3 }).observe(pf);
     set(0);
   }
 
-  /* ---------- 자주 묻는 질문: 분류 · 검색 · 펼치기 ---------- */
-  // 검색: 질문 · 답 글 모두에서 찾고 둘 다 하이라이트(<mark>, 답은 글자 마디만 감싸 링크는 그대로). 결과가 1~2개면 첫 결과를 펼침.
-  // 분류는 사용자가 고른 대로 둠(전에는 글자를 칠 때마다 '전체'로 돌아감). 고른 분류에 없고 다른 분류에 있으면 '없어요' 대신
-  // '전체 분류에서는 n개' + 전체에서 보기 버튼(문구는 index.html #faqEmpty, 여기서는 분류 이름 · 숫자만 채움)
-  const fl = $('#faqList', main);
-  if (fl) {
-    const items = $$('.faq-item', fl), tabs = $$('.faq-tab', main), q = $('#faqQ', main), clr = $('#faqClear', main),
-      cnt = $('#faqCount', main), empty = $('#faqEmpty', main), eq = $('#faqEmptyQ', main),
-      eIn = $('#faqEmptyIn', main), eCat = $('#faqEmptyCat', main), eAsk = $('#faqEmptyAsk', main),
-      eAll = $('#faqEmptyAll', main), eAllN = $('#faqAllN', main), allBtn = $('#faqAllBtn', main);
-    let cat = 'all';
-    const answers = new Map(items.map(li => { const at = $('.faq-at', li); return [li, { at, html: at.innerHTML }]; }));
-    const esc = t => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    const markText = (txt, kw) => {
-      const i = txt.toLowerCase().indexOf(kw);
-      return i < 0 ? esc(txt) : esc(txt.slice(0, i)) + '<mark>' + esc(txt.slice(i, i + kw.length)) + '</mark>' + esc(txt.slice(i + kw.length));
-    };
-    const markAnswer = (at, kw) => {
-      const w = document.createTreeWalker(at, NodeFilter.SHOW_TEXT), nodes = [];
-      while (w.nextNode()) if (w.currentNode.nodeValue.toLowerCase().includes(kw)) nodes.push(w.currentNode);
-      nodes.forEach(n => { const s = document.createElement('span'); s.innerHTML = markText(n.nodeValue, kw); n.replaceWith(...s.childNodes); });
-    };
-    const setOpen = (li, open) => { li.classList.toggle('is-open', open); $('.faq-q', li).setAttribute('aria-expanded', String(open)); };
-    const setCat = c => { cat = c; tabs.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cat === c))); };
-    const catName = c => {   // 칩 글자에서 질문 수(.faq-cnt)는 빼고 이름만
-      const b = tabs.find(t => t.dataset.cat === c);
-      return b ? [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.nodeValue).join('').trim() : c;
-    };
-    const apply = () => {
-      const kw = q.value.trim().toLowerCase();
-      const shown = [];
-      let hits = 0;   // 분류와 상관없이 검색어에 맞는 질문 수
-      items.forEach(li => {
-        const qt = $('.faq-qt', li), txt = qt.dataset.text, a = answers.get(li);
-        a.at.innerHTML = a.html;
-        const hit = !kw || (txt + ' ' + a.at.textContent).toLowerCase().includes(kw);
-        if (hit) hits++;
-        const ok = (cat === 'all' || li.dataset.cat === cat) && hit;
-        li.hidden = !ok;
-        if (ok) shown.push(li);
-        if (kw && ok) { qt.innerHTML = markText(txt, kw); markAnswer(a.at, kw); } else qt.textContent = txt;
-      });
-      const n = shown.length;
-      if (kw && n && n <= 2 && !shown.some(li => li.classList.contains('is-open'))) {
-        items.forEach(li => setOpen(li, false));
-        setOpen(shown[0], true);
-      }
-      const other = !n && kw && cat !== 'all' ? hits : 0;   // 고른 분류에는 없고 다른 분류에 있는 수
-      clr.hidden = !q.value;
-      cnt.textContent = (kw || cat !== 'all') ? n + '개의 질문' + (other ? ' · 전체 분류에서 ' + other + '개' : '') : '';
-      empty.hidden = n > 0;
-      eq.textContent = kw ? '“' + q.value.trim() + '”' : '이 분류';
-      eCat.textContent = catName(cat);
-      eIn.hidden = !other;
-      eAsk.hidden = !!other;
-      eAll.hidden = allBtn.hidden = !other;
-      eAllN.textContent = other;
-    };
-    tabs.forEach(t => t.addEventListener('click', () => { setCat(t.dataset.cat); apply(); }));
-    q.addEventListener('input', apply);
-    // 전체에서 보기: 분류만 '전체'로(검색어 그대로), 초점은 첫 결과 질문으로(누른 버튼이 사라지므로)
-    allBtn.addEventListener('click', () => {
-      setCat('all'); apply();
-      const first = items.find(li => !li.hidden);
-      if (first) $('.faq-q', first).focus();
-    });
-    clr.addEventListener('click', () => { q.value = ''; apply(); q.focus(); });
-    $$('.faq-q', fl).forEach(b => b.addEventListener('click', () => {
-      const li = b.closest('.faq-item'), open = !li.classList.contains('is-open');
-      if (open) items.forEach(o => setOpen(o, false));
-      setOpen(li, open);
-    }));
-    apply();
-  }
-
   /* ---------- 스스로 체크 ---------- */
-  // 진행 막대(.chk-bar, role=progressbar)의 aria-valuenow도 같이 바꿈
   const boxes = $$('.chk-box', main), now = $('#chkNow', main), bar = $('#chkBar', main), go = $('#chkGo', main);
-  if (boxes.length && now && bar && go) {
-    const meter = bar.parentElement;
-    meter.setAttribute('aria-valuemax', boxes.length);
-    const upd = () => {
-      const n = boxes.filter(b => b.checked).length;
-      now.textContent = n;
-      bar.style.width = (n / boxes.length * 100) + '%';
-      meter.setAttribute('aria-valuenow', n);
-      go.hidden = n < 1;
-    };
-    boxes.forEach(b => b.addEventListener('change', upd));
-    upd();
+  if (boxes.length) {
+    const upd = () => { const n = boxes.filter(b => b.checked).length; now.textContent = n; bar.style.width = (n / boxes.length * 100) + '%'; go.hidden = n < 1; };
+    boxes.forEach(b => b.addEventListener('change', upd)); upd();
   }
 })();

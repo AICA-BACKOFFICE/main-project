@@ -1,0 +1,61 @@
+/* 관리자 홈(대시보드) · 방문 통계 화면 전용 — layout/admin.html 이 menu 가 dashboard/stats 일 때만 로드 */
+/* ---------- 대시보드 ---------- */
+.visit-row { display: flex; align-items: center; justify-content: space-between; padding: 22px 24px; }
+.visit-row .nums { display: flex; gap: 40px; }
+.visit-row .n .k { font-size: 12px; color: #777; margin-bottom: 4px; }
+.visit-row .n .v { font-size: 22px; font-weight: 700; color: #111; }
+.btn-line { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border: 1px solid #d5d5d5; border-radius: 4px; font-size: 12px; color: #333; background: #fff; }
+.btn-line:hover { background: #f7f7f7; }
+.btn-line svg { width: 13px; height: 13px; }
+.chart-card { margin-top: 12px; padding: 22px 20px 12px; position: relative; }
+.chart-card .chart-title { position: absolute; left: 24px; top: 14px; font-size: 12px; color: #999; }
+.chart { width: 100%; height: 240px; display: block; }
+.chart text { stroke: none; }
+.chart .grid { stroke: #f0f0f0; stroke-width: 1; }
+.chart .line { fill: none; stroke: var(--red); stroke-width: 1.6; }
+.chart .dot { fill: #fff; stroke: var(--red); stroke-width: 1.4; }
+.chart .dot.today { fill: var(--red); }
+.chart .lbl { font-size: 10px; fill: #aaa; text-anchor: middle; }
+.chart .lbl.today { fill: #fff; font-weight: 700; }
+.chart .today-bg { fill: var(--red); stroke: none; }
+.chart .tip-box { fill: #fff; stroke: #ddd; stroke-width: 1; }
+.chart .tip-k { font-size: 10px; fill: #888; }
+.chart .tip-v { font-size: 13px; font-weight: 700; fill: #111; }
+.chart .tip-d { font-size: 10px; fill: var(--red); }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+.mini-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; background: #fff; }
+.mini-card h4 { margin: 0 0 12px; font-size: 12px; color: #777; font-weight: 600; }
+.rank { list-style: none; margin: 0; padding: 0; }
+.rank li { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; font-size: 13px; }
+.rank li b { color: var(--red); min-width: 14px; font-size: 12px; }
+.rank li a { color: #222; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank li a:hover { text-decoration: underline; }
+.rank li .c { margin-left: auto; color: var(--muted); font-size: 12px; }
+.ratio { list-style: none; margin: 0; padding: 0; }
+.ratio li { display: grid; grid-template-columns: 64px 1fr 44px; gap: 10px; align-items: center; padding: 6px 0; font-size: 12px; color: #555; }
+.ratio li .bar { height: 3px; background: #eee; border-radius: 2px; position: relative; }
+.ratio li .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--red); }
+.ratio li .bar i.c2 { background: #4cc2b6; }
+.ratio li .bar i.c3 { background: #9aa3ad; }
+.ratio li .bar i.c4 { background: #f0b24a; }
+.ratio li .p { text-align: right; color: #333; }
+
+/* ---------- 통계 화면(기존 클래스 유지) ---------- */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+.kpi { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+.kpi .k { color: #777; font-size: 12px; }
+.kpi .v { font-size: 22px; font-weight: 700; margin-top: 6px; color: #111; }
+.kpi .d { color: var(--muted); font-size: 11px; margin-top: 4px; }
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 160px; padding: 10px 0 0; }
+.bars .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+.bars .bar { width: 100%; max-width: 34px; border-radius: 2px 2px 0 0; background: #f6a59d; min-height: 2px; position: relative; }
+.bars .bar.views { background: var(--red); }
+.bars .bar .tip { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #444; white-space: nowrap; }
+.bars .lbl { font-size: 10px; color: var(--muted); }
+.legend { display: flex; gap: 14px; font-size: 11px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.tabs a { padding: 6px 12px; font-size: 12px; color: #333; background: #fff; }
+.tabs a.on { background: #111; color: #fff; }

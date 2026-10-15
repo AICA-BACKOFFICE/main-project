@@ -1,0 +1,73 @@
+/* =========================================================
+   사이트 토큰: 메인 색 · 글꼴 · 크기 (모든 페이지 공통)
+   색 · 글꼴을 바꿀 때는 이 파일만 고칩니다.
+   2026-10-06 결정: 메인 색 #2457F5, 지원하기 버튼 노랑 #FEE500, 랜딩 바탕 · 헤더 막대 기본색 차콜 #2B2D31(10-07 변경, 전에는 파랑 #0B2854), 기본 글꼴 Pretendard(알아보기 글꼴), 작은 제목 Paperlogy, 큰 제목 Giants
+   ========================================================= */
+
+/* 글꼴 파일은 common/assets/fonts. Pretendard는 400 · 700 · 900 파일만 있어 500 이하는 Regular, 600~800은 Bold로 씁니다 */
+@font-face{font-family:"Pretendard";src:url("../assets/fonts/Pretendard-Regular.woff2") format("woff2");font-weight:100 500;font-style:normal;font-display:swap}
+@font-face{font-family:"Pretendard";src:url("../assets/fonts/Pretendard-Bold.woff2") format("woff2");font-weight:600 800;font-style:normal;font-display:swap}
+@font-face{font-family:"Pretendard";src:url("../assets/fonts/Pretendard-Black.woff2") format("woff2");font-weight:900;font-style:normal;font-display:swap}
+@font-face{font-family:"Giants";src:url("../assets/fonts/Giants-Bold.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+/* Paperlogy 한 가족(2026-10-13 정리): 전에는 Paperlogy · Paperlogy Text · Paperlogy Title · Paperlogy XB · School Paperlogy 다섯 이름.
+   굵기 → 파일: 400 Regular · 500 Medium · 600 SemiBold(700도 여기) · 800 ExtraBold · 900 Black. 7 Bold 파일은 없음 */
+@font-face{font-family:"Paperlogy";src:url("../assets/fonts/Paperlogy-4Regular.woff2") format("woff2");font-weight:100 449;font-style:normal;font-display:swap}
+@font-face{font-family:"Paperlogy";src:url("../assets/fonts/Paperlogy-5Medium.woff2") format("woff2");font-weight:450 549;font-style:normal;font-display:swap}
+@font-face{font-family:"Paperlogy";src:url("../assets/fonts/Paperlogy-6SemiBold.woff2") format("woff2");font-weight:550 749;font-style:normal;font-display:swap}
+@font-face{font-family:"Paperlogy";src:url("../assets/fonts/Paperlogy-8ExtraBold.woff2") format("woff2");font-weight:750 849;font-style:normal;font-display:swap}
+@font-face{font-family:"Paperlogy";src:url("../assets/fonts/Paperlogy-9Black.woff2") format("woff2");font-weight:850 900;font-style:normal;font-display:swap}
+
+:root{
+  /* 색 */
+  --primary-deep:#102D80;  /* 남색. 쓰는 곳: 기수별 인스타 모양. 10-14: 디자인시스템(AI-Log) 이름에 맞춰 --blue* → --primary*로 바꿈(홈 자체 변수는 --hm-primary*) */
+  --primary:#2457F5;        /* 메인 색: 버튼 · 강조 · 링크. 10-13: 헤더(프라이머리)와 같은 색으로 통일(전에는 #1F4ED8) */
+  --primary-soft:#DCE5F7;
+  --ink:#14233F;         /* 본문 · 제목 */
+  --ink-strong:#0B0B0C;  /* 스티커 말투의 굵은 선 · 번짐 없는 그림자(배너 · 모서리 탭) */
+  --graphite:#566175;    /* 보조 글: 흰 바탕 6.5 : 1 */
+  --muted:#666F81;       /* 캡션 · 덜 중요한 글: 흰 바탕 5.1 : 1 · paper 4.7 : 1(작은 글도 AA) */
+  --line:#D3D9E1;
+  --line-ui:color-mix(in srgb,var(--ink) 55%,var(--surface));   /* 입력 칸 · 고르는 칩 · 진행 막대처럼 경계가 곧 모양인 UI의 선: 바탕(--paper) 3.4 : 1 · 흰 면 3.7 : 1(--line 1.3 : 1은 장식 선 · 카드 테두리용) */
+  --paper:#F5F7F6;       /* 바탕 */
+  --paper-2:#E9EEF3;
+  --surface:#FFFFFF;
+  --cta:#FFFFFF;         /* 지원하기 버튼(10-14 결정: 흰 알약 + --ink-strong 2px 테두리 + 번짐 없는 그림자 + 파란 글자). 헤더 · 모바일 메뉴 · .btn.is-cta */
+  --on-cta:#2457F5;      /* 흰 알약 위 글자: 메인 파랑. 다크 모드에서도 이 값 고정(흰 면 위 5.6 : 1) */
+  --yellow:#FEE500;      /* 강조 노랑(10-14: 전 --cta 값). 선배들의 이야기 장식(번호 · 키커 · 배지 · 분류 점) · 카카오톡 버튼. 지원하기에는 쓰지 않음 */
+
+  /* 상단 헤더 막대. 기본은 랜딩 바탕색(home.css --ax-bg가 이 값을 씀): 차콜
+     페이지마다 자기 CSS에서 :root{--header-bg:…}로 그 페이지에 맞는 색을 씀(알아보기 #1C2A4A) */
+  --header-bg:#2457F5;   /* 10-13: 새 랜딩(aica-home-v2) 헤더와 같은 파랑. 흰 글자 5.6 : 1. 전에는 남색 #102D80 */
+  --on-header:#fff;
+  --header-muted:#fff;   /* 파랑 위 흐린 흰색은 대비 미달이라 쓰지 않음(랜딩과 같음) */
+  --header-accent:#fff;  /* 현재 메뉴 · 포커스: 흰 글자 + 흰 밑줄 */
+
+  /* 글꼴 */
+  --ff-sans:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;   /* 기본: 본문 · 메뉴 · 푸터 */
+  --ff-sub:"Paperlogy","Pretendard",sans-serif;    /* 작은 제목(지금은 board.css만 씀. 알아보기는 자기 'Paperlogy') */
+  --ff-title:"Giants","Pretendard",sans-serif;     /* 큰 제목 */
+  --ff-text:"Paperlogy","Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;   /* 카테고리 페이지 본문(이야기 · 라이프 · 체크 같게, 2026-10-08) */
+
+  /* 크기 */
+  --hdr:72px;            /* 상단 헤더 높이 */
+  --sub:0px;             /* 하위 메뉴 바 높이: 바가 있는 카테고리 페이지만 아래 규칙으로 52px */
+  --wrap:1376px;   /* 10-13: 내용 폭 1280px(+ 좌우 여백 48px씩) — 전에는 1240px(내용 1144px) */
+  --gutter:clamp(20px,4vw,48px);
+  /* 카테고리 페이지 세로 리듬(2026-10-07, 지원 전 체크 시안 값을 사이트 기준으로). 가로 정렬은 위 --wrap · --gutter(헤더와 같은 선) */
+  --sec-y:clamp(72px,8vw,112px);         /* 섹션 사이(섹션 제목 위) · 바탕색이 다른 띠 섹션의 위아래 · 마지막 섹션 아래. '다음으로' 띠는 위 선 양쪽에 반씩(site.css) */
+  --sec-y-first:clamp(40px,4.4vw,60px);  /* 히어로 바로 다음 첫 섹션 제목 위 */
+  --hero-y:clamp(36px,4vw,56px);         /* 히어로 안 위아래 */
+  --r-card:16px;         /* 본문 카드 모서리(공용 '다음으로' 띠 등). 버튼은 알약(site.css .btn) */
+  --ease:cubic-bezier(.22,.61,.36,1);
+
+  /* 옛 이름(10-14 전 --blue*): 예전 코드 · 시안이 그대로 동작하도록 남겨 둠. 새 코드는 --primary*만 씀 */
+  --blue:var(--primary);--blue-deep:var(--primary-deep);--blue-soft:var(--primary-soft);--blue-bright:var(--primary-bright);
+}
+:root[data-menu]:not([data-subnav="off"]){--sub:52px}
+@media (max-width:860px){
+  :root{--hdr:60px}
+  :root[data-menu]:not([data-subnav="off"]){--sub:48px}
+}
+
+/* 밝은 화면 고정(10-14): 기기 · 브라우저가 다크 모드여도 색이 바뀌지 않게(Chrome 자동 어둡게도 막음) */
+:root{color-scheme:only light}

@@ -34,7 +34,7 @@
       <ol class="rank" th:unless="${#lists.isEmpty(weekly.topPosts)}">
         <li th:each="p, it : ${weekly.topPosts}" th:if="${it.index < 5}">
           <b th:text="${it.count}">1</b>
-          <a th:href="@{/admin/posts/{id}/preview(id=${p.id})}" target="_blank" th:text="${p.title}">제목</a>
+          <a th:href="@{/admin/posts/{id}/preview(id=${p.id})}" target="_blank" rel="noopener" data-preview th:data-title="${p.title}" th:data-edit="@{/admin/posts/{id}/edit(id=${p.id})}" th:text="${p.title}">제목</a>
           <span class="c" th:text="${#numbers.formatInteger(p.viewCount, 1, 'COMMA')}">0</span>
         </li>
       </ol>

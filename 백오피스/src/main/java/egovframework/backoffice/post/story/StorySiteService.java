@@ -68,6 +68,9 @@ public class StorySiteService {
 
     static final String DATA_FILE = "stories/js/stories-data.js";
     static final String STORIES_PAGE = "stories/index.html";
+    /** 글 종류마다 그 글이 보이는 페이지(2026-10-14 사이트 새 시안: 한눈에 보기 + 종류별 페이지) */
+    static final Map<StoryKind, String> KIND_PAGES = Map.of(StoryKind.REVIEW, "stories/reviews.html", StoryKind.INTERVIEW, "stories/interviews.html",
+            StoryKind.PROJECT, "stories/projects.html", StoryKind.COHORT, "stories/cohorts.html");
     static final String UPLOAD_DIR = "stories/assets/uploads";
     static final String COPY_PREFIX = "post-";
     private static final String HEADER = "/* 선배들의 이야기 글 데이터: 관리자 페이지(게시물 관리)가 게시·미게시·휴지통·복원할 때마다 다시 써요. 직접 고치지 마세요. */\n";
@@ -210,23 +213,46 @@ public class StorySiteService {
         }
         out.put("title", p.getTitle());
         for (var e : story.entrySet()) {
-            if (e.getKey().equals("anchor") || e.getKey().equals("id") || e.getKey().equals("title")) {
+            String k = e.getKey();
+            if (k.equals("anchor") || k.equals("id") || k.equals("title") || k.equals("cover")) {
                 continue;
             }
             Object value = e.getValue();
-            if (value instanceof Map<?, ?> m && m.get("src") instanceof String src && (e.getKey().equals("img") || e.getKey().equals("imgLarge") || e.getKey().equals("heroImg"))) {
-                String mapped = images.apply(src);
-                if (mapped == null) {
-                    continue;
+            if (k.equals("img") || k.equals("imgLarge") || k.equals("heroImg")) {
+                value = siteImage(value, images);
+            } else if (k.equals("photos")) {
+                // 사진 여러 장: 글을 열면 넘겨 보는 사진들(파일을 찾지 못한 사진은 빼고)
+                List<Map<String, Object>> list = new ArrayList<>();
+                if (value instanceof List<?> photos) {
+                    for (Object o : photos) {
+                        Map<String, Object> img = siteImage(o, images);
+                        if (img != null) {
+                            list.add(img);
+                        }
+                    }
                 }
-                Map<String, Object> img = new LinkedHashMap<>();
-                m.forEach((k, v) -> img.put(String.valueOf(k), v));
-                img.put("src", mapped);
-                value = img;
+                value = list.isEmpty() ? null : list;
             }
-            out.put(e.getKey(), value);
+            if (value != null) {
+                out.put(k, value);
+            }
         }
         return out;
+    }
+
+    /** 사진 하나의 주소를 사이트 기준으로. 사진이 아니거나 파일이 없으면 null */
+    private static Map<String, Object> siteImage(Object value, UnaryOperator<String> images) {
+        if (!(value instanceof Map<?, ?> m) || !(m.get("src") instanceof String src)) {
+            return null;
+        }
+        String mapped = images.apply(src);
+        if (mapped == null) {
+            return null;
+        }
+        Map<String, Object> img = new LinkedHashMap<>();
+        m.forEach((k, v) -> img.put(String.valueOf(k), v));
+        img.put("src", mapped);
+        return img;
     }
 
     /** 업로드 사진을 사이트로 복사하고 사이트 기준 주소를 돌려준다. 원본이 없으면 null(그림 없이) */
@@ -300,6 +326,9 @@ public class StorySiteService {
             int n = importSiteStories();
             if (n > 0) {
                 log.info("선배들의 이야기 사이트에 있던 글 {}개를 게시물로 가져왔습니다.", n);
+            } else {
+                // 사이트 파일을 새로 받았거나(새 시안 등) 꺼져 있는 동안 바뀐 게 있어도 켤 때 게시중인 글과 맞춤(같으면 그대로)
+                regenerate();
             }
         } catch (RuntimeException e) {
             log.warn("선배들의 이야기 사이트 글을 가져오지 못했습니다.", e);
@@ -457,7 +486,9 @@ public class StorySiteService {
         }
         String token = UUID.randomUUID().toString().replace("-", "");
         previews.put(token, new Preview(toJs(data), hash, note, now));
-        return "/admin/posts/story-preview/" + token + "/" + STORIES_PAGE + hash;
+        // 그 종류의 페이지가 있으면 그 페이지로(예전 한 페이지 사이트면 한 페이지로)
+        String target = Files.isRegularFile(pages.siteRoot().resolve(KIND_PAGES.get(kind))) ? KIND_PAGES.get(kind) : STORIES_PAGE;
+        return "/admin/posts/story-preview/" + token + "/" + target + hash;
     }
 
     /** 미리보기 화면의 파일: 데이터 파일은 미리보기 내용으로, 선배들의 이야기 페이지에는 안내 띠를 붙이고, 나머지는 사이트 파일 그대로 */
@@ -484,7 +515,8 @@ public class StorySiteService {
         String ext = name.contains(".") ? name.substring(name.lastIndexOf('.') + 1).toLowerCase() : "";
         try {
             byte[] bytes = Files.readAllBytes(f);
-            if (f.equals(pages.siteRoot().resolve(STORIES_PAGE).normalize())) {
+            // 이야기 페이지(한눈에 보기 · 후기 · 인터뷰 · 프로젝트 · 기수별 이모저모)에는 미리보기 안내 띠
+            if (f.getParent().equals(pages.siteRoot().resolve(STORIES_PAGE).normalize().getParent()) && "html".equals(ext)) {
                 bytes = withBanner(new String(bytes, UTF_8), preview.note()).getBytes(UTF_8);
             }
             return file(bytes, ext);
@@ -533,9 +565,13 @@ public class StorySiteService {
                     }
                     return;
                 } catch (FileSystemException e) {
-                    if (attempt >= 10 || e instanceof NoSuchFileException) {
+                    if (e instanceof NoSuchFileException) {
                         Files.deleteIfExists(temp);
                         throw e;
+                    }
+                    if (attempt >= 6) {
+                        overwriteInPlace(target, bytes, temp, e);
+                        return;
                     }
                     try {
                         Thread.sleep(attempt * 100L);
@@ -547,5 +583,18 @@ public class StorySiteService {
         } catch (IOException e) {
             throw new IllegalStateException("사이트 데이터 파일을 쓰지 못했습니다: " + target, e);
         }
+    }
+
+    /** 이름 바꾸기가 끝내 막히면(다른 프로그램이 파일을 열어 둔 채 놓지 않을 때) 그 자리에 덮어쓴다. 그것도 안 되면 처음 오류를 그대로 */
+    private static void overwriteInPlace(Path target, byte[] bytes, Path temp, FileSystemException cause) throws IOException {
+        try {
+            Files.write(target, bytes);
+        } catch (IOException e) {
+            cause.addSuppressed(e);
+            Files.deleteIfExists(temp);
+            throw cause;
+        }
+        Files.deleteIfExists(temp);
+        log.warn("{} 파일을 다른 프로그램이 잡고 있어 그 자리에 덮어썼습니다({}).", target.getFileName(), cause.getClass().getSimpleName());
     }
 }

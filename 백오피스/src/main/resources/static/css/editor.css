@@ -234,3 +234,7 @@
 .alert.error { background: #fdf3f2; border: 1px solid #f3c4bf; color: #c0392b; padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; }
 
 .ed-select.is-off { color: #9aa7bd; background: #f3f5f9; }
+
+/* 등록 · 수정 뒤 알림: 위 가운데에 잠깐 */
+.toast.ed-done { top: 74px; right: auto; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px; font-size: 14px; font-weight: 700; white-space: nowrap; animation-duration: 4.5s; }
+.toast.ed-done::before { content: ''; width: 18px; height: 18px; flex: none; border-radius: 50%; background: #2fbf71 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 12px no-repeat; }

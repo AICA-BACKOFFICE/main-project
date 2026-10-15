@@ -60,9 +60,15 @@ public class PostController {
         return "post/list";
     }
 
+    /** 새 글은 늘 글 종류(카테고리)가 정해진 채로 연다: 목록에서 고른 종류(kind), 없으면 후기 양식 */
     @GetMapping("/new")
-    public String createForm(Model model) {
-        model.addAttribute("form", new PostForm());
+    public String createForm(@RequestParam(required = false) String kind, Model model) {
+        PostForm form = new PostForm();
+        Category start = categoryService.findBySlug(StoryKind.ofSlug(kind) != null ? kind : StoryKind.REVIEW.slug());
+        if (start != null && start.isTop() && start.isActive()) {
+            form.setCategoryId(start.getId());
+        }
+        model.addAttribute("form", form);
         addFormOptions(model);
         return "post/editor";
     }
@@ -76,7 +82,7 @@ public class PostController {
         }
         try {
             Post saved = postService.create(form, me.getId());
-            redirect.addFlashAttribute("toast", "게시물을 등록했습니다.");
+            redirect.addFlashAttribute("toast", "등록이 완료되었습니다.");
             return "redirect:/admin/posts/" + saved.getId() + "/edit";
         } catch (IllegalArgumentException e) {
             binding.reject("blocks", e.getMessage());
@@ -112,7 +118,7 @@ public class PostController {
         }
         try {
             postService.update(id, form, me.getId());
-            redirect.addFlashAttribute("toast", "게시물을 저장했습니다.");
+            redirect.addFlashAttribute("toast", "수정이 완료되었습니다.");
             return "redirect:/admin/posts/" + id + "/edit";
         } catch (IllegalArgumentException e) {
             binding.reject("blocks", e.getMessage());

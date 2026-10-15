@@ -68,8 +68,17 @@
             '</div>';
           view.querySelector('#histLoad').addEventListener('click', function () {
             titleEl.value = v.title || ''; summaryEl.value = v.summary || '';
-            if (v.categoryId) form.querySelector('[name="categoryId"]').value = v.categoryId;
-            editor.setBlocks(v.blocks || []); markDirty(); close();
+            // 그 버전의 카테고리가 지금 목록에 있을 때만 바꾸고(숨긴 카테고리면 그대로), 양식도 그 카테고리로 바뀌게 change 를 알림
+            var catSel = form.querySelector('[name="categoryId"]');
+            var known = v.categoryId && [].some.call(catSel.options, function (o) { return o.value === String(v.categoryId); });
+            if (known) {
+              if (catSel.value !== String(v.categoryId)) { catSel.value = String(v.categoryId); catSel.dispatchEvent(new Event('change', { bubbles: true })); }
+              ctx.setCategory(v.categoryId, v.subCategoryId);
+            }
+            editor.setBlocks(v.blocks || []);
+            // 선배들의 이야기 글은 양식 칸(사진 · 대표 사진 포함)도 그 버전으로(post/story-form.js 가 다시 그림)
+            if (ctx.storyEl && v.storyJson) { ctx.storyEl.value = v.storyJson; ctx.storyEl.dispatchEvent(new Event('story:external')); }
+            markDirty(); close();
             notify('버전 #' + v.id + ' 내용을 불러왔습니다. 임시저장 또는 완료를 눌러야 서버에 반영됩니다.');
           });
           view.querySelector('#histRestore').addEventListener('click', function () {

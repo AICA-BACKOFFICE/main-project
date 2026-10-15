@@ -156,7 +156,8 @@ class CategoryPageWebTest {
         mvc.perform(get("/admin/pages/api/state").param("page", "about").session(session)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.hasDraft").value(false)).andExpect(jsonPath("$.conflict").value(false));
         mvc.perform(get("/admin/pages/api/pages").session(session)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(4))
+                .andExpect(jsonPath("$.length()").value(8))   // 2026-10-14: 이야기 하위 페이지 4개(후기 · 인터뷰 · 프로젝트 · 기수별 이모저모) 더함
+                .andExpect(jsonPath("$[2].id").value("stories-reviews"))
                 .andExpect(jsonPath("$[0].id").value("about")).andExpect(jsonPath("$[0].ready").value(true))
                 .andExpect(jsonPath("$[1].ready").value(false));
 

@@ -1,252 +1,225 @@
 /* =========================================================
-   지원 전 체크(check/index.html) 본문 스타일
-   출처: aica-prototype-v3(2026-10-08) styles.css에서 '지원 전 체크'(#/check) 본문에 쓰이는 규칙만.
-     시안이 같은 선택자를 뒤에서 다시 덮어쓰던 층(섹션 머리 · 정부지원사업 안내 · 체크 표시 색 · 단계 그림 등)은 마지막 값으로 합쳐 한 규칙으로,
-     !important는 선택자를 한 단계 좁혀 뺌. 시안 값 그대로(화면은 시안과 같음).
-   모든 선택자는 .check-page(main) 범위. 헤더 · 하위 메뉴 바 · 푸터 · 맨 위로 · 토스트 · 버튼(.btn) · '다음으로' 띠,
-   기본 요소(box-sizing · img · a · button · :focus-visible · .wrap)는 ../common/css/
-   글꼴: 본문 --ff-text("Paperlogy Text" = 시안 "Paperlogy", common/css/tokens.css), 큰 제목 · 숫자 "Giants"(시안 "Giants Title")
-   시안과 다르게 둔 것(README '사이트에 맞춰 바꾼 것'): 버튼은 공통 .btn에 시안 모양을 덮음, 분류 칩 묶음 테두리 --line-ui,
-     검색어 지우기 누르는 곳 44px(보이는 원은 시안 32px), 답 글 검색 하이라이트, 스크롤 등장 숨김은 JS가 있을 때만, #위치 자리
-   순서: 바탕 · 공통 조각 → 스크롤 등장 → 섹션 · 섹션 머리 → 모집 대상 → 모집 프로세스 → 지원 혜택 → 자주 묻는 질문 → #위치 자리
+   지원 전 체크(10-13 교체): 사용자 제공 아티팩트 '인사교 A to Z'의 #/check 화면을 그대로 옮김
+   원본 아티팩트 CSS에서 이 화면이 쓰는 규칙만 뽑아 둠(아래). 색 · 글꼴 토큰은 공통 tokens.css를 씀
    ========================================================= */
+.check-page,.check-page ~ *{--page:#fff;--surface:#fff;--primary-soft:#DCE5F7;--n-lime:#8CFF3F;--n-yellow:#FFE600;--ease:cubic-bezier(.22,.61,.36,1);--ff-display:var(--ff-text)}
+body[data-cat="check"]{--t-h3:20px;--t-body:18px;--t-card:16px;--t-aux:15px;--t-label:13px;--page:#fff;--surface:#fff;--primary-soft:#DCE5F7;--n-lime:#8CFF3F;--n-yellow:#FFE600;--ease:cubic-bezier(.22,.61,.36,1);--ff-display:var(--ff-text)}
+@media (max-width:640px){body[data-cat="check"]{--t-h3:18px;--t-body:16px;--t-card:15px;--t-aux:13.5px;--t-label:12.5px}}
+body[data-cat="check"] main{--c:var(--primary)}
+body[data-cat="check"]{background:#fff}
 
-/* ---------- 바탕 · 공통 조각 ---------- */
-/* 시안 :root · body · main 값 중 공통(tokens · base)과 다른 것만: 본문 글꼴, 자간 0, 큰 제목 글꼴 대체 순서 */
-.check-page{
-  --ff-title:"Giants","Paperlogy Text",sans-serif;   /* 큼직한 타이틀 · 숫자 */
-  font-family:var(--ff-text);
-  letter-spacing:0;     /* Paperlogy 자간(공통 body는 -.01em) */
-  padding-bottom:var(--sec-y);   /* 끝에 '다음으로' 띠가 있으면 공통 site.css가 0으로(띠 앞 마지막 섹션 아래 --sec-y / 2도 공통 site.css) */
-}
-.check-page p,
-.check-page li,
-.check-page dd,
-.check-page dt{letter-spacing:0}
-/* 화면에 안 보이는 페이지 제목(h1 #overview) — 시안 v3는 히어로 없이 바로 섹션 */
-.check-page .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-/* 확인 필요 표시 — 확정 전 정보는 숨기지 않고 표시 */
-.check-page .tbd{display:inline-block;font-size:12px;line-height:1;padding:4px 7px;border-radius:4px;background:var(--blue-soft);color:var(--blue);font-weight:500;vertical-align:.15em;margin-left:6px;letter-spacing:0;white-space:nowrap}
-/* 글 안 링크: 파랑 + 밑줄 테두리. 화살표 아이콘은 뒤에 */
-.check-page .text-link{display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--blue);text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:2px}
-.check-page .text-link svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;transition:transform .25s var(--ease)}
-.check-page .text-link:hover svg{transform:translate(2px,-2px)}
-/* '공식 모집 공고'(data-site-link="notice")는 시안에 없던 링크(시안은 글자만) — 밑줄 테두리만큼 줄 높이가 늘지 않게(문단 높이 시안 그대로) */
-.check-page .text-link[data-site-link]{margin-bottom:-3px}
+/* ---- 원본 아티팩트에서 뽑은 규칙 ---- */
+.tbd{display:inline-block;font-size:12px;line-height:1;padding:4px 7px;border-radius:4px;background:var(--primary-soft);color:var(--primary);font-weight:500;vertical-align:.15em;margin-left:6px;letter-spacing:0;white-space:nowrap}
+.rv{opacity:0;transform:translateY(18px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.rv.is-in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;clip-path:none;transition:none}}
+.text-link{display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--primary);text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:2px}
+.text-link svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;transition:transform .25s var(--ease)}
+.text-link:hover svg{transform:translate(2px,-2px)}
+.fp-btn{width:48px;height:48px;border-radius:50%;border:1.5px solid var(--ink);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;transition:background .2s,color .2s,transform .25s var(--ease),opacity .2s}
+.fp-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
+.fp-btn:hover:not(:disabled){background:var(--ink);color:var(--paper);transform:translateY(-2px)}
+.fp-btn:disabled{opacity:.3;cursor:default}
+.chk-notice{display:flex;align-items:flex-start;margin-top:26px;background:var(--surface);border:1.5px solid var(--ink);border-radius:14px}
+.chk-notice-ico{flex:none;border-radius:50%;background:var(--n-yellow);color:var(--ink);display:grid;place-items:center;font-weight:800;border:2px solid var(--ink)}
+.chk-notice h4{margin:0 0 6px;letter-spacing:-.02em}
+.chk-notice p{margin:0;}
+.chk-self{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(28px,5vw,72px);align-items:start}
+.chk-list{list-style:none;margin:0;padding:0;border-top:2px solid var(--ink)}
+.chk-list li{border-bottom:1px solid var(--line)}
+.chk-list label{display:flex;gap:16px;align-items:flex-start;padding:18px 4px;cursor:pointer}
+.chk-box{position:absolute;opacity:0;pointer-events:none}
+.chk-mark{flex:none;width:26px;height:26px;border:2px solid var(--ink);border-radius:6px;background:var(--surface);position:relative;margin-top:1px;transition:background .2s,transform .3s cubic-bezier(.34,1.56,.64,1)}
+.chk-mark::after{content:"";position:absolute;left:7px;top:1px;width:7px;height:14px;border:solid var(--ink);border-width:0 3px 3px 0;transform:rotate(40deg) scale(0);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.chk-box:checked + .chk-mark{transform:scale(1.06)}
+.chk-box:checked + .chk-mark::after{transform:rotate(40deg) scale(1)}
+.chk-box:focus-visible + .chk-mark{outline:3px solid var(--primary);outline-offset:3px}
+.chk-text{font-size:16.5px;line-height:1.6}
+.chk-box:checked ~ .chk-text{color:var(--graphite)}
+.chk-progress{padding:26px;border:1.5px solid var(--ink);border-radius:14px;background:var(--surface)}
+.chk-progress p{margin:0 0 14px;font-size:17px}
+.chk-progress b{font-family:var(--ff-title);font-weight:400;font-size:38px;margin-right:2px}
+.chk-bar{height:12px;border:2px solid var(--ink);border-radius:12px;background:var(--paper);overflow:hidden}
+.chk-bar i{display:block;height:100%;width:0;transition:width .45s var(--ease)}
+.chk-go{display:inline-flex;align-items:center;gap:8px;margin-top:18px;padding:12px 18px;border-radius:40px;background:var(--ink);color:var(--paper);font-weight:700;font-size:14.5px;text-decoration:none;transition:background .2s,color .2s}
+.chk-go[hidden]{display:none}
+.chk-go svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+.chk-go:hover{background:var(--primary);color:#fff}
+@media (max-width:860px){.chk-self{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.chk-bar i,.chk-mark,.chk-mark::after{transition:none}}
+.chk-crit{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:2px solid var(--ink)}
+.chk-crit>div{padding:30px 28px 34px 0}
+.chk-crit>div+div{padding-left:clamp(20px,3vw,40px);border-left:1px solid var(--line)}
+.chk-crit-label{display:inline-block;margin:0 0 20px;padding:5px 16px;border-radius:30px;background:var(--ink);color:var(--paper);font-weight:700;font-size:14px}
+.chk-crit-main{margin:0 0 12px;font-family:var(--ff-title);line-height:1.22;letter-spacing:-.025em}
+.chk-crit-main mark{color:inherit;padding:0 2px}
+.chk-crit-sub{margin:0;line-height:1.6;color:var(--graphite)}
+.chk-crit-note{margin:16px 0 0;font-size:14.5px;color:var(--graphite)}
+@media (max-width:860px){.chk-crit{grid-template-columns:1fr}.chk-crit>div,.chk-crit>div+div{padding:24px 0;border-left:0}.chk-crit>div+div{border-top:1px solid var(--line)}}
+.ben-foot{margin-top:28px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;font-size:15px;color:var(--graphite)}
+.ben-foot p{margin:0}
+.ben-foot small{font-size:13.5px}
+.ben-foot .text-link svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.faq-tools{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:center;justify-content:space-between}
+.faq-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:60px}
+.faq-tab{padding:12px 26px;border:0;border-radius:40px;background:transparent;color:var(--primary);font-weight:700;font-size:16px;cursor:pointer;transition:background .2s,color .2s}
+.faq-tab:hover{background:var(--primary-soft)}
+.faq-tab[aria-pressed="true"]{background:var(--primary);color:#fff}
+.faq-count{margin:22px 0 0;min-height:22px;font-size:14.5px;color:var(--graphite)}
+.faq-list{list-style:none;margin:6px 0 0;padding:0;border-top:2px solid var(--ink)}
+.faq-item{border-bottom:1px solid var(--line)}
+.faq-item[hidden]{display:none}
+.faq-item h3{margin:0}
+.faq-q{width:100%;display:grid;grid-template-columns:34px minmax(0,1fr) 36px;gap:10px;align-items:center;padding:26px 6px;background:none;border:0;text-align:left;cursor:pointer;color:var(--ink);font:inherit}
+.faq-qa{font-family:var(--ff-title);font-size:22px;line-height:1;color:var(--ink)}
+.faq-qt{font-size:clamp(17px,1.5vw,20px);font-weight:700;letter-spacing:-.02em;line-height:1.5}
+.faq-qt mark{background:rgba(36,87,245,.18);color:inherit;border-radius:3px}
+.faq-arrow{display:grid;place-items:center;transition:transform .35s var(--ease)}
+.faq-arrow svg{width:26px;height:26px;fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
+.faq-q:hover .faq-qt{color:var(--primary)}
+.faq-q:hover .faq-arrow svg{stroke:var(--primary)}
+.faq-item.is-open .faq-arrow{transform:rotate(180deg)} /* 펼치기: 아래 화살괄호(⌄) → 열리면 위(⌃)로(10-13) */
+.faq-item.is-open .faq-arrow svg{stroke:var(--primary)}
+.faq-a{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s var(--ease);visibility:hidden}
+.faq-a>div{overflow:hidden;display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:0 6px;background:var(--surface);border-radius:0}
+.faq-item.is-open .faq-a{grid-template-rows:1fr;visibility:visible}
+.faq-at{padding:26px 36px 28px 0;font-size:16.5px;line-height:1.85;color:var(--graphite)}
+.faq-at .text-link{font-weight:700}
+@media (max-width:860px){.faq-tabs{width:100%;border-radius:28px;padding:6px}.faq-tab{padding:10px 16px;font-size:15px;flex:1 1 auto}.faq-q{grid-template-columns:28px minmax(0,1fr) 28px;padding:22px 0}.faq-a>div{grid-template-columns:28px minmax(0,1fr);padding:0}.faq-at{padding-right:0}}
+@media (prefers-reduced-motion:reduce){.faq-a,.faq-arrow{transition:none}}
+.v3-sec{padding:clamp(72px,8vw,112px) 0 0}
+.s-head{align-items:center;gap:18px;}
+.s-head h2{margin:0;font-weight:700;letter-spacing:-.035em;line-height:1.25}
+.s-head p{margin:6px 0 0;color:var(--graphite);font-size:15.5px}
+.v3-h3{margin:48px 0 16px;font-size:20px;font-weight:700;letter-spacing:-.02em}
+.s-head + .v3-h3{margin-top:0}
+.ben2{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.b2{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px 22px 26px;transition:border-color .2s,transform .3s var(--ease)}
+.b2:hover{border-color:var(--ink);transform:translateY(-3px)}
+.b2-ico{display:grid;place-items:center;width:58px;height:58px;border-radius:12px;border:1px solid var(--line);background:var(--paper);margin-bottom:18px}
+.b2-ico svg{width:38px;height:38px;fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.b2-ico .b{stroke:var(--primary)}
+.b2-no{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--graphite)}
+.b2 h3{margin:0 0 8px;font-size:18.5px;font-weight:700;letter-spacing:-.025em}
+.b2-desc,.b2-sub{margin:0;font-size:14.5px;line-height:1.7;color:var(--graphite)}
+.b2-sub{margin-top:8px;font-size:13.5px}
+.b2 b{color:var(--ink);font-weight:700;}
+@media (max-width:1000px){.ben2{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.ben2{grid-template-columns:1fr}}
+.s-head{display:block;padding-bottom:0;border-bottom:0;margin-bottom:clamp(28px,3.4vw,44px)}
+.s-head h2{font-size:clamp(28px,2.8vw,38px)}
+.s-head p{margin-top:10px;max-width:60ch;line-height:1.7}
+.chk-box:checked + .chk-mark{background:var(--primary);border-color:var(--primary)}
+.chk-mark::after{border-color:#fff}
+.chk-bar i{background:var(--primary)}
+.chk-crit-main mark{background:linear-gradient(transparent 60%,var(--primary-soft) 60%)}
+.b2 b{background:linear-gradient(transparent 62%,var(--primary-soft) 62%)}
+.chk-crit-main{font-size:clamp(24px,2.4vw,34px)!important}
+.chk-crit-sub{font-size:clamp(15px,1.2vw,17px)}
+.chk-notice{padding:26px 30px;gap:18px}
+.chk-notice h4{font-size:clamp(19px,1.6vw,22px);margin-bottom:8px}
+.chk-notice p{font-size:clamp(16.5px,1.3vw,18px);line-height:1.75;color:var(--ink)}
+.chk-notice-ico{width:34px;height:34px;font-size:18px}
+.faq-tab{display:inline-flex;align-items:center;gap:7px}
+.faq-cnt{font-style:normal;min-width:22px;padding:1px 7px;border-radius:20px;background:var(--primary-soft);color:var(--primary);font-size:12.5px;font-weight:700;text-align:center;line-height:1.5}
+.faq-tab[aria-pressed="true"] .faq-cnt{background:rgba(255,255,255,.22);color:#fff}
+.chk-progress,body[data-cat="check"] .chk-progress{position:static!important;top:auto}
+.pf{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:18px;}
+.pf-col{position:relative;display:flex;flex-direction:column;align-items:stretch;cursor:pointer}
+.pf-illus{height:clamp(170px,16vw,230px);display:flex;align-items:flex-end;justify-content:center;padding-bottom:18px}
+.pf-illus img{max-width:86%;max-height:100%;object-fit:contain;filter:grayscale(1);opacity:.42;transform:scale(.82);transform-origin:center bottom;transition:transform .55s cubic-bezier(.34,1.56,.64,1),filter .45s,opacity .45s}
+.pf-col.is-on .pf-illus img{filter:none;opacity:1;transform:scale(1)}
+.pf-dot{position:relative;display:block;height:24px}
+.pf-dot::before{content:"";position:absolute;left:-9px;right:-9px;top:11px;height:1px;background:var(--line)}
+.pf-col:first-child .pf-dot::before{left:0}
+.pf-col:last-child .pf-dot::before{right:0}
+.pf-dot::after{content:"";position:absolute;left:50%;top:5px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--surface);border:2px solid #C9D3E6;transition:border-color .3s,box-shadow .3s}
+.pf-col.is-on .pf-dot::after{border-color:var(--primary);box-shadow:0 0 0 4px color-mix(in srgb,var(--primary) 18%,transparent)}
+.pf-card{margin-top:22px;flex:1;padding:22px 22px 24px;background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--line);border-radius:16px;transition:border-color .3s,background .3s,box-shadow .3s;outline:none}
+.pf-col.is-on .pf-card{background:var(--surface);border-color:var(--primary);box-shadow:0 16px 32px -24px rgba(36,87,245,.55)}
+.pf-card:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+.pf-step{margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--graphite)}
+.pf-col.is-on .pf-step{color:var(--primary)}
+.pf-card h3{margin:0 0 12px;font-size:clamp(18px,1.6vw,21px);font-weight:700;letter-spacing:-.03em;line-height:1.35}
+.pf-body p,.pf-body dd{margin:0;font-size:14.5px;line-height:1.7;color:var(--graphite)}
+.pf-body dl{margin:0;display:flex;flex-direction:column;gap:10px}
+.pf-body dt{font-weight:700;font-size:14px;color:var(--ink);margin-bottom:2px}
+.pf-note{margin-top:12px!important;padding:12px 14px;border-radius:10px;background:var(--primary-soft);color:var(--ink)!important;font-size:13.5px!important}
+.pf-note b{display:block;margin-bottom:2px;font-size:12.5px;color:var(--primary)}
+@media (max-width:1000px){.pf{grid-template-columns:1fr 1fr;row-gap:28px}.pf-dot{display:none}.pf-illus img{filter:none;opacity:1;transform:scale(.9)}}
+@media (max-width:620px){.pf{grid-template-columns:1fr}.pf-illus{height:180px}}
+@media (prefers-reduced-motion:reduce){.pf-illus img{transition:none}}
+.pf-illus img{mix-blend-mode:normal}
+.pf{padding-top:8px}
+.sec-float{position:fixed;right:clamp(14px,2.2vw,36px);top:50%;z-index:30;transform:translateY(-50%);opacity:0;transition:opacity .4s var(--ease)}
+.sec-float.is-in{opacity:1}
+.sec-float ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:18px}
+.sf-btn{display:flex;flex-direction:column;align-items:center;gap:0;padding:6px 8px;background:none;border:0;cursor:pointer;font:inherit;color:var(--graphite)}
+.sf-slash{display:block;width:22px;height:14px;position:relative}
+.sf-slash::before{content:"";position:absolute;left:50%;top:50%;width:20px;height:1.5px;border-radius:1px;background:currentColor;opacity:.55;transform:translate(-50%,-50%) rotate(-28deg);transition:opacity .25s,background .25s,width .25s var(--ease)}
+.sf-label{writing-mode:vertical-rl;font-size:13px;font-weight:600;letter-spacing:.08em;line-height:1;white-space:nowrap;color:var(--primary);max-height:0;opacity:0;overflow:hidden;margin-top:0;transition:max-height .45s var(--ease),opacity .3s,margin-top .3s var(--ease)}
+.sf-btn::after{content:"";display:block;width:1px;height:0;margin-top:0;background:var(--primary);transition:height .45s var(--ease),margin-top .45s var(--ease)}
+.sf-btn:hover .sf-label,.sf-btn:focus-visible .sf-label{max-height:220px;opacity:1;margin-top:10px}
+.sf-btn:hover::after,.sf-btn:focus-visible::after{height:64px;margin-top:12px}
+.sf-btn:hover .sf-slash::before,.sf-btn:focus-visible .sf-slash::before{opacity:1;background:var(--primary);width:24px}
+.sf-btn.is-active .sf-slash::before{opacity:1;background:var(--primary);width:24px}
+.sf-btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:4px}
+@media (max-width:767px){.sec-float{display:none}}
+@media (prefers-reduced-motion:reduce){.sec-float,.sf-label,.sf-btn::after,.sf-slash::before{transition:none}}
+.k-head{margin-bottom:clamp(28px,3.4vw,44px)}
+.k-head .k-label{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:15px;font-weight:700;letter-spacing:-.01em;color:#2457F5}
+.k-head .k-label::before{content:"";width:26px;height:2px;border-radius:1px;background:#2457F5}
+.k-head h2{margin:0;font-family:var(--ff-title);font-weight:400;font-size:clamp(28px,3vw,42px);line-height:1.3;letter-spacing:-.02em;color:var(--ink);text-wrap:balance}
+.chk-crit .chk-crit-main{font-family:var(--ff-title);font-weight:400;letter-spacing:-.01em}
+.chk-crit .chk-crit-main mark{background:none;color:var(--primary);padding:0}
+.chk-crit .chk-crit-main{color:var(--primary)}
+.chk-crit .chk-crit-label{display:block;margin:0 0 12px;padding:0;border-radius:0;background:none;color:var(--ink);font-size:16px;font-weight:700}
+.ben2 .b2 b{background:none;color:var(--primary)}
+.drawer{background:var(--page)}
+.faq-pager{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:20px}
+#faq .k-head{margin-bottom:28px}
+#faq .faq-q{padding:17px 0}
+.faq-pager[hidden]{display:none}
+.faq-pb{width:40px;height:40px}
+.faq-pb svg{width:18px;height:18px}
+.faq-pages{display:flex;gap:6px}
+.faq-pn{min-width:40px;height:40px;padding:0 6px;border:0;border-radius:50%;background:none;font:inherit;font-size:15px;font-weight:700;color:var(--graphite);cursor:pointer;transition:background .2s,color .2s}
+.faq-pn:hover{color:var(--ink);background:var(--paper)}
+.faq-pn[aria-current="page"]{background:none;color:var(--primary)}
+.faq-pn:focus-visible,.faq-pb:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media (min-width:1000px){.faq-tools{flex-wrap:nowrap}}
+#faq .faq-count{height:22px;min-height:0;line-height:22px;overflow:hidden}
+.faq-pager.is-off{visibility:hidden}
+.faq-item.is-open .faq-q .faq-qa,.faq-item.is-open .faq-qt{color:var(--primary)}
+.faq-a .faq-qa{color:var(--graphite);padding:26px 0 0;line-height:calc(16.5px * 1.85);align-self:start}
+#schedule .k-head{margin-bottom:clamp(16px,1.6vw,24px)}
+#schedule .pf-illus{height:clamp(118px,9.4vw,150px);padding-bottom:10px}
+#schedule .pf-card{margin-top:16px}
+body[data-cat="check"] .v3-h3,
+body[data-cat="check"] .chk-notice h4,
+body[data-cat="check"] .pf-card h3,
+body[data-cat="check"] .b2 h3,
+body[data-cat="check"] .faq-qt{font-size:var(--t-h3)}
+body[data-cat="check"] .chk-crit-sub,
+body[data-cat="check"] .chk-notice p,
+body[data-cat="check"] .chk-text,
+body[data-cat="check"] .chk-progress p,
+body[data-cat="check"] .faq-at{font-size:var(--t-body)}
+body[data-cat="check"] .pf-body p,
+body[data-cat="check"] .pf-body dd,
+body[data-cat="check"] .pf-body dt,
+body[data-cat="check"] .b2-desc{font-size:var(--t-card)}
+body[data-cat="check"] .chk-crit-note,
+body[data-cat="check"] .pf-note,
+body[data-cat="check"] .b2-sub,
+body[data-cat="check"] .b2-sub small,
+body[data-cat="check"] .ben-foot p,
+body[data-cat="check"] .ben-foot small{font-size:var(--t-aux)!important}
+body[data-cat="check"] .ben-foot .text-link{font-size:16px!important}
+body[data-cat="check"] .pf-note b{font-size:var(--t-label)}
+body[data-cat="check"] .faq-at{line-height:1.8}
+@media (min-width:1001px){body[data-cat="check"] .ben2 .b2{padding-left:20px;padding-right:20px}body[data-cat="check"] .b2-desc{letter-spacing:-.025em;word-break:keep-all}}
+body[data-cat="check"] .faq-a .faq-qa{line-height:calc(var(--t-body) * 1.8)}
 
-/* ---------- 스크롤 등장(.rv: 옅게 떠오름) ---------- */
-/* 숨김은 js/check.js가 main에 .rv-ready를 붙일 때만(스크립트가 없어도 본문이 보임). 붙이는 순간(.rv-init)은 전환 없이 바로 숨김 → 첫 화면 요소도 0에서 떠오름 */
-.check-page.rv-ready .rv{opacity:0;transform:translateY(18px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
-.check-page.rv-ready .rv.is-in{opacity:1;transform:none}
+/* 등장 숨김을 붙이는 순간은 전환 없이(첫 화면 요소도 0에서 떠오름) */
 .check-page.rv-init .rv{transition:none}
-@media (prefers-reduced-motion:reduce){
-.check-page.rv-ready .rv{opacity:1;transform:none;transition:none}
-}
-
-/* ---------- 섹션 · 섹션 머리: 큰 영문 포인트 단어(파랑) + 한글 제목 한 줄, 아래 설명 ---------- */
-/* 세로 여백은 공통 토큰(--sec-y · --sec-y-first, common/css/tokens.css)과 시안 값이 같음. 첫 섹션은 시안의 '목차 바로 다음 섹션' 값 */
-.check-page .sec{padding:var(--sec-y) 0 0}
-.check-page>.sec:first-of-type{padding-top:var(--sec-y-first)}
-.check-page .s-head{margin-bottom:clamp(28px,3.4vw,44px)}
-.check-page .s-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 18px}
-.check-page .s-head .s-word{margin:0;font-family:var(--ff-title);font-weight:400;font-size:clamp(52px,6vw,86px);line-height:.95;letter-spacing:-.01em;color:var(--blue)}
-.check-page .s-head h2{margin:0;font-size:clamp(28px,2.8vw,38px);font-weight:700;letter-spacing:-.035em;line-height:1.25}
-.check-page .s-head .s-desc{margin:10px 0 0;max-width:60ch;font-size:15.5px;line-height:1.7;color:var(--graphite)}
-.check-page .s-sub{margin:48px 0 16px;font-size:20px;font-weight:700;letter-spacing:-.02em}
-.check-page .s-head+.s-sub{margin-top:0}
-@media (max-width:860px){
-.check-page .s-head .s-word{font-size:clamp(44px,13vw,64px)}
-}
-
-/* ---------- 모집 대상: 기본 대상(나이 · 학력 · 전공) ---------- */
-.check-page .chk-crit{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:2px solid var(--ink)}
-.check-page .chk-crit>div{padding:30px 28px 34px 0}
-.check-page .chk-crit>div+div{padding-left:clamp(20px,3vw,40px);border-left:1px solid var(--line)}
-.check-page .chk-crit-label{display:inline-block;margin:0 0 20px;padding:5px 16px;border-radius:30px;background:var(--ink);color:var(--paper);font-weight:700;font-size:14px}
-.check-page .chk-crit-main{margin:0 0 12px;font-family:var(--ff-title);font-size:clamp(24px,2.4vw,34px);line-height:1.22;letter-spacing:-.025em}
-.check-page .chk-crit-main mark{background:linear-gradient(transparent 60%,var(--blue-soft) 60%);color:inherit;padding:0 2px}
-.check-page .chk-crit-sub{margin:0;font-size:clamp(15px,1.2vw,17px);line-height:1.6;color:var(--graphite)}
-.check-page .chk-crit-note{margin:16px 0 0;font-size:14.5px;color:var(--graphite)}
-@media (max-width:860px){
-.check-page .chk-crit{grid-template-columns:1fr}
-.check-page .chk-crit>div,
-.check-page .chk-crit>div+div{padding:24px 0;border-left:0}
-.check-page .chk-crit>div+div{border-top:1px solid var(--line)}
-}
-
-/* ---------- 모집 대상: 다른 정부지원사업 안내(중요 내용이라 글씨 키움) ---------- */
-.check-page .chk-notice{display:flex;gap:18px;align-items:flex-start;margin-top:26px;padding:26px 30px;background:var(--surface);border:1.5px solid var(--ink);border-radius:14px}
-.check-page .chk-notice-ico{flex:none;display:grid;place-items:center;width:34px;height:34px;border:2px solid #111;border-radius:50%;background:#FFE600;color:#111;font-size:18px;font-weight:800}
-.check-page .chk-notice h4{margin:0 0 8px;font-size:clamp(19px,1.6vw,22px);letter-spacing:-.02em}
-.check-page .chk-notice p{margin:0;font-size:clamp(16.5px,1.3vw,18px);line-height:1.75;color:var(--ink)}
-
-/* ---------- 모집 대상: 스스로 체크(체크 목록 + 진행 상자) ---------- */
-.check-page .chk-self{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(28px,5vw,72px);align-items:start}
-.check-page .chk-list{list-style:none;margin:0;padding:0;border-top:2px solid var(--ink)}
-.check-page .chk-list li{border-bottom:1px solid var(--line)}
-.check-page .chk-list label{display:flex;gap:16px;align-items:flex-start;padding:18px 4px;cursor:pointer}
-.check-page .chk-box{position:absolute;opacity:0;pointer-events:none}
-.check-page .chk-mark{flex:none;width:26px;height:26px;border:2px solid var(--ink);border-radius:6px;background:var(--surface);position:relative;margin-top:1px;transition:background .2s,transform .3s cubic-bezier(.34,1.56,.64,1)}
-.check-page .chk-mark::after{content:"";position:absolute;left:7px;top:1px;width:7px;height:14px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(40deg) scale(0);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
-.check-page .chk-box:checked+.chk-mark{background:var(--blue);border-color:var(--blue);transform:scale(1.06)}
-.check-page .chk-box:checked+.chk-mark::after{transform:rotate(40deg) scale(1)}
-.check-page .chk-box:focus-visible+.chk-mark{outline:3px solid var(--blue);outline-offset:3px}
-.check-page .chk-text{font-size:16.5px;line-height:1.6}
-.check-page .chk-box:checked~.chk-text{color:var(--graphite)}
-/* 진행 상자: 체크 목록과 함께 스크롤(시안 v3는 따라오지 않음) */
-.check-page .chk-progress{padding:26px;border:1.5px solid var(--ink);border-radius:14px;background:var(--surface)}
-.check-page .chk-progress p{margin:0 0 14px;font-size:17px}
-.check-page .chk-progress b{font-family:var(--ff-title);font-weight:400;font-size:38px;margin-right:2px}
-.check-page .chk-bar{height:12px;border:2px solid var(--ink);border-radius:12px;background:var(--paper);overflow:hidden}
-.check-page .chk-bar i{display:block;height:100%;width:0;background:var(--blue);transition:width .45s var(--ease)}
-/* '모집 프로세스 보러 가기': 공통 .btn.is-sm에 시안 모양(잉크 알약, 글 굵게, 위아래 12px)을 덮음 */
-.check-page .btn.chk-go{height:auto;margin-top:18px;padding:12px 18px;border:0;gap:8px;background:var(--ink);color:var(--paper);font-weight:700;line-height:inherit;letter-spacing:0;transition:background .2s,color .2s}
-.check-page .btn.chk-go:hover{background:var(--blue);color:#fff}
-.check-page .btn.chk-go svg{stroke-width:2}
-.check-page .chk-go[hidden]{display:none}
-@media (max-width:860px){
-.check-page .chk-self{grid-template-columns:1fr}
-}
-@media (prefers-reduced-motion:reduce){
-.check-page .chk-bar i,
-.check-page .chk-mark,
-.check-page .chk-mark::after{transition:none}
-}
-
-/* ---------- 모집 프로세스: 단계 그림 + 점 + 카드(켜진 단계만 색 · 파란 카드), 1000px 이하 2열 · 620px 이하 1열 ---------- */
-/* 단계 목록은 ol(시안은 div) — 목록 기본 여백만 지움 */
-.check-page .pf{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:18px;list-style:none;margin:0;padding:8px 0 0}
-.check-page .pf-col{position:relative;display:flex;flex-direction:column;align-items:stretch;cursor:pointer}
-.check-page .pf-illus{height:clamp(170px,16vw,230px);display:flex;align-items:flex-end;justify-content:center;padding-bottom:18px}
-.check-page .pf-illus img{max-width:86%;max-height:100%;object-fit:contain;filter:grayscale(1);opacity:.42;transform:scale(.82);transform-origin:center bottom;transition:transform .55s cubic-bezier(.34,1.56,.64,1),filter .45s,opacity .45s}
-.check-page .pf-col.is-on .pf-illus img{filter:none;opacity:1;transform:scale(1)}
-.check-page .pf-dot{position:relative;display:block;height:24px}
-.check-page .pf-dot::before{content:"";position:absolute;left:-9px;right:-9px;top:11px;height:1px;background:var(--line)}
-.check-page .pf-col:first-child .pf-dot::before{left:0}
-.check-page .pf-col:last-child .pf-dot::before{right:0}
-.check-page .pf-dot::after{content:"";position:absolute;left:50%;top:5px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--surface);border:2px solid #C9D3E6;transition:border-color .3s,box-shadow .3s}
-.check-page .pf-col.is-on .pf-dot::after{border-color:var(--blue);box-shadow:0 0 0 4px color-mix(in srgb,var(--blue) 18%,transparent)}
-.check-page .pf-card{margin-top:22px;flex:1;padding:22px 22px 24px;background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--line);border-radius:16px;transition:border-color .3s,background .3s,box-shadow .3s;outline:none}
-.check-page .pf-col.is-on .pf-card{background:var(--surface);border-color:var(--blue);box-shadow:0 16px 32px -24px rgba(31,78,216,.55)}
-.check-page .pf-card:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
-.check-page .pf-step{margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--graphite)}
-.check-page .pf-col.is-on .pf-step{color:var(--blue)}
-.check-page .pf-card h3{margin:0 0 12px;font-size:clamp(18px,1.6vw,21px);font-weight:700;letter-spacing:-.03em;line-height:1.35}
-.check-page .pf-body p,
-.check-page .pf-body dd{margin:0;font-size:14.5px;line-height:1.7;color:var(--graphite)}
-.check-page .pf-body dl{margin:0;display:flex;flex-direction:column;gap:10px}
-.check-page .pf-body dt{font-weight:700;font-size:14px;color:var(--ink);margin-bottom:2px}
-/* 코딩 테스트 면제 상자 */
-.check-page .pf-body .pf-note{margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--blue-soft);color:var(--ink);font-size:13.5px}
-.check-page .pf-note b{display:block;margin-bottom:2px;font-size:12.5px;color:var(--blue)}
-@media (max-width:1000px){
-.check-page .pf{grid-template-columns:1fr 1fr;row-gap:28px}
-.check-page .pf-dot{display:none}
-.check-page .pf-illus img{filter:none;opacity:1;transform:scale(.9)}
-}
-@media (max-width:620px){
-.check-page .pf{grid-template-columns:1fr}
-.check-page .pf-illus{height:180px}
-}
-@media (prefers-reduced-motion:reduce){
-.check-page .pf-illus img{transition:none}
-}
-
-/* ---------- 지원 혜택: 카드 8장(4 → 1000px 이하 2 → 560px 이하 1열) + 아래 안내 ---------- */
-.check-page .ben-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
-.check-page .ben-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px 22px 26px;transition:border-color .2s,transform .3s var(--ease)}
-.check-page .ben-card:hover{border-color:var(--ink);transform:translateY(-3px)}
-.check-page .ben-ico{display:grid;place-items:center;width:58px;height:58px;border-radius:12px;border:1px solid var(--line);background:var(--paper);margin-bottom:18px}
-.check-page .ben-ico svg{width:38px;height:38px;fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.check-page .ben-ico .accent{stroke:var(--blue)}
-.check-page .ben-no{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--graphite)}
-.check-page .ben-card h3{margin:0 0 8px;font-size:18.5px;font-weight:700;letter-spacing:-.025em}
-.check-page .ben-desc,
-.check-page .ben-sub{margin:0;font-size:14.5px;line-height:1.7;color:var(--graphite)}
-.check-page .ben-sub{margin-top:8px;font-size:13.5px}
-.check-page .ben-card b{color:var(--ink);font-weight:700;background:linear-gradient(transparent 62%,var(--blue-soft) 62%)}
-@media (max-width:1000px){
-.check-page .ben-grid{grid-template-columns:1fr 1fr}
-}
-@media (max-width:560px){
-.check-page .ben-grid{grid-template-columns:1fr}
-}
-@media (prefers-reduced-motion:reduce){
-.check-page .ben-card:hover{transform:none}
-}
-.check-page .ben-foot{margin-top:28px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;font-size:15px;color:var(--graphite)}
-.check-page .ben-foot p{margin:0}
-.check-page .ben-foot small{font-size:13.5px}
-
-/* ---------- 자주 묻는 질문: 분류(질문 수) · 검색 · 하나씩 펼치기 + 카카오톡 문의 ---------- */
-.check-page .faq-tools{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:center;justify-content:space-between}
-/* 분류 칩 묶음 테두리는 사이트 기준 --line-ui(고르는 UI의 경계, 바탕 대비 3 : 1 이상 — 시안은 --line) */
-.check-page .faq-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--surface);border:1px solid var(--line-ui);border-radius:60px}
-.check-page .faq-tab{display:inline-flex;align-items:center;gap:7px;padding:12px 26px;border:0;border-radius:40px;background:transparent;color:var(--blue);font-weight:700;font-size:16px;cursor:pointer;transition:background .2s,color .2s}
-.check-page .faq-tab:hover{background:var(--blue-soft)}
-.check-page .faq-tab[aria-pressed="true"]{background:var(--blue);color:#fff}
-.check-page .faq-cnt{min-width:22px;padding:1px 7px;border-radius:20px;background:var(--blue-soft);color:var(--blue);font-style:normal;font-size:12.5px;font-weight:700;line-height:1.5;text-align:center}
-.check-page .faq-tab[aria-pressed="true"] .faq-cnt{background:rgba(255,255,255,.22);color:#fff}
-.check-page .faq-search{position:relative;flex:1 1 280px;max-width:380px}
-.check-page .faq-search svg{position:absolute;left:18px;top:50%;width:20px;height:20px;margin-top:-10px;stroke:var(--graphite);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none}
-.check-page .faq-search input{width:100%;height:56px;padding:0 48px 0 50px;border:1.5px solid var(--ink);border-radius:40px;background:var(--surface);font:inherit;font-size:16px;color:var(--ink);outline:none;transition:border-color .2s,box-shadow .2s}
-.check-page .faq-search input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(31,78,216,.15)}
-.check-page .faq-search input::-webkit-search-cancel-button{display:none}
-/* 검색어 지우기: 보이는 원은 시안 그대로 32px(오른쪽 12px), 누르는 곳은 44px */
-.check-page .faq-search button{position:absolute;right:6px;top:50%;width:44px;height:44px;margin-top:-22px;border:0;border-radius:50%;background:radial-gradient(circle,var(--blue-soft) 15.5px,transparent 16.5px);color:var(--ink);font-size:20px;line-height:1;cursor:pointer}
-.check-page .faq-count{margin:22px 0 0;min-height:22px;font-size:14.5px;color:var(--graphite)}
-.check-page .faq-list{list-style:none;margin:6px 0 0;padding:0;border-top:2px solid var(--ink)}
-.check-page .faq-item{border-bottom:1px solid var(--line)}
-.check-page .faq-item[hidden]{display:none}
-.check-page .faq-item h3{margin:0}
-.check-page .faq-q{width:100%;display:grid;grid-template-columns:34px minmax(0,1fr) 36px;gap:10px;align-items:center;padding:26px 6px;background:none;border:0;text-align:left;cursor:pointer;color:var(--ink);font:inherit}
-.check-page .faq-qa{font-family:var(--ff-title);font-size:22px;line-height:1;color:var(--ink)}
-.check-page .faq-qt{font-size:clamp(17px,1.5vw,20px);font-weight:700;letter-spacing:-.02em;line-height:1.5}
-/* 검색 하이라이트: 질문(시안) · 답 글(사이트에서 더함) 같은 색 */
-.check-page :is(.faq-qt,.faq-at) mark{background:rgba(31,78,216,.18);color:inherit;border-radius:3px}
-.check-page .faq-arrow{display:grid;place-items:center;transition:transform .35s var(--ease)}
-.check-page .faq-arrow svg{width:26px;height:26px;fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
-.check-page .faq-q:hover .faq-qt{color:var(--blue)}
-.check-page .faq-q:hover .faq-arrow svg,
-.check-page .faq-item.is-open .faq-arrow svg{stroke:var(--blue)}
-.check-page .faq-item.is-open .faq-arrow{transform:rotate(-90deg)}
-/* 답: 닫혀 있으면 높이 0 + visibility:hidden(안의 링크도 초점이 안 감) */
-.check-page .faq-a{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s var(--ease);visibility:hidden}
-.check-page .faq-a>div{overflow:hidden;display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:0 6px;background:var(--surface)}
-.check-page .faq-item.is-open .faq-a{grid-template-rows:1fr;visibility:visible}
-.check-page .faq-a .faq-qa{color:var(--blue);padding:28px 0}
-.check-page .faq-at{padding:26px 36px 28px 0;font-size:16.5px;line-height:1.85;color:var(--graphite)}
-.check-page .faq-at .text-link{font-weight:700}
-.check-page .faq-empty{padding:44px 0;text-align:center;color:var(--graphite);border-bottom:1px solid var(--line)}
-.check-page .faq-empty p{margin:0 0 6px}
-.check-page .faq-empty b{color:var(--ink)}
-.check-page .faq-empty[hidden]{display:none}
-.check-page .faq-all{margin-top:14px}   /* 고른 분류 밖에 결과가 있을 때 '전체에서 보기'(공통 .btn.is-line.is-sm, 사이트에서 더함) */
-.check-page .faq-all[hidden]{display:none}
-/* 카카오톡 문의 */
-.check-page .faq-cta{margin-top:40px;display:flex;flex-wrap:wrap;gap:18px 32px;align-items:center;justify-content:space-between;padding:28px 32px;border:1.5px solid var(--ink);border-radius:16px;background:var(--surface)}
-.check-page .faq-cta h3{margin:0 0 4px;font-size:clamp(19px,1.8vw,23px);letter-spacing:-.03em}
-.check-page .faq-cta p{margin:0;color:var(--graphite)}
-/* 카카오톡 버튼: 공통 .btn.is-kakao(카카오 노랑)에 시안 모양(높이 52 · 글 16px 굵게 · 올리면 떠오름)을 덮음 */
-.check-page .btn.faq-kakao{height:52px;padding:0 26px;border:0;gap:10px;font-size:16px;font-weight:700;line-height:inherit;letter-spacing:0;transition:transform .25s var(--ease),box-shadow .25s}
-.check-page .btn.faq-kakao:hover{background:#FEE500;transform:translateY(-2px);box-shadow:0 12px 22px -12px rgba(0,0,0,.4)}
-.check-page .btn.faq-kakao svg{width:20px;height:20px}
-@media (max-width:860px){
-.check-page .faq-tabs{width:100%;border-radius:28px;padding:6px}
-.check-page .faq-tab{padding:10px 16px;font-size:15px;flex:1 1 auto}
-.check-page .faq-search{max-width:none;flex-basis:100%}
-.check-page .faq-q{grid-template-columns:28px minmax(0,1fr) 28px;padding:22px 0}
-.check-page .faq-a>div{grid-template-columns:28px minmax(0,1fr);padding:0}
-.check-page .faq-at{padding-right:0}
-}
-@media (prefers-reduced-motion:reduce){
-.check-page .faq-a,
-.check-page .faq-arrow{transition:none}
-.check-page .btn.faq-kakao:hover{transform:none}
-}
-
-/* ---------- #위치 자리(사이트 연결) ---------- */
-/* 주소 #위치로 열 때(헤더 메뉴 · 하위 메뉴 바 · 다른 페이지 링크) 브라우저가 직접 스크롤해도 js/check.js의 jumpTo와 같은 자리 —
-   섹션 머리가 헤더 + 하위 메뉴 바 아래 32px. scroll-margin = 24px(32 - base.css scroll-padding의 8) - 섹션 위 여백 */
-.check-page section.sec[id]{scroll-margin-top:calc(24px - var(--sec-y))}
-.check-page>section.sec[id]:first-of-type{scroll-margin-top:calc(24px - var(--sec-y-first))}

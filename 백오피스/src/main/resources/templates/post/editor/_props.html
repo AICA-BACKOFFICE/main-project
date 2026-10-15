@@ -14,9 +14,13 @@
         <option value="PENDING">답변대기 · FAQ 질문 등</option>
       </select>
 
-      <label class="ed-props-label" for="categoryId">카테고리</label>
-      <select class="ed-select" th:field="*{categoryId}" id="categoryId">
-        <option value="">미분류</option>
+      <label class="ed-props-label" for="categoryId">카테고리 <span class="ed-help">고르면 그 종류의 글 양식으로 바뀌어요</span></label>
+      <select class="ed-select" th:field="*{categoryId}" id="categoryId"
+              th:with="listed=${form.categoryId != null and #lists.contains(categoryTree.![id], form.categoryId)}">
+        <!--/* 미분류는 없앴어요. 지금 목록에 없는 카테고리(없음 · 숨긴 카테고리)로 저장된 예전 글만 그 상태를 그대로 보여 줘요.
+               그대로 두면 본문이 지켜지고, 다른 카테고리를 고르면 그 양식으로 바뀌어요(첫 칸인 후기로 몰래 바뀌지 않게) */-->
+        <option th:if="${form.id != null and !listed}" th:value="${form.categoryId != null} ? ${form.categoryId} : ''"
+                th:text="${form.categoryId == null} ? '카테고리 없음 (예전 글)' : '숨긴 카테고리 (예전 글)'">카테고리 없음 (예전 글)</option>
         <option th:each="c : ${categoryTree}" th:value="${c.id}" th:text="${c.name}" th:attr="data-slug=${c.slug}"></option>
       </select>
       <p class="ed-help sf-only" style="margin-top:8px">후기 분야 · 기수는 양식에서 고르면 세부 카테고리가 자동으로 정해져요.</p>

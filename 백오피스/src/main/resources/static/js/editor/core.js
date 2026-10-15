@@ -91,7 +91,10 @@
         .catch(function () { throw new Error('서버에 연결하지 못했습니다. 서버가 실행 중인지, 파일이 너무 크지 않은지 확인하세요.'); })
         .then(function (r) {
           return r.json().catch(function () { return {}; }).then(function (body) {
-            if (r.status === 401 || r.status === 403) throw new Error('로그인이 만료됐습니다. 새로고침 후 다시 로그인하세요.');
+            if (r.status === 401 || r.status === 403) {
+              if (global.BOSession) global.BOSession.check();   // 화면 위에 '다시 로그인' 안내(쓰던 글은 그대로)
+              throw new Error('로그인이 풀려서 올리지 못했습니다. 화면 위 안내대로 다시 로그인한 뒤 한 번 더 올려 주세요.');
+            }
             if (!r.ok) throw new Error(body.message || ('업로드 실패 (' + r.status + ')'));
             return body;
           });

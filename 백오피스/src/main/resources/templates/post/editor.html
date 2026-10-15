@@ -14,6 +14,8 @@
   <link rel="stylesheet" th:href="@{/css/story-form.css}">
 </head>
 <body class="ed-body">
+<!-- 등록 · 수정 뒤 알림(서버가 다시 열어 준 글 수정 화면 위에 잠깐) -->
+<div class="toast ed-done" role="status" th:if="${toast}" th:text="${toast}"></div>
 
 <form id="postForm" th:object="${form}" method="post"
       th:action="${form.id == null} ? @{/admin/posts} : @{/admin/posts/{id}(id=${form.id})}">
@@ -38,7 +40,7 @@
       <button class="ed-tool" type="button" id="btnHistory" th:if="${form.id != null}" title="저장·발행할 때마다 남는 이전 버전을 보고 되돌립니다">
         <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg> 버전 이력
       </button>
-      <button class="ed-tool" type="submit" th:formaction="@{/admin/posts/preview}" formtarget="_blank" formnovalidate title="새 탭에서 프론트 화면으로 미리보기">
+      <button class="ed-tool" type="submit" th:formaction="@{/admin/posts/preview}" formtarget="_blank" formnovalidate data-preview-submit title="쓰고 있는 내용이 사이트에서 어떻게 보이는지 창으로 보기">
         <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기
       </button>
       <span class="ed-bar-sep"></span>
@@ -102,6 +104,7 @@
      th:data-post-id="${form.id}"></div>
 
 <script th:src="@{/js/admin.js}"></script>
+<script th:src="@{/js/preview-modal.js}"></script>
 <script th:src="@{/js/category-select.js}"></script>
 <!-- 블록 에디터 라이브러리: 로드 순서 고정 (core → blocks → render → input → dialogs → toolbar → image-editor → index) -->
 <script th:src="@{/js/editor/core.js}"></script>
@@ -115,6 +118,8 @@
 <!-- 글쓰기 페이지 로직 -->
 <script th:src="@{/js/post/editor-page.js}"></script>
 <script th:src="@{/js/post/history.js}"></script>
+<!-- 사진 편집 · 썸네일 맞추기 창(카테고리 페이지 관리 편집기와 같은 파일) -->
+<script th:src="@{/js/page/photo-editor.js}"></script>
 <script th:src="@{/js/post/story-form.js}"></script>
 <script>PostEditorPage.init(document.getElementById('editorConfig').dataset);</script>
 </body>

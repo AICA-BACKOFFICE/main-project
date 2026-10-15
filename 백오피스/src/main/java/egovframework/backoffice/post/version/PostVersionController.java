@@ -45,7 +45,10 @@ public class PostVersionController {
         Map<String, Object> m = summary(v);
         m.put("summary", v.getSummary());
         m.put("categoryId", v.getCategoryId());
+        m.put("subCategoryId", v.getSubCategoryId());
         m.put("categoryName", v.getCategoryName());
+        // 선배들의 이야기 글: '편집기에 불러오기'가 양식 칸(사진 포함)을 채울 수 있게
+        m.put("storyJson", v.getStoryJson());
         m.put("thumbnailUrl", v.getThumbnailUrl());
         m.put("thumbnailMode", v.getThumbnailMode());
         m.put("blocks", versions.blocksOf(v));

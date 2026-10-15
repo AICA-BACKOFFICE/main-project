@@ -2,7 +2,7 @@
    사이트 메뉴(카테고리) — IA_v3 01.메뉴요약 기준 · 바깥 연결처
    상단 GNB · 드롭다운 · 하위 메뉴 바 · 모바일 메뉴(common/js/site.js)가 모두 이 목록으로 그려집니다.
    홈 포스터 · 페이지 본문의 링크는 HTML에 직접 씀(메뉴 주소를 바꾸면 같이 고침).
-   메뉴 이름 · 순서 · 주소, 지원하기 같은 바깥 연결처, 검색 추천 키워드는 이 파일에서 고칩니다.
+   메뉴 이름 · 순서 · 주소, 지원하기 같은 바깥 연결처는 이 파일에서 고칩니다.
 
    page      사이트 폴더(site/) 기준 페이지 주소
    title     하위 메뉴 바 왼쪽에 보이는 카테고리 페이지 이름(없으면 바 왼쪽 제목 없음 — 알아보기 · 라이프, 2026-10-08 사용자)
@@ -21,11 +21,14 @@ const SITE_MENU = [
     { id:'activity', label:'어떤 활동을 하나요?', anchor:'#activities' },
     { id:'career', label:'취업·창업 지원', anchor:'#career' } ]},
   { id:'stories', label:'선배들의 이야기', title:'먼저 다녀온 선배들의 SSUL', type:'tab', page:'stories/index.html', children:[
-    { id:'reviews', label:'선배 후기' },
-    { id:'interviews', label:'선배 인터뷰' },
-    { id:'projects', label:'프로젝트' },
-    { id:'cohorts', label:'기수별 모아보기' } ]},
-  { id:'life', label:'인사교 라이프', type:'tab', page:'life/index.html', children:[
+    // 10-13 사본: 한 페이지 탭 → 2뎁스마다 페이지. index.html = 한눈에 보기(각 2뎁스 요약 + 전체 보기)
+    { id:'overview', label:'All', page:'stories/index.html' },
+    { id:'interviews', label:'인터뷰', page:'stories/interviews.html' },
+    { id:'reviews', label:'후기', page:'stories/reviews.html' },
+    { id:'projects', label:'프로젝트', page:'stories/projects.html' },
+    { id:'cohorts', label:'기수별 이모저모', page:'stories/cohorts.html' } ]},
+  { id:'life', label:'인사교 라이프', title:'인사교 LIFE', type:'tab', page:'life/index.html', children:[
+    { id:'overview', label:'All' },
     { id:'facilities', label:'시설 둘러보기' },
     { id:'tips', label:'생활 꿀팁' },
     { id:'directions', label:'오시는 길' } ]},
@@ -44,12 +47,3 @@ const SITE_LINKS = {
   notice:   { url:'', note:'모집 공고는 확정 후 연결돼요' },           // 본문 '공식 모집 공고'
   kakao:    { url:'', note:'카카오톡 채널 주소는 확정 후 연결돼요' }   // 본문 카카오톡 문의
 };
-
-/* 헤더 검색 패널 아래 추천 키워드. menu · sub는 위 메뉴 · 하위 메뉴 id
-   query: 도착 페이지에서 그 분류를 켜 두는 조건(cat=분류 → 본문 [data-cat="분류"][aria-pressed] 버튼, site.js). 통합 검색이 붙기 전까지 */
-const SITE_SEARCH_TAGS = [
-  { label:'#비전공자', menu:'stories', sub:'reviews' },
-  { label:'#타지출신', menu:'life', sub:'tips' },
-  { label:'#팀활동', menu:'stories', sub:'reviews' },
-  { label:'#지원금', menu:'check', sub:'faq', query:'cat=지원금' }
-];

@@ -60,6 +60,8 @@ class BackofficeWebTest {
         mvc.perform(get("/admin/posts")).andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrlPattern("**/login"));
         mvc.perform(get("/api/public/categories")).andExpect(status().isOk());
+        // 열어 둔 화면의 로그인 확인: 풀렸으면 로그인 화면 대신 401, 살아 있으면 새 보안 토큰
+        mvc.perform(get("/admin/session")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -69,6 +71,11 @@ class BackofficeWebTest {
         mvc.perform(get("/admin").session(session)).andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("누적 방문수")));
         mvc.perform(get("/admin/users").session(session)).andExpect(status().isOk());
+        mvc.perform(get("/admin/session").session(session)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.ok").value(true))
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.header").value("X-CSRF-TOKEN"))
+                .andExpect(jsonPath("$.parameter").value("_csrf"));
     }
 
     @Test
@@ -81,7 +88,8 @@ class BackofficeWebTest {
         mvc.perform(get("/api/public/categories")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(4))
                 .andExpect(jsonPath("$[0].slug").value("review"))
-                .andExpect(jsonPath("$[0].children.length()").value(4))
+                .andExpect(jsonPath("$[0].children.length()").value(5))   // 2026-10-14: 취업·진로 → 취업 성공 · 진로 고민
+                .andExpect(jsonPath("$[0].children[3].slug").value("review-job")).andExpect(jsonPath("$[0].children[4].slug").value("review-path"))
                 .andExpect(jsonPath("$[0].children[0].slug").value("review-life"))
                 .andExpect(jsonPath("$[3].slug").value("cohort"))
                 .andExpect(jsonPath("$[3].children[2].name").value("7기"))
@@ -468,7 +476,7 @@ class BackofficeWebTest {
         // 관리 화면: 카테고리 탭·세부 탭·파일명
         String page = mvc.perform(get("/admin/media").param("cat", String.valueOf(review)).param("sub", String.valueOf(life)).session(session))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(page).contains("생활_사진.png").contains("media-subtabs").contains("기수별 모아보기").contains("취업·진로");
+        assertThat(page).contains("생활_사진.png").contains("media-subtabs").contains("기수별 모아보기").contains("취업 성공").contains("진로 고민");
 
         // 분류 이동(기수별 › 7기) → 미분류로 → 완전 삭제
         mvc.perform(post("/admin/media/" + imageId + "/move").session(session).with(csrf())

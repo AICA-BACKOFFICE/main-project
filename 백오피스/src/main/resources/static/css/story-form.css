@@ -16,8 +16,27 @@
 .sf-row { display: flex; gap: 12px; flex-wrap: wrap; }
 .sf-row > .sf-field { flex: 1 1 180px; }
 .sf-row > .sf-narrow { flex: 0 1 120px; }
-.sf-photo img { max-height: 220px; }
-.sf-alt { margin-top: 8px; }
+/* 사진 여러 장: 작은 사진 줄(누르면 아래에서 다루기) · 대표 표시 */
+.sf-gallery { display: flex; flex-wrap: wrap; gap: 8px; }
+.sf-tile { position: relative; width: 96px; height: 72px; padding: 0; border: 1px solid var(--ed-line); border-radius: 8px; background: var(--ed-soft); overflow: hidden; cursor: pointer; }
+.sf-tile img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sf-tile.on { outline: 3px solid var(--ed-accent); outline-offset: 1px; border-color: var(--ed-accent); }
+.sf-tile:focus-visible { outline: 3px solid #abc0ff; outline-offset: 1px; }
+.sf-tile .sf-no { position: absolute; right: 4px; bottom: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: rgba(23, 39, 65, .72); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+.sf-badge { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 10px; background: #ff3d8b; color: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.sf-tile .sf-badge { position: absolute; left: 4px; top: 4px; }
+.sf-add { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-style: dashed; color: var(--ed-accent); font-size: 12px; font-weight: 600; }
+.sf-add b { font-size: 22px; line-height: 1; font-weight: 400; }
+.sf-add:hover { background: var(--ed-accent-bg); }
+.sf-pp { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; padding: 14px; border: 1px solid var(--ed-line); border-radius: 8px; background: var(--ed-soft); }
+.sf-card { flex: none; max-width: 100%; border-radius: 8px; overflow: hidden; background: #e9edf4; }
+.sf-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sf-pp-side { flex: 1 1 260px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sf-pp-title { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ed-text); }
+.sf-pp-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.sf-pp-row .ed-btn:disabled { opacity: .45; cursor: default; }
+.sf-danger { color: #c62e3d; }
+.sf-danger:hover { background: #fff1f2; }
 .sf-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
 .sf-list:empty { display: none; }
 .sf-item { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--ed-line); border-radius: 8px; background: var(--ed-soft); }

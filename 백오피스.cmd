@@ -24,8 +24,9 @@ if "%BACKOFFICE_FRONT_URL%"=="" set "BACKOFFICE_FRONT_URL=http://127.0.0.1:4181/
 echo 백오피스(관리자 페이지): http://127.0.0.1:%BACKOFFICE_PORT%/  (이 창을 닫으면 꺼져요)
 echo 고치는 사이트 폴더: %BACKOFFICE_SITE_ROOT%
 echo 프론트오피스: %BACKOFFICE_FRONT_URL%  (프론트오피스.cmd로 켜요)
-rem 서버가 준비되면 브라우저로 관리자 페이지를 열어요(BACKOFFICE_NO_BROWSER=1 이면 열지 않음).
-if not "%BACKOFFICE_NO_BROWSER%"=="1" start "" /b powershell -NoProfile -WindowStyle Hidden -Command "for ($i = 0; $i -lt 300; $i++) { try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 http://127.0.0.1:%BACKOFFICE_PORT%/login | Out-Null; Start-Process 'http://127.0.0.1:%BACKOFFICE_PORT%/'; break } catch { Start-Sleep -Seconds 2 } }"
+rem 서버가 준비되면 바로 브라우저로 관리자 페이지를 열어요(BACKOFFICE_NO_BROWSER=1 이면 열지 않음).
+rem 그사이 이미 열어 둔 창에서 관리자 화면(로그인 화면 포함)을 열었으면 새 창은 열지 않아요(/launcher/browser-seen).
+if not "%BACKOFFICE_NO_BROWSER%"=="1" start "" /b powershell -NoProfile -WindowStyle Hidden -Command "$w = New-Object Net.WebClient; $w.Proxy = $null; for ($i = 0; $i -lt 2400; $i++) { try { $s = $w.DownloadString('http://127.0.0.1:%BACKOFFICE_PORT%/launcher/browser-seen'); if ($s -notmatch 'true') { Start-Process 'http://127.0.0.1:%BACKOFFICE_PORT%/' }; break } catch { Start-Sleep -Milliseconds 500 } }"
 call .\mvnw.cmd -B -ntp -Denforcer.skip=true spring-boot:run
 pause
 exit /b

@@ -58,10 +58,14 @@ backoffice:
     data-dir: ./data/pages
     # 프론트오피스(사이트) 주소. '반영된 페이지' 버튼이 이 주소를 엶. 비우면 이 서버의 /admin/pages/site/ 에서 보여 줌. 환경변수 BACKOFFICE_FRONT_URL
     front-url: ${BACKOFFICE_FRONT_URL:}
-    # 사이드바 메뉴 순서 · 이름 · 사이트 폴더 기준 파일
+    # 사이드바 메뉴 순서 · 이름 · 사이트 폴더 기준 파일. parent 가 있으면 그 메뉴 아래에 펼쳐 보임(2026-10-14 이야기 페이지가 나뉨)
     items:
       - { id: about, title: 인사교 알아보기, file: about/index.html }
       - { id: stories, title: 선배들의 이야기, file: stories/index.html }
+      - { id: stories-reviews, title: 선배들의 이야기 › 후기, file: stories/reviews.html, parent: stories }
+      - { id: stories-interviews, title: 선배들의 이야기 › 인터뷰, file: stories/interviews.html, parent: stories }
+      - { id: stories-projects, title: 선배들의 이야기 › 프로젝트, file: stories/projects.html, parent: stories }
+      - { id: stories-cohorts, title: 선배들의 이야기 › 기수별 이모저모, file: stories/cohorts.html, parent: stories }
       - { id: life, title: 인사교 라이프, file: life/index.html }
       - { id: check, title: 지원 전 체크, file: check/index.html }
 
