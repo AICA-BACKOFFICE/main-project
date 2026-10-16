@@ -33,6 +33,12 @@ public interface PostMapper {
 
     Post findDeletedById(@Param("id") Long id);
 
+    List<Post> findAllDeleted();
+
+    List<Post> lockDeleted(@Param("ids") List<Long> ids);
+
+    List<Post> lockAllDeleted();
+
     int restore(@Param("id") Long id);
 
     int deleteViewLogs(@Param("id") Long id);

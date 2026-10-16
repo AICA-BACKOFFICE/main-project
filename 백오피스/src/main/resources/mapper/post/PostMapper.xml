@@ -142,6 +142,20 @@
     <include refid="trashWhere"/>
   </select>
 
+  <select id="findAllDeleted" resultType="Post">
+    SELECT id, deleted_at FROM posts WHERE deleted_at IS NOT NULL ORDER BY id
+  </select>
+
+  <select id="lockAllDeleted" resultType="Post" useCache="false" flushCache="true">
+    SELECT id, deleted_at FROM posts WHERE deleted_at IS NOT NULL ORDER BY id FOR UPDATE
+  </select>
+
+  <select id="lockDeleted" resultType="Post" useCache="false" flushCache="true">
+    SELECT id, deleted_at FROM posts WHERE deleted_at IS NOT NULL AND id IN
+    <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    ORDER BY id FOR UPDATE
+  </select>
+
   <select id="findDeletedById" resultType="Post">
     SELECT <include refid="columns"/>
     <include refid="joins"/>

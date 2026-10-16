@@ -214,6 +214,14 @@ table.list td.nowrap, table.list th.nowrap { white-space: nowrap; }
 
 /* ---------- 휴지통 ---------- */
 .trash-note { padding: 10px 20px; font-size: 13px; color: #666; background: #fafafa; border-bottom: 1px solid var(--line-soft); }
+.trash-bulk { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); }
+.trash-bulk form { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; }
+.trash-selected-count { min-width: 64px; font-size: 13px; font-weight: 700; color: var(--text); }
+.trash-selection-hint { font-size: 12px; }
+table.list .trash-check-cell { width: 44px; padding-left: 12px; padding-right: 4px; }
+.trash-check-cell input { width: 16px; height: 16px; margin: 0; vertical-align: middle; accent-color: var(--primary, #2457f5); cursor: pointer; }
+table.list tr.trash-row-selected td { background: #edf3ff; }
+@media (max-width: 720px) { .trash-bulk { padding: 12px; } .trash-selection-hint { flex-basis: 100%; } }
 .title-cell .muted-t { font-weight: 700; color: #777; }
 
 /* ---------- 이미지 관리 (/admin/media) ---------- */

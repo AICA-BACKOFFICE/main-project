@@ -7,6 +7,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import java.util.List;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /** 휴지통 화면과 이동·복원·완전 삭제. (URL 은 /admin/posts 아래에 그대로 둔다 — SecurityConfig 규칙과 일치) */
@@ -27,7 +31,25 @@ public class PostTrashController {
         }
         model.addAttribute("menu", "trash");
         model.addAttribute("result", trash.search(search));
+        var overview = trash.overview();
+        model.addAttribute("trashTotal", overview.count());
+        model.addAttribute("trashSnapshot", overview.token());
         return "post/trash";
+    }
+
+    @PostMapping("/trash/bulk")
+    public String bulk(@RequestParam(required = false) List<Long> ids, @RequestParam String action,
+                       @RequestParam(defaultValue = "") String keyword, RedirectAttributes redirect) {
+        int count = trash.bulk(ids, action);
+        redirect.addFlashAttribute("toast", count + "개 게시물을 " + ("restore".equals(action) ? "복원했습니다." : "완전히 삭제했습니다."));
+        return "redirect:/admin/posts/trash" + (keyword.isBlank() ? "" : "?keyword=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8));
+    }
+
+    @PostMapping("/trash/empty")
+    public String empty(@RequestParam String snapshot, RedirectAttributes redirect) {
+        int count = trash.empty(snapshot);
+        redirect.addFlashAttribute("toast", "휴지통의 " + count + "개 게시물을 완전히 삭제했습니다.");
+        return "redirect:/admin/posts/trash";
     }
 
     /** 휴지통으로 이동 (soft delete) */

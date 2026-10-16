@@ -20,9 +20,29 @@
       휴지통으로 옮긴 글은 <b>미게시</b>로 바뀌어 프론트(사이트)에서 내려갑니다. <b>복원</b>하면 옮기기 전 상태로 선배들의 이야기 게시물 관리에 돌아오고, 게시중이던 글은 사이트에도 다시 올라갑니다. <b>완전 삭제</b>는 되돌릴 수 없습니다.
     </div>
 
+    <div class="trash-bulk" id="trash-bulk">
+      <form id="trash-bulk-form" th:action="@{/admin/posts/trash/bulk}" method="post">
+        <input type="hidden" name="action" id="trash-bulk-action" value="purge">
+        <input type="hidden" name="keyword" th:value="${search.keyword}">
+        <span id="trash-selected-count" class="trash-selected-count" aria-live="polite">0개 선택</span>
+        <button class="btn ghost sm" type="submit" data-trash-action="restore" disabled>선택 복원</button>
+        <button class="btn danger sm" type="submit" data-trash-action="purge" disabled>선택 삭제</button>
+        <button class="btn ghost sm" type="button" id="trash-clear-selection" disabled>선택 해제</button>
+        <span class="muted trash-selection-hint">전체 선택은 현재 페이지에 적용됩니다.</span>
+      </form>
+      <form id="trash-empty-form" th:action="@{/admin/posts/trash/empty}" method="post"
+            th:data-confirm="'검색 조건과 관계없이 휴지통 전체 ' + ${trashTotal} + '개 게시물을 완전히 삭제할까요? 버전 이력과 조회 기록도 함께 삭제되며 복구할 수 없습니다.'">
+        <input type="hidden" name="snapshot" th:value="${trashSnapshot}">
+        <button class="btn danger sm" type="submit" th:disabled="${trashTotal == 0}">
+          휴지통 전체 비우기 <span th:text="'(' + ${trashTotal} + '개)'">(0개)</span>
+        </button>
+      </form>
+    </div>
+
     <table class="list">
       <thead>
       <tr>
+        <th class="center trash-check-cell"><input type="checkbox" id="trash-select-all" aria-label="현재 페이지 전체 선택" th:disabled="${result.empty}"></th>
         <th style="width:70px">ID</th>
         <th>게시물</th>
         <th style="width:120px">카테고리</th>
@@ -34,7 +54,7 @@
       </thead>
       <tbody>
       <tr th:if="${result.empty}">
-        <td colspan="7">
+        <td colspan="8">
           <div class="empty-state">
             <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg>
             <div>휴지통이 비어 있습니다.</div>
@@ -42,6 +62,7 @@
         </td>
       </tr>
       <tr th:each="p : ${result.items}">
+        <td class="center trash-check-cell"><input type="checkbox" class="trash-select" name="ids" th:value="${p.id}" form="trash-bulk-form" th:aria-label="'게시물 선택: ' + ${p.title}"></td>
         <td class="num" th:text="${p.id}">1</td>
         <td>
           <div class="title-cell">
@@ -88,6 +109,6 @@
     </nav>
   </div>
 </main>
-<th:block th:fragment="scripts"></th:block>
+<th:block th:fragment="scripts"><script th:src="@{/js/post/trash.js}"></script></th:block>
 </body>
 </html>

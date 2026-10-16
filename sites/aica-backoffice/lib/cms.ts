@@ -6,9 +6,52 @@ import storyPages from './story-pages.json';
 
 export const STATUSES=['DRAFT','PUBLISHED','HIDDEN','PENDING'].map(enumValue);
 export const ROLES=['SUPER_ADMIN','ADMIN','SUPPORT'].map(enumValue);
+
+export async function trashOverview(rows?:any[]){
+ const items=(rows??await all('posts')).filter(p=>p.deletedAt).sort((a,b)=>a.id-b.id);
+ const state=items.map(p=>`${p.id}:${p.deletedAt}`).join('|');
+ const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(state));
+ return {trashTotal:items.length,trashSnapshot:Array.from(new Uint8Array(hash),x=>x.toString(16).padStart(2,'0')).join('')};
+}
+
+export async function bulkTrash(action:string,requested:FormDataEntryValue[],user:any,snapshot?:string){
+ manage(user);
+ if(!['restore','purge','empty'].includes(action))fail(400,'작업을 확인해 주세요.');
+ const posts=await all('posts');
+ let targets:any[];
+ if(action==='empty'){
+  const overview=await trashOverview(posts);
+  if(snapshot!==overview.trashSnapshot)fail(409,'휴지통 목록이 변경되었습니다. 새로고침 후 전체 개수를 다시 확인해 주세요.');
+  targets=posts.filter(p=>p.deletedAt);
+ }else{
+  if(!requested.length||requested.length>100||requested.some(id=>typeof id!=='string'||!/^\d+$/.test(id)||!Number.isSafeInteger(Number(id))||Number(id)<=0))fail(400,'현재 페이지에서 게시물을 선택해 주세요.');
+  const ids=[...new Set(requested.map(Number))];
+  targets=posts.filter(p=>p.deletedAt&&ids.includes(p.id));
+  if(targets.length!==ids.length)fail(409,'휴지통 목록이 변경되었습니다. 새로고침 후 다시 선택해 주세요.');
+ }
+ if(!targets.length)return 0;
+ // Match the confirmed deletion timestamp too: a concurrently restored/re-trashed post is excluded.
+ const selected=JSON.stringify(targets.map(p=>({id:p.id,deletedAt:p.deletedAt})));
+ const eligible=`SELECT p.key FROM cms_records p WHERE p.collection='posts' AND EXISTS (SELECT 1 FROM json_each(?) t WHERE p.key=CAST(json_extract(t.value,'$.id') AS TEXT) AND json_extract(p.data,'$.deletedAt')=json_extract(t.value,'$.deletedAt'))`;
+ let count:number;
+ if(action==='restore'){
+  const stamp=now();
+  const result=await db().prepare(`UPDATE cms_records SET data=json_set(data,'$.status',COALESCE(json_extract(data,'$.statusBeforeTrash'),json_extract(data,'$.status'),'DRAFT'),'$.statusBeforeTrash',NULL,'$.deletedAt',NULL,'$.updatedAt',?),updated_at=? WHERE collection='posts' AND key IN (${eligible})`).bind(stamp,stamp,selected).run();
+  count=result.meta.changes;
+  if(count&&targets.some(p=>(p.statusBeforeTrash||p.status)==='PUBLISHED'))await regenerateStories();
+ }else{
+  // D1 batch is transactional: history, view logs, and posts are removed together.
+  const results=await db().batch([
+   ...['versions','views'].map(collection=>db().prepare(`DELETE FROM cms_records WHERE collection=? AND CAST(json_extract(data,'$.postId') AS TEXT) IN (${eligible})`).bind(collection,selected)),
+   db().prepare(`DELETE FROM cms_records WHERE collection='posts' AND key IN (${eligible})`).bind(selected)
+  ]);
+  count=results[2].meta.changes;
+ }
+ return count;
+}
 export function sanitizedBlocks(raw:any){const list=parseJson(raw,[]);if(!Array.isArray(list)||list.length>500)fail(400,'본문 블록 형식이 올바르지 않습니다.');const clean=(v:any,key=''):any=>{if(typeof v==='string'){if(v.length>100000)fail(400,'본문 항목이 너무 깁니다.');if(/(?:url|src|href|link)$/i.test(key)&&v&&!safeHref(v))return '';return /html|text|caption|items|rows/i.test(key)?sanitizeHtml(v):v;}if(Array.isArray(v))return v.map(x=>clean(x,key));if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).filter(([k])=>!['__proto__','constructor','prototype'].includes(k)).map(([k,x])=>[k,clean(x,k)]));return v;};return clean(list);}
 export function cleanStory(input:any):any{const clean=(v:any,key=''):any=>{if(typeof v==='string'){if(v.length>100000)fail(400,'양식 내용이 너무 깁니다.');if(['art','heroArt'].includes(key)&&(!/^\s*<svg[\s>]/i.test(v)||/<script|<foreignobject|<iframe|<object|<embed|javascript:|\son\w+\s*=|(?:href|src)\s*=\s*["']?\s*(?:https?:|\/\/)/i.test(v)))return '';if(['src','url'].includes(key)&&v&&!safeHref(v))return '';return v;}if(['w','h'].includes(key))return Math.min(10000,Math.max(0,Math.trunc(Number(v)||0)));if(Array.isArray(v))return v.slice(0,500).map(x=>clean(x,key));if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).filter(([k])=>!['__proto__','constructor','prototype'].includes(k)).map(([k,x])=>[k,clean(x,k)]));return v;};return clean(input);}
-export async function postModel(raw:any,refs?:any[][]){const [cats,users]=refs||await Promise.all([all('categories'),all('users')]),cat=cats.find(c=>c.id===raw.categoryId),sub=cats.find(c=>c.id===raw.subCategoryId),author=users.find(u=>u.id===raw.authorId);return {...raw,categoryName:cat?.name||'',categorySlug:cat?.slug||'',subCategoryName:sub?.name||'',subCategorySlug:sub?.slug||'',categoryPath:[cat?.name,sub?.name].filter(Boolean).join(' › '),authorName:author?.name||'관리자',authorLoginId:author?.loginId||'',status:enumValue(raw.status),blocks:parseJson(raw.blocksJson,[]),story:parseJson(raw.storyJson,{}),layout:parseJson(raw.layoutJson,{}),statusLabel:enumValue(raw.status).label};}
+export async function postModel(raw:any,refs?:any[][]){const [cats,users]=refs||await Promise.all([all('categories'),all('users')]),cat=cats.find(c=>c.id===raw.categoryId),sub=cats.find(c=>c.id===raw.subCategoryId),author=users.find(u=>u.id===raw.authorId);return {...raw,categoryName:cat?.name||'',categorySlug:cat?.slug||'',subCategoryName:sub?.name||'',subCategorySlug:sub?.slug||'',categoryPath:[cat?.name,sub?.name].filter(Boolean).join(' › '),authorName:author?.name||'관리자',authorLoginId:author?.loginId||'',status:enumValue(raw.status),statusBeforeTrash:raw.statusBeforeTrash?enumValue(raw.statusBeforeTrash):null,blocks:parseJson(raw.blocksJson,[]),story:parseJson(raw.storyJson,{}),layout:parseJson(raw.layoutJson,{}),statusLabel:enumValue(raw.status).label};}
 export async function postModels(rows:any[]){const refs=await Promise.all([all('categories'),all('users')]);return Promise.all(rows.map(p=>postModel(p,refs)));}
 export async function listPosts(url:URL,trash=false){const q=url.searchParams,kind=q.get('kind'),tree=await categoryTree(),cat=q.get('categoryId')?numeric(q.get('categoryId')):tree.find(c=>c.slug===kind)?.id??null,search={keyword:q.get('keyword')||'',categoryId:cat,subCategoryId:numeric(q.get('subCategoryId')),authorId:numeric(q.get('authorId')),status:q.get('status')||null,page:Number(q.get('page'))||1,size:Number(q.get('size'))||20,filtered:!!(q.get('keyword')||cat||q.get('status')||q.get('authorId'))};let list=await all('posts');list=list.filter(p=>!!p.deletedAt===trash&&(!cat||p.categoryId===cat)&&(!search.subCategoryId||p.subCategoryId===search.subCategoryId)&&(!search.authorId||p.authorId===search.authorId)&&(!search.status||p.status===search.status));const models=await postModels(list);const keyword=search.keyword.toLowerCase();const result=paginate(models.filter(p=>!keyword||[p.title,p.summary,p.authorName,p.authorLoginId].some(s=>String(s||'').toLowerCase().includes(keyword))).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))),search.page,search.size);return {search,result,categoryTree:tree,statuses:STATUSES,storyKind:kind};}
 export async function postForm(id:any,kind?:string|null){const p=id?await get('posts',id):null;if(id&&!p)fail(404,'게시물을 찾을 수 없습니다.');if(p?.deletedAt)fail(400,'휴지통의 게시물입니다. 먼저 복원해 주세요.');const tree=await categoryTree(),categoryId=p?.categoryId??tree.find(c=>c.slug===kind)?.id??tree[0]?.id??null;return {form:{id:null,title:'',summary:'',blocksJson:'[]',layoutJson:'{}',storyJson:'',thumbnailMode:'AUTO',thumbnailUrl:'',status:'DRAFT',subCategoryId:null,...p,categoryId},post:p?await postModel(p):null,categoryTree:tree,statuses:STATUSES};}

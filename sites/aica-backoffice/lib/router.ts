@@ -5,6 +5,7 @@ import {faqApi,lifeApi,sanitizeHtml} from './content';
 import {ROLES,STATUSES,cleanStory,imagesTree,listPosts,liveNotices,mediaList,mediaModel,mediaModels,mutatePost,noticeModel,postForm,postModel,regenerateStories,restoreVersion,sanitizedBlocks,saveNotice,savePost,saveTemplate,saveUser,stats,templateModel,versions} from './cms';
 import {escapeHtml as esc,renderView,safeJson} from './views';
 import storyPages from './story-pages.json';
+import {bulkTrash,trashOverview} from './cms';
 
 const routeError=(status:number,message:string)=>html(`<!doctype html><html lang="ko"><meta charset="utf-8"><title>AICA 백오피스</title><link rel="stylesheet" href="/css/admin.css"><body><main style="max-width:640px;margin:12vh auto;padding:32px;background:white;border-radius:16px"><h1>${status===403?'접근 권한이 필요합니다':'요청을 완료하지 못했습니다'}</h1><p>${esc(message)}</p><a href="/admin">관리자 홈</a> · <a href="javascript:history.back()">이전 화면</a></main></body></html>`,status);
 function loginPage(unknown=false){return html(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AICA 관리자 로그인</title><style>body{margin:0;background:#f2f5fb;color:#142138;font:16px/1.7 system-ui}main{max-width:420px;margin:14vh auto;padding:40px;background:white;border:1px solid #e1e7f0;border-radius:20px;box-shadow:0 14px 45px #1626400c}small{color:#52708c;letter-spacing:.15em}h1{font-size:28px;margin:14px 0}p{color:#5b697d}a{display:block;background:#1849a9;color:white;text-align:center;text-decoration:none;padding:13px;border-radius:9px;margin-top:28px}</style></head><body><main><small>AICA BACKOFFICE</small><h1>관리자 로그인</h1><p>등록된 관리자의 ChatGPT 계정으로 로그인해 주세요. 편집한 내용은 클라우드에 저장됩니다.</p>${unknown?'<p role="alert">이 계정은 관리자 명단에 없습니다. 최고관리자에게 이메일 등록을 요청해 주세요.</p><a href="/signout-with-chatgpt?return_to=%2Flogin" target="_top">다른 계정으로 로그인</a>':'<a href="/signin-with-chatgpt?return_to=%2Fadmin" target="_top">ChatGPT로 로그인</a>'}</main></body></html>`,unknown?403:200);}
@@ -58,7 +59,15 @@ export async function dispatch(request:Request):Promise<Response>{const url=new 
  if((path==='/admin/faq'||path==='/admin/pages/faq')&&method==='GET'){manage(me);return view('faq/index',{frontLink:'/site/check/index.html'});}
  if(path==='/admin/pages/life-photos'&&method==='GET'){manage(me);return view('page/life-photos',{lifeSection:url.searchParams.get('section')||'fac',frontLink:'/site/life/index.html'});}
  if(path==='/admin/posts'&&method==='GET')return view('post/list',await listPosts(url));
- if(path==='/admin/posts/trash'&&method==='GET'){manage(me);return view('post/trash',await listPosts(url,true));}
+ if(path==='/admin/posts/trash'&&method==='GET'){manage(me);return view('post/trash',{...await listPosts(url,true),...await trashOverview(),menu:'trash'});}
+ if(path==='/admin/posts/trash/bulk'&&method==='POST'){
+  const form=await request.formData(),action=value(form,'action'),count=await bulkTrash(action,form.getAll('ids'),me);
+  return redirect('/admin/posts/trash?'+new URLSearchParams({keyword:value(form,'keyword'),toast:count+'개 게시물을 '+(action==='restore'?'복원했습니다.':'완전히 삭제했습니다.')}));
+ }
+ if(path==='/admin/posts/trash/empty'&&method==='POST'){
+  const form=await request.formData(),count=await bulkTrash('empty',[],me,value(form,'snapshot'));
+  return redirect('/admin/posts/trash?toast='+encodeURIComponent('휴지통의 '+count+'개 게시물을 완전히 삭제했습니다.'));
+ }
  if(path==='/admin/posts/new'&&method==='GET')return view('post/editor',await postForm(null,url.searchParams.get('kind')));
  match=path.match(/^\/admin\/posts\/(\d+)\/edit$/);if(match&&method==='GET')return view('post/editor',await postForm(match[1]));
  if(path==='/admin/posts/preview'&&method==='POST')return await preview(previewForm(await request.formData(),me),shared);
