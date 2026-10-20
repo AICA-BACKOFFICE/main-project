@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /** 휴지통: 이동(soft delete) · 목록 · 복원 · 완전 삭제. */
 @Service
@@ -76,6 +77,7 @@ public class PostTrashService {
         return snapshot(mapper.findAllDeleted());
     }
 
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN') and (#action != 'purge' or hasRole('SUPER_ADMIN'))")
     public int bulk(List<Long> requested, String action) {
         if (!List.of("restore", "purge").contains(action)) throw new BusinessException("작업을 확인해 주세요.");
         if (requested == null || requested.isEmpty() || requested.size() > 100
@@ -93,6 +95,7 @@ public class PostTrashService {
         return locked.size();
     }
 
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public int empty(String expectedSnapshot) {
         List<Post> locked = mapper.lockAllDeleted();
         if (!snapshot(locked).token().equals(expectedSnapshot)) {
@@ -117,6 +120,7 @@ public class PostTrashService {
     }
 
     /** 완전 삭제 — 휴지통에 있는 글만 가능하며 되돌릴 수 없다. 이력·조회 로그를 먼저 지운다(FK). */
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public void purge(Long id) {
         getDeleted(id);
         versions.deleteByPost(id);

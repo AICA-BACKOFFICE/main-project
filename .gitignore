@@ -5,6 +5,9 @@
 /백오피스/.cache/
 /백오피스/.tools/
 node_modules/
+# 백오피스 전용 PostgreSQL 데이터 폴더 · 로그(컴퓨터마다 따로 — 백오피스.cmd가 처음 켤 때 만들어요)
+/백오피스/data/postgres/
+/백오피스/data/postgres*.log
 # H2 데이터베이스가 켜져 있을 때만 생기는 파일
 *.lock.db
 *.trace.db
@@ -17,3 +20,6 @@ node_modules/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# DB 백업 파일(pg_dump) — 저장소에는 넣지 않아요
+/백오피스/data/db-backups/

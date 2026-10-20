@@ -1,21 +1,25 @@
 /*
  * 게시물 관리 › 인사교 라이프 게시물 관리 (templates/page/life-photos.html)
  *   세 탭: 시설 사진(층 › 공간 사진 넘김) · 오늘 점심, 여기 어때요?(식당 · 카페 카드) · 수업 끝나고, 바람 쐬러 가요(문화 · 여가 카드)
- *   새로 올리기 · 고치기 · 순서 · 지우기를 하고 '저장'을 누르면 바꾼 것만 보내고, 서버(LifePhotoService · LifeTipService)가
- *   사이트 파일(life/index.html)의 그 목록만 고쳐 반영한다. 사진은 브라우저에서 긴 변 1920px · WEBP로 줄여 올린다.
+ *   새로 올리기 · 고치기 · 순서 · 지우기를 하고 '저장'을 누르면 바꾼 것만 보내요. 셋 다 DB에 저장되고(LifePhotoService · LifeFacilityService ·
+ *   LifeTipService) 사이트는 공개 API로 받아 그려요. 목록에서 뺀 카드는 휴지통(휴지통 › 인사교 라이프 카드)으로 가고,
+ *   저장할 때마다 바로 전 모습이 '버전 기록'에 남아 그 모습으로 되돌릴 수 있어요.
+ *   사진은 브라우저에서 긴 변 1920px · WEBP로 줄여 올린다.
  */
 (function () {
   'use strict';
   var root = document.getElementById('lifePhotos');
   if (!root) return;
-  var DRAFT_API = root.dataset.draftApi;
-  var API = root.dataset.api, UPLOAD = root.dataset.upload, SITE = root.dataset.siteBase, FRONT = (root.dataset.front || '').split('#')[0], EDITOR = root.dataset.editor;
+  var API = root.dataset.api, UPLOAD = root.dataset.upload, SITE = root.dataset.siteBase, FRONT = (root.dataset.front || '').split('#')[0];
+  var VERSIONS = root.dataset.versionsApi, TRASH = root.dataset.trash;
   var meta = function (n) { var m = document.querySelector('meta[name="' + n + '"]'); return m ? m.getAttribute('content') : ''; };
   var SIZES = [['', '꽉 차게(기본)'], ['150%', '1.5배 확대'], ['200%', '2배 확대'], ['250%', '2.5배 확대'], ['300%', '3배 확대']];
   var SECTIONS = [['fac', '시설 사진', '#facilities'], ['food', '오늘 점심, 여기 어때요?', '#tp-food'], ['fun', '수업 끝나고, 바람 쐬러 가요', '#tp-fun']];
   var model = null, floor = null, foodKind = 'food', busy = false;
   var section = /^(fac|food|fun)$/.test(root.dataset.section || '') ? root.dataset.section : 'fac';
   var dirty = { spaces: {}, food: false, fun: {} };
+  // 버전 기록 칸: 열린 묶음(section) · 받은 목록(null = 불러오는 중)
+  var history = { section: null, items: null };
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function toast(msg, err) { if (window.notify) window.notify(msg, err); else alert(msg); }
@@ -62,14 +66,16 @@
   // ── 그리기 ──
   function render() {
     var h = '';
-    if (model.hasDraft) h += window.draftNoteHtml(model.draft, '인사교 라이프', EDITOR);
     h += '<div class="lp-sections" role="tablist" aria-label="고칠 곳">' + SECTIONS.map(function (s) {
       return '<button type="button" role="tab" class="lp-section" data-section="' + s[0] + '" aria-selected="' + (section === s[0]) + '">' + esc(s[1]) + mark(sectionDirty(s[0])) + '</button>';
     }).join('') + '</div>';
     var link = FRONT + SECTIONS.filter(function (s) { return s[0] === section; })[0][2];
     h += '<div class="lp-bar"><div class="lp-floors" role="tablist">' + leftTabs() + '</div>'
       + '<div class="lp-top-r"><span class="lp-state" id="lpState"></span><a class="btn ghost sm" href="' + esc(link) + '" target="_blank" rel="noopener">사이트에서 보기 ↗</a>'
+      + (section !== 'fac' ? '<a class="btn ghost sm" href="' + esc(TRASH) + '" title="지운 카드를 다시 꺼낼 수 있어요">휴지통 ' + (model.trashCount || 0) + '</a>' : '')
+      + '<button class="btn ghost sm" type="button" data-act="versions" aria-expanded="' + (history.section === section) + '">버전 기록</button>'
       + '<button class="btn primary" type="button" id="lpSave">저장</button></div></div>';
+    if (history.section === section) h += historyHtml();
     if (section === 'fac') {
       var current = model.floors.filter(function (f) { return f.g === floor; })[0] || model.floors[0];
       h += current.spaces.map(spaceHtml).join('');
@@ -186,10 +192,42 @@
       + '<button type="button" class="btn danger xs" data-act="fun-del"' + (total < 2 ? ' disabled title="한 곳은 있어야 해요"' : '') + '>삭제</button></div></div>';
   }
 
+  // 버전 기록: 저장할 때마다 바로 전 모습. '이 모습으로 되돌리기'를 누르면 그 모습이 바로 사이트에 반영돼요(지금 모습도 기록에 남음)
+  function historyHtml() {
+    var name = SECTIONS.filter(function (s) { return s[0] === section; })[0][1];
+    var body = history.items === null ? '<p class="lp-hist-empty">불러오는 중이에요…</p>'
+      : !history.items.length ? '<p class="lp-hist-empty">아직 버전 기록이 없어요. 저장하면 바로 전 모습이 여기에 남아요.</p>'
+      : '<ol class="lp-hist-list">' + history.items.map(function (v) {
+        return '<li><div><b>' + esc(v.at) + '</b> <span class="muted">' + esc(v.by || '') + ' · ' + esc(v.reason) + '</span><div class="lp-hist-sum">' + esc(v.summary) + '</div></div>'
+          + '<button type="button" class="btn ghost xs" data-act="restore" data-id="' + v.id + '">이 모습으로 되돌리기</button></li>';
+      }).join('') + '</ol>';
+    return '<section class="card lp-hist"><div class="lp-space-h"><h3>' + esc(name) + ' 버전 기록 <span class="muted">저장할 때마다 바로 전 모습을 남겨요 · 최근 50개</span></h3>'
+      + '<button type="button" class="btn ghost xs" data-act="versions">닫기</button></div>' + body + '</section>';
+  }
+  function openHistory() {
+    if (history.section === section) { history.section = null; render(); return; }
+    history = { section: section, items: null }; render();
+    var want = section;
+    request(VERSIONS + '?section=' + encodeURIComponent(want)).then(function (items) {
+      if (history.section === want) { history.items = items; render(); }
+    }).catch(function (e) { history.section = null; render(); toast(e.message, true); });
+  }
+  function restoreVersion(id) {
+    var name = SECTIONS.filter(function (s) { return s[0] === section; })[0][1];
+    var v = (history.items || []).filter(function (x) { return String(x.id) === String(id); })[0];
+    var msg = '‘' + name + '’을(를) ' + (v ? v.at + ' 모습(' + v.summary + ')' : '그 모습') + '으로 되돌릴까요?\n지금 모습은 버전 기록에 남아서 다시 돌아올 수 있어요. 사이트에도 바로 반영돼요.';
+    if (sectionDirty(section)) msg += '\n\n이 탭에서 저장하지 않은 변경은 사라져요.';
+    if (!confirm(msg)) return;
+    withBusy(request(VERSIONS + '/' + encodeURIComponent(id) + '/restore', { method: 'POST' }).then(function (m) {
+      model = m; dirty = { spaces: {}, food: false, fun: {} }; history = { section: null, items: null }; render();
+      toast(m.saved ? '되돌렸어요. 사이트의 인사교 라이프에도 반영됐어요.' : '지금 모습과 같아서 바뀐 게 없어요.');
+    }));
+  }
+
   function syncBar() {
     var save = document.getElementById('lpSave'), st = document.getElementById('lpState');
     if (!save) return;
-    save.disabled = busy || !isDirty() || model.hasDraft;
+    save.disabled = busy || !isDirty();
     st.textContent = busy ? '처리 중…' : isDirty() ? '저장 안 한 변경이 있어요' : '';
   }
 
@@ -235,7 +273,8 @@
     if (t.dataset.floor) { floor = t.dataset.floor; render(); return; }
     if (t.dataset.kind) { foodKind = t.dataset.kind; render(); return; }
     var act = t.dataset.act;
-    if (act === 'discard-draft') { discardDraft(); return; }
+    if (act === 'versions') { openHistory(); return; }
+    if (act === 'restore') { restoreVersion(t.dataset.id); return; }
     // 먹거리
     if (/^food-/.test(act)) {
       var fc = t.closest('[data-food]'), fi = fc ? Number(fc.dataset.food) : -1;
@@ -250,7 +289,7 @@
         var tmp = model.food[same[p]]; model.food[same[p]] = model.food[same[q]]; model.food[same[q]] = tmp;
         dirty.food = true; render();
       } else if (act === 'food-del') {
-        if (!confirm('‘' + (model.food[fi].name || '이름 없는 곳') + '’을(를) 목록에서 지울까요? (저장해야 사이트에 반영돼요)')) return;
+        if (!confirm('‘' + (model.food[fi].name || '이름 없는 곳') + '’을(를) 목록에서 뺄까요?\n저장하면 휴지통으로 옮겨져 사이트에서 빠지고, 휴지통에서 다시 꺼낼 수 있어요.')) return;
         model.food.splice(fi, 1); dirty.food = true; render();
       } else if (act === 'food-nophoto') {
         model.food[fi].src = ''; model.food[fi].url = ''; dirty.food = true; render();
@@ -267,7 +306,7 @@
       } else if (act === 'fun-left' || act === 'fun-right') {
         if (move(g.cards, ci, act === 'fun-left' ? ci - 1 : ci + 1)) { dirty.fun[g.k] = true; render(); }
       } else if (act === 'fun-del') {
-        if (!confirm('‘' + (g.cards[ci].name || '이름 없는 곳') + '’을(를) 목록에서 지울까요? (저장해야 사이트에 반영돼요)')) return;
+        if (!confirm('‘' + (g.cards[ci].name || '이름 없는 곳') + '’을(를) 목록에서 뺄까요?\n저장하면 휴지통으로 옮겨져 사이트에서 빠지고, 휴지통에서 다시 꺼낼 수 있어요.')) return;
         g.cards.splice(ci, 1); dirty.fun[g.k] = true; render();
       }
       return;
@@ -279,7 +318,7 @@
       if (move(s.photos, i, act === 'left' ? i - 1 : i + 1)) { dirty.spaces[s.id] = true; render(); }
     } else if (act === 'del') {
       if (s.photos.length < 2) return;
-      if (!confirm('이 사진을 이 공간에서 뺄까요? (저장해야 사이트에 반영돼요)')) return;
+      if (!confirm('이 사진을 이 공간에서 뺄까요? (저장해야 사이트에 반영돼요. 저장 전 모습은 버전 기록에 남아요)')) return;
       s.photos.splice(i, 1); dirty.spaces[s.id] = true; render();
     } else if (act === 'focus') {
       var r = t.getBoundingClientRect();
@@ -338,16 +377,6 @@
     }
   });
 
-  // 임시저장 버리기: 페이지 편집기에서 반영하지 않은 편집을 지우면 여기서 다시 저장할 수 있어요(여기서 고치던 것은 그대로)
-  function discardDraft() {
-    var n = (model.draft && model.draft.changes ? model.draft.changes.length : 0) + (model.draft && model.draft.more || 0);
-    if (!confirm('인사교 라이프 페이지 편집기의 임시저장(' + (n ? n + '곳 바뀜' : '반영하지 않은 편집') + ')을 버릴까요?\n버리면 그 편집 내용은 되돌릴 수 없어요. 사이트에 이미 반영된 내용은 그대로예요.')) return;
-    withBusy(request(DRAFT_API, { method: 'DELETE' }).then(function () {
-      model.hasDraft = false; model.draft = null; render();
-      toast('임시저장을 버렸어요. 이제 저장할 수 있어요.');
-    }));
-  }
-
   // ── 저장: 바꾼 것만 ──
   function check() {
     var need = [];
@@ -376,12 +405,13 @@
       var s = spaceById(id);
       return { id: s.id, badge: s.badge || '', photos: s.photos.map(function (p) { return { cls: p.cls || '', src: p.src || '', bs: p.bs || '', bp: p.bp || '', caption: p.caption }; }) };
     }) };
-    if (dirty.food) body.food = model.food.map(function (f) { return { t: f.t, g: f.g, w: f.w, category: f.category, name: f.name, menu: f.menu, review: f.review, example: !!f.example, src: f.src || '' }; });
+    // 카드 번호(id)도 보내요: DB에서 같은 카드는 고치고, 새 카드는 더하고, 빠진 카드는 휴지통으로
+    if (dirty.food) body.food = model.food.map(function (f) { return { id: f.id || null, t: f.t, g: f.g, w: f.w, category: f.category, name: f.name, menu: f.menu, review: f.review, example: !!f.example, src: f.src || '' }; });
     if (Object.keys(dirty.fun).length) body.fun = Object.keys(dirty.fun).map(function (k) {
-      return { k: k, cards: funGroup(k).cards.map(function (c) { return { name: c.name, distance: c.distance, fee: c.fee, summary: c.summary, cls: c.cls || '', src: c.src || '' }; }) };
+      return { k: k, cards: funGroup(k).cards.map(function (c) { return { id: c.id || null, name: c.name, distance: c.distance, fee: c.fee, summary: c.summary, cls: c.cls || '', src: c.src || '' }; }) };
     });
     withBusy(request(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (m) {
-      model = m; dirty = { spaces: {}, food: false, fun: {} }; render();
+      model = m; dirty = { spaces: {}, food: false, fun: {} }; history = { section: null, items: null }; render();
       toast(m.saved ? '저장했어요. 사이트의 인사교 라이프에 반영됐어요.' : '바뀐 내용이 없어요.');
     }));
   });

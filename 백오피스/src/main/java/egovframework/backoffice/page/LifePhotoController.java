@@ -1,17 +1,21 @@
 package egovframework.backoffice.page;
 
+import egovframework.backoffice.account.CurrentAdmin;
 import egovframework.backoffice.common.BusinessException;
 import egovframework.backoffice.common.NotFoundException;
 import egovframework.backoffice.config.BackofficeProperties;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -52,8 +56,22 @@ public class LifePhotoController {
 
     @PostMapping("/admin/pages/life-photos/api")
     @ResponseBody
-    public Map<String, Object> save(@RequestBody LifePhotoService.SaveRequest body, HttpServletRequest request) {
-        return service.save(body, request.getContextPath());
+    public Map<String, Object> save(@RequestBody LifePhotoService.SaveRequest body, HttpServletRequest request, @AuthenticationPrincipal CurrentAdmin me) {
+        return service.save(body, request.getContextPath(), me == null ? null : me.getId());
+    }
+
+    /** 버전 기록(최근 것부터): section = food · fun · fac */
+    @GetMapping("/admin/pages/life-photos/api/versions")
+    @ResponseBody
+    public List<Map<String, Object>> versions(@RequestParam String section) {
+        return service.versions(section);
+    }
+
+    /** 그 버전의 모습으로 되돌리기(지금 모습은 버전 기록에 남음) */
+    @PostMapping("/admin/pages/life-photos/api/versions/{id}/restore")
+    @ResponseBody
+    public Map<String, Object> restore(@PathVariable Long id, HttpServletRequest request, @AuthenticationPrincipal CurrentAdmin me) {
+        return service.restore(id, request.getContextPath(), me == null ? null : me.getId());
     }
 
     @ExceptionHandler({BusinessException.class, NotFoundException.class, CategoryPageService.PageStorageException.class})

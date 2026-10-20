@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.backoffice.page.LifeFacilityMapper">
+
+  <select id="findPhotos" resultType="LifeFacilityPhoto">
+    SELECT id, space_id, COALESCE(photo_class, '') AS photo_class, COALESCE(photo, '') AS photo,
+           COALESCE(zoom, '') AS zoom, COALESCE(pos, '') AS pos, caption, sort_order
+      FROM life_facility_photos
+     ORDER BY space_id, sort_order, id
+  </select>
+
+  <insert id="insertPhoto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO life_facility_photos (space_id, photo_class, photo, zoom, pos, caption, sort_order)
+    VALUES (#{spaceId}, #{photoClass}, #{photo}, #{zoom}, #{pos}, #{caption}, #{sortOrder})
+  </insert>
+
+  <delete id="deletePhotos">
+    DELETE FROM life_facility_photos WHERE space_id = #{spaceId}
+  </delete>
+
+  <!-- 공간마다 사진 표시(예시 · 임시): {space_id → badge} -->
+  <select id="findBadges" resultType="map">
+    SELECT space_id AS "spaceId", badge AS "badge" FROM life_facility_spaces
+  </select>
+
+  <delete id="deleteBadge">
+    DELETE FROM life_facility_spaces WHERE space_id = #{spaceId}
+  </delete>
+
+  <insert id="insertBadge">
+    INSERT INTO life_facility_spaces (space_id, badge) VALUES (#{spaceId}, #{badge})
+  </insert>
+</mapper>

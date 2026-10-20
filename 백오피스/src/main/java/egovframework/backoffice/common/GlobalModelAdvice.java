@@ -12,24 +12,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 public class GlobalModelAdvice {
 
     private final BackofficeProperties properties;
-    private final egovframework.backoffice.notice.NoticeService notices;
 
-    public GlobalModelAdvice(BackofficeProperties properties, egovframework.backoffice.notice.NoticeService notices) {
+    public GlobalModelAdvice(BackofficeProperties properties) {
         this.properties = properties;
-        this.notices = notices;
-    }
-
-    /** 현재 요청 경로(공지 닫기 뒤 돌아올 곳) */
-    @ModelAttribute("currentPath")
-    public String currentPath(jakarta.servlet.http.HttpServletRequest request) {
-        return request == null ? "/admin" : request.getRequestURI();
-    }
-
-    /** 상단 띠에 표시할 운영진 공지(로그인한 사람 기준, 닫은 것 제외) */
-    @ModelAttribute("liveNotices")
-    public java.util.List<egovframework.backoffice.notice.Notice> liveNotices() {
-        CurrentAdmin admin = me();
-        return admin == null ? java.util.List.of() : notices.visibleFor(admin.getId());
     }
 
     @ModelAttribute("siteName")

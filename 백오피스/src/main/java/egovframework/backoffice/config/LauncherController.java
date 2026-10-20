@@ -32,7 +32,7 @@ public class LauncherController {
     }
 
     /** 서버가 켜진 뒤 브라우저가 화면(HTML)을 한 번이라도 열었는지 */
-    @Component
+    @Component("browserVisitsFilter")
     public static class BrowserVisits extends OncePerRequestFilter {
 
         private final AtomicBoolean seen = new AtomicBoolean();

@@ -1,3 +1,5 @@
+> 현재 구현 안내(2026-10-16): Java 백오피스는 Spring Boot를 제거한 Spring Framework MVC·표준 WAR 구조로 전환되었습니다. 이 문서는 이전 제안·검증 기록이며, 실행·설정은 최신 README.md를 참고하세요.
+
 # 0단계 기술 검증 결과와 실행 방법
 
 > **참고(2026-09-22):** 이 문서는 0단계 기술 검증 기록이다. 1차 초안에서 `/__stage0/status` 화면과 `Stage0WebTest`는 업무 기능·`BackofficeWebTest`로 대체되었고, 실행 JAR 이름은 `backoffice-0.1.0-SNAPSHOT.jar`, DB·MyBatis·Flyway 의존성은 실행 범위로 옮겨졌다. 현재 구성은 [BACKOFFICE_DRAFT.md](BACKOFFICE_DRAFT.md)를 참고한다. `Stage0DatabaseTest`와 `egov43-probe` 프로필의 RTE 검증은 그대로 유지된다.

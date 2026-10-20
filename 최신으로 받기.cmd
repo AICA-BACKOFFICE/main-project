@@ -1,8 +1,8 @@
 @echo off
 chcp 65001 >nul
 title 최신으로 받기 (GitHub)
-rem 함께 작업하는 사람이 GitHub에 올린 최신 내용(코드 · 사이트 · 관리자 데이터)을 받아서 이 폴더를 올라와 있는 것과 똑같이 맞춰요. 필요한 것: Git
-rem 새 내용이 있을 때만, 이 컴퓨터에서 바뀐 파일(관리자 데이터는 백오피스를 켜기만 해도 조금 바뀌어요)을 지우지 않고 git stash에 보관해 둔 뒤 받아요.
+rem 함께 작업하는 사람이 GitHub에 올린 최신 내용(코드 · 사이트)을 받아서 이 폴더를 올라와 있는 것과 똑같이 맞춰요. 필요한 것: Git
+rem 새 내용이 있을 때만, 이 컴퓨터에서 바뀐 파일을 지우지 않고 git stash에 보관해 둔 뒤 받아요.
 cd /d "%~dp0"
 where git >nul 2>nul || goto :nogit
 git rev-parse --is-inside-work-tree >nul 2>nul || goto :notclone
@@ -11,8 +11,10 @@ git fetch --quiet || goto :fetchfail
 git rev-parse --verify --quiet "@{u}" >nul || goto :noupstream
 git merge-base --is-ancestor "@{u}" HEAD && goto :uptodate
 git merge-base --is-ancestor HEAD "@{u}" || goto :diverged
-rem 백오피스가 켜져 있으면 관리자 데이터 파일이 잠겨 있어서 바꿀 수 없어요.
-powershell -NoProfile -Command "$p = '%~dp0백오피스\data\backoffice.mv.db'; if (Test-Path -LiteralPath $p) { try { $f = [IO.File]::Open($p, 'Open', 'ReadWrite', 'None'); $f.Close() } catch { exit 1 } }" || goto :running
+rem 백오피스가 켜져 있으면(관리자 페이지 포트가 열려 있으면) 받기 전에 닫아 달라고 해요.
+set "BO_PORT=%BACKOFFICE_PORT%"
+if "%BO_PORT%"=="" set "BO_PORT=8080"
+powershell -NoProfile -Command "try { $c = New-Object Net.Sockets.TcpClient; $c.Connect('127.0.0.1', %BO_PORT%); $c.Close(); exit 1 } catch { exit 0 }" || goto :running
 echo.
 echo 새로 받을 내용:
 git --no-pager log --format="  - %%s" "HEAD..@{u}"
@@ -20,7 +22,7 @@ set "STASHED="
 for /f "delims=" %%x in ('git status --porcelain -uall') do set "STASHED=1"
 if not defined STASHED goto :merge
 echo.
-echo 이 컴퓨터에서 바뀐 파일이 있어요(관리자 데이터는 백오피스를 켜기만 해도 조금 바뀌어요).
+echo 이 컴퓨터에서 바뀐 파일이 있어요.
 echo 지우지 않고 따로 보관(git stash)해 둔 뒤 최신 내용으로 바꿀게요.
 git -c user.name=auto-backup -c user.email=auto-backup@localhost stash push --include-untracked --message "최신으로 받기 전 자동 보관" >nul || goto :stashfail
 :merge

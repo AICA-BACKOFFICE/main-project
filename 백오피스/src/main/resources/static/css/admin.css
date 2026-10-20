@@ -213,6 +213,12 @@ table.list td.nowrap, table.list th.nowrap { white-space: nowrap; }
 .login-box .btn.green:hover { background: #000; }
 
 /* ---------- 휴지통 ---------- */
+/* 휴지통 탭: 선배들의 이야기 게시물 · 인사교 라이프 카드 (post/trash.html) */
+.trash-tabs { display: flex; gap: 6px; margin: 0 0 12px; }
+.trash-tabs a { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border: 1px solid #d5d5d5; border-radius: 999px; background: #fff; color: #333; font-size: 13px; font-weight: 600; }
+.trash-tabs a em { font-style: normal; font-weight: 500; color: var(--muted); }
+.trash-tabs a.on { background: #111; border-color: #111; color: #fff; }
+.trash-tabs a.on em { color: #ddd; }
 .trash-note { padding: 10px 20px; font-size: 13px; color: #666; background: #fafafa; border-bottom: 1px solid var(--line-soft); }
 .trash-bulk { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); }
 .trash-bulk form { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; }
@@ -307,30 +313,6 @@ table.list tr.trash-row-selected td { background: #edf3ff; }
 .media-rename-form .name-edit:hover { background: #eef3fd; color: var(--blue); }
 .media-rename-form .name-edit svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .media-rename-form.editing .name-edit { display: none; }
-
-/* ---------- 운영진 공지 띠 (layout/admin.html · notice/*) ---------- */
-.notice-band { max-width: var(--wrap-w); margin: 14px auto -22px; padding: 0 24px; display: flex; flex-direction: column; gap: 6px; }
-.notice-item { border: 1px solid #bcd0f7; background: #eef3fe; border-radius: 6px; color: #1e3a8a; }
-.notice-item.nl-warn { border-color: #f3d9a0; background: #fff8e6; color: #7a5200; }
-.notice-item.nl-urgent { border-color: #f3b8b2; background: #fdf0ee; color: #9b2c22; }
-.notice-item summary { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-size: 13px; cursor: default; }
-.notice-item[open] summary, .notice-item .nl-more { cursor: pointer; }
-.nl-tag { flex-shrink: 0; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 9px; background: #2f6ee6; color: #fff; }
-.nl-warn .nl-tag { background: #c98a00; } .nl-urgent .nl-tag { background: #d9463a; }
-.nl-title { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nl-meta { margin-left: auto; flex-shrink: 0; font-size: 11px; opacity: .75; }
-.nl-more { flex-shrink: 0; font-size: 11px; text-decoration: underline; opacity: .8; }
-.nl-close { margin: 0; flex-shrink: 0; } .nl-close button { border: 0; background: none; color: inherit; cursor: pointer; font-size: 13px; opacity: .6; padding: 0 2px; }
-.nl-close button:hover { opacity: 1; }
-.nl-pin { flex-shrink: 0; font-size: 10px; font-weight: 700; opacity: .7; }
-.nl-body { padding: 0 12px 10px 12px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: inherit; }
-.badge.nl-info { background: #e7efff; color: #2456c9; } .badge.nl-warn { background: #fff4d6; color: #9a6b00; } .badge.nl-urgent { background: #fdecea; color: #c0392b; }
-.notice-form .row { margin-bottom: 10px; }
-.notice-form .row label { display: block; font-size: 12px; font-weight: 700; color: #555; }
-.notice-form .row label .input, .notice-form .row label .textarea, .notice-form .row label .select { display: block; margin-top: 4px; font-weight: 400; }
-.notice-form .row.inline { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-.notice-form .row.inline label.chk { display: inline-flex; align-items: center; gap: 6px; height: 34px; font-weight: 600; }
-.notice-form .textarea.wide { width: 100%; height: auto; padding: 8px 10px; resize: vertical; }
 
 /* 미디어 관리 — 세부 카테고리 탭 · 분류 이동 */
 .media-tabs-note { margin-left: auto; font-size: 11px; color: var(--muted); }

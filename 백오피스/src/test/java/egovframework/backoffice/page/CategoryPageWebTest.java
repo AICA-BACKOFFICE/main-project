@@ -26,8 +26,10 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
+import egovframework.backoffice.BackofficeApplication;
+import egovframework.testsupport.CmsMockMvcConfig;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,14 +38,14 @@ import org.springframework.test.web.servlet.MockMvc;
  * 카테고리 페이지 관리: 사이드바 메뉴 → 편집 화면 → 편집용 페이지(편집기 붙임) → 임시저장 · 반영 · 버전 기록 · 그림 올리기 흐름을
  * 임시 사이트 폴더로 검증한다. 원본 표기(CRLF·문자 참조)는 받은 글 그대로 저장되어야 한다.
  */
-@SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:backoffice-pages-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+@TestPropertySource(properties = {
+        "datasource.url=jdbc:h2:mem:backoffice-pages-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
         "backoffice.upload-dir=${java.io.tmpdir}/aica-category-pages-test/uploads",
         "backoffice.pages.site-root=${java.io.tmpdir}/aica-category-pages-test/site",
         "backoffice.pages.data-dir=${java.io.tmpdir}/aica-category-pages-test/data",
         "backoffice.initial-admin.password=test-pass-1234"
 })
-@AutoConfigureMockMvc
+@SpringJUnitWebConfig({BackofficeApplication.class, CmsMockMvcConfig.class})
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CategoryPageWebTest {
 

@@ -92,8 +92,8 @@ public class PostController {
     }
 
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model) {
-        Post post = postService.get(id);
+    public String editForm(@PathVariable Long id, @AuthenticationPrincipal CurrentAdmin me, Model model) {
+        Post post = postService.getForEditing(id, me.getId());
         model.addAttribute("post", post);
         model.addAttribute("form", PostForm.from(post));
         addFormOptions(model);
@@ -110,6 +110,7 @@ public class PostController {
     public String update(@PathVariable Long id, @Valid @ModelAttribute("form") PostForm form,
                          BindingResult binding, @AuthenticationPrincipal CurrentAdmin me,
                          Model model, RedirectAttributes redirect) {
+        postService.getForEditing(id, me.getId());
         form.setId(id);
         if (binding.hasErrors()) {
             model.addAttribute("post", postService.get(id));

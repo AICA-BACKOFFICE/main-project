@@ -1,17 +1,23 @@
 package egovframework.backoffice.config;
 
 import egovframework.backoffice.account.AdminRole;
+import egovframework.backoffice.account.AdminUserMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
+import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.LinkedHashMap;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -26,11 +32,17 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  * - 그 외 모든 화면은 로그인 필요
  */
 @Configuration(proxyBeanMethods = false)
+@EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    AuthenticationEventPublisher authenticationEventPublisher(ApplicationEventPublisher publisher) {
+        return new DefaultAuthenticationEventPublisher(publisher);
+    }
+
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http, AdminUserMapper users) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/css/**", "/js/**", "/img/**", "/favicon.ico", "/error").permitAll()
@@ -39,13 +51,11 @@ public class SecurityConfig {
                 .requestMatchers("/uploads/**", "/api/public/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/admin/users/**").hasRole(AdminRole.SUPER_ADMIN.name())
-                // SUPPORT 는 게시물 등록·수정만: 삭제·휴지통·상태 변경·통계는 관리자 이상
+                .requestMatchers("/admin/posts/*/purge", "/admin/posts/trash/empty", "/admin/posts/trash/life/*/*/purge").hasRole(AdminRole.SUPER_ADMIN.name())
+                // 서포터즈는 본인 게시글 작성·수정과 전체 통계 조회. 휴지통·상태 변경은 관리자 이상.
                 .requestMatchers("/admin/posts/trash", "/admin/posts/trash/**", "/admin/posts/*/delete", "/admin/posts/*/restore",
-                        "/admin/posts/*/purge", "/admin/posts/*/status", "/admin/stats/**").hasAnyRole(
+                        "/admin/posts/*/status").hasAnyRole(
                         AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
-                // 운영진 공지: 보기·닫기는 전원, 작성·수정·내리기·삭제는 최고관리자
-                .requestMatchers("/admin/notices/*/dismiss").authenticated()
-                .requestMatchers(HttpMethod.POST, "/admin/notices/**").hasRole(AdminRole.SUPER_ADMIN.name())
                 // 템플릿 관리: 보기·불러오기는 전원, 생성·수정·삭제는 관리자 이상
                 .requestMatchers(HttpMethod.POST, "/admin/templates/**").hasAnyRole(
                         AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
@@ -76,6 +86,7 @@ public class SecurityConfig {
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID"))
             .sessionManagement(session -> session.sessionFixation().migrateSession())
+            .addFilterAfter(new AdminSessionFilter(users), SecurityContextHolderFilter.class)
             .csrf(csrf -> csrf.ignoringRequestMatchers("/api/public/**", "/h2-console/**"))
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
         return http.build();

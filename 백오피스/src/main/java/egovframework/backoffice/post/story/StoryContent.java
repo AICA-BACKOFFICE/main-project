@@ -106,7 +106,7 @@ public class StoryContent {
                     require(out, "cat", "후기 분야(생활·수업·프로젝트·취업 성공·진로 고민)를 골라 주세요.");
                     require(out, "cohort", "기수를 입력해 주세요.");
                     require(out, "author", "이름을 입력해 주세요.");
-                    require(out, "track", "직군(트랙)을 입력해 주세요.");
+                    // 직군(트랙 · 반)은 후기에서는 비워도 돼요(2026-10-19 사용자 결정: 엑셀 후기에 반 정보 없음)
                     require(out, "summary", "굵은 첫 문단(요약)을 입력해 주세요.");
                     require(out, "body", "본문 문단을 하나 이상 입력해 주세요.");
                 }
@@ -149,8 +149,8 @@ public class StoryContent {
                 if (publishing) {
                     require(out, "summary", "요약을 입력해 주세요.");
                     require(out, "team", "팀을 입력해 주세요.");
-                    require(out, "type", "유형을 입력해 주세요.");
-                    require(out, "term", "기간을 입력해 주세요.");
+                    require(out, "type", "전공을 입력해 주세요.");
+                    require(out, "term", "기수 · 반을 입력해 주세요.");
                 }
             }
             case COHORT -> {

@@ -89,7 +89,7 @@
 
 </form>
 
-<form id="deleteForm" th:if="${form.id != null}" th:action="@{/admin/posts/{id}/delete(id=${form.id})}" method="post"
+<form id="deleteForm" th:if="${form.id != null and me.role.canManageContent()}" th:action="@{/admin/posts/{id}/delete(id=${form.id})}" method="post"
       data-confirm="이 게시물을 휴지통으로 이동할까요? 목록과 프론트에서 제외되며 휴지통에서 복원할 수 있습니다."></form>
 <form id="restoreForm" th:if="${form.id != null}" method="post" hidden></form>
 
@@ -101,7 +101,7 @@
      th:data-templates-url="@{/admin/templates/api}"
      th:data-templates-page="@{/admin/templates}"
      th:data-versions-url="${form.id != null} ? @{/admin/posts/{id}/versions(id=${form.id})} : ''"
-     th:data-post-id="${form.id}"></div>
+     th:data-post-id="${form.id}" th:data-can-manage-status="${me.role.canManageContent()}"></div>
 
 <script th:src="@{/js/admin.js}"></script>
 <script th:src="@{/js/preview-modal.js}"></script>
@@ -120,7 +120,7 @@
 <script th:src="@{/js/post/history.js}"></script>
 <!-- 사진 편집 · 썸네일 맞추기 창(카테고리 페이지 관리 편집기와 같은 파일) -->
 <script th:src="@{/js/page/photo-editor.js}"></script>
-<script th:src="@{/js/post/story-form.js}"></script>
+<script th:src="@{/js/post/story-form.js(v='20261019d')}"></script>
 <script>PostEditorPage.init(document.getElementById('editorConfig').dataset);</script>
 </body>
 </html>

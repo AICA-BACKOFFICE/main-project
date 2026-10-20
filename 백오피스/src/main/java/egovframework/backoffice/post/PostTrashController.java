@@ -1,5 +1,7 @@
 package egovframework.backoffice.post;
 
+import egovframework.backoffice.page.LifeTipService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,21 +21,27 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class PostTrashController {
 
     private final PostTrashService trash;
+    private final LifeTipService lifeTips;
 
-    public PostTrashController(PostTrashService trash) {
+    public PostTrashController(PostTrashService trash, LifeTipService lifeTips) {
         this.trash = trash;
+        this.lifeTips = lifeTips;
     }
 
+    /** 휴지통: tab = posts 선배들의 이야기 게시물(기본) · life 인사교 라이프 카드 */
     @GetMapping("/trash")
-    public String trash(@ModelAttribute("search") PostSearch search, Model model) {
+    public String trash(@ModelAttribute("search") PostSearch search, @RequestParam(defaultValue = "posts") String tab,
+                        Model model, HttpServletRequest request) {
         if (search.getSize() < 1 || search.getSize() > 100) {
             search.setSize(20);
         }
         model.addAttribute("menu", "trash");
+        model.addAttribute("tab", "life".equals(tab) ? "life" : "posts");
         model.addAttribute("result", trash.search(search));
         var overview = trash.overview();
         model.addAttribute("trashTotal", overview.count());
         model.addAttribute("trashSnapshot", overview.token());
+        model.addAttribute("lifeTrash", lifeTips.trash(request.getContextPath()));
         return "post/trash";
     }
 

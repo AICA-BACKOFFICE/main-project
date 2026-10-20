@@ -9,7 +9,7 @@
   <meta name="_csrf_header" th:content="${_csrf != null} ? ${_csrf.headerName} : 'X-CSRF-TOKEN'">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
   <link rel="stylesheet" th:if="${menu == 'dashboard' or menu == 'stats'}" th:href="@{/css/dashboard.css}">
-  <link rel="stylesheet" th:if="${menu == 'life-photos'}" th:href="@{/css/page/life-photos.css}">
+  <link rel="stylesheet" th:if="${menu == 'life-photos'}" th:href="@{/css/page/life-photos.css(v='20261019')}">
   <link rel="stylesheet" th:if="${menu == 'faq'}" th:href="@{/css/page/faq.css}">
 </head>
 <body>
@@ -34,24 +34,6 @@
     </div>
   </div>
 </header>
-
-<!-- ===== 운영진 공지 띠 (최고관리자가 올림 · 운영진 전체 표시 · 개인별 닫기) ===== -->
-<div class="notice-band" th:if="${liveNotices != null and !#lists.isEmpty(liveNotices)}">
-  <details class="notice-item" th:each="n, st : ${liveNotices}" th:classappend="'nl-' + ${n.levelCss}" th:open="${st.index == 0 and n.body != null and n.level == 'URGENT'}">
-    <summary>
-      <span class="nl-tag" th:text="${n.levelLabel}">안내</span>
-      <span class="nl-title" th:text="${n.title}">공지 제목</span>
-      <span class="nl-meta" th:text="${n.creatorName != null} ? ${n.creatorName} + ' · ' + ${#temporals.format(n.createdAt, 'MM-dd')} : ${#temporals.format(n.createdAt, 'MM-dd')}">작성자</span>
-      <span class="nl-more" th:if="${n.body != null}">자세히</span>
-      <form th:unless="${n.pinned}" th:action="@{/admin/notices/{id}/dismiss(id=${n.id})}" method="post" class="nl-close">
-        <input type="hidden" name="back" th:value="${currentPath}">
-        <button type="submit" title="이 공지 닫기 (나에게만)">✕</button>
-      </form>
-      <span th:if="${n.pinned}" class="nl-pin" title="고정 공지는 닫을 수 없습니다">고정</span>
-    </summary>
-    <div class="nl-body" th:if="${n.body != null}" th:text="${n.body}">본문</div>
-  </details>
-</div>
 
 <!-- ===== 본문 ===== -->
 <div class="wrap">
@@ -82,7 +64,7 @@
     </details>
 
     <nav class="lnb-menu">
-      <a class="lnb-home" th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'dashboard'} ? 'on'" th:href="@{/admin}">
+      <a class="lnb-home" th:if="${me != null}" th:classappend="${menu == 'dashboard'} ? 'on'" th:href="@{/admin}">
         <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>
         관리자 홈
       </a>
@@ -145,7 +127,7 @@
         <a th:classappend="${menu == 'media'} ? 'on'" th:href="@{/admin/media}">미디어 관리</a>
       </div>
 
-      <div class="lnb-group" th:if="${me != null and me.role.canManageContent()}">
+      <div class="lnb-group" th:if="${me != null}">
         <div class="lnb-title">
           <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
           통계

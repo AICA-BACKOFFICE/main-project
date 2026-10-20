@@ -20,8 +20,10 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
+import egovframework.backoffice.BackofficeApplication;
+import egovframework.testsupport.CmsMockMvcConfig;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockMultipartFile;
@@ -32,12 +34,14 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 /**
  * 로그인 → 카테고리 등록 → 게시물 등록·미리보기·게시 → 공개 API 조회·조회수 집계 흐름을 실제 컨텍스트로 검증한다.
  */
-@SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:backoffice-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
-        "backoffice.upload-dir=${java.io.tmpdir}/backoffice-test-uploads",
+@TestPropertySource(properties = {
+        "datasource.url=jdbc:h2:mem:backoffice-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+        "backoffice.pages.site-root=${java.io.tmpdir}/aica-backofficewebtest/site",
+        "backoffice.pages.data-dir=${java.io.tmpdir}/aica-backofficewebtest/data",
+        "backoffice.upload-dir=${java.io.tmpdir}/aica-backofficewebtest/uploads",
         "backoffice.initial-admin.password=test-pass-1234"
 })
-@AutoConfigureMockMvc
+@SpringJUnitWebConfig({BackofficeApplication.class, CmsMockMvcConfig.class})
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BackofficeWebTest {
 
@@ -68,6 +72,7 @@ class BackofficeWebTest {
     @Order(2)
     void initialSuperAdminCanLoginAndSeeDashboard() throws Exception {
         MockHttpSession session = login();
+        assertThat(jdbc.queryForObject("SELECT last_login_at FROM admin_users WHERE login_id='admin'", java.sql.Timestamp.class)).isNotNull();
         mvc.perform(get("/admin").session(session)).andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("누적 방문수")));
         mvc.perform(get("/admin/users").session(session)).andExpect(status().isOk());
@@ -351,42 +356,14 @@ class BackofficeWebTest {
 
     @Test
     @Order(9)
-    void superAdminNoticesShowForEveryoneAndCanBeDismissedPerUser() throws Exception {
+    void adminNoticesAreRemoved() throws Exception {
+        // 운영진 공지 기능은 없앴다(2026-10-19): 화면 · 상단 띠 · 표 모두 없음
         MockHttpSession session = login();
-        // 작성 → 모든 관리자 화면 상단에 표시
-        mvc.perform(post("/admin/notices").session(session).with(csrf())
-                        .param("title", "10/15 22시 서버 점검").param("body", "글 저장이 잠시 안 됩니다").param("level", "WARN").param("active", "true"))
-                .andExpect(status().is3xxRedirection());
-        String posts = mvc.perform(get("/admin/posts").session(session)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(posts).contains("notice-band").contains("10/15 22시 서버 점검").contains("nl-warn");
-        long noticeId = jdbc.queryForObject("SELECT id FROM notices WHERE title = '10/15 22시 서버 점검'", Long.class);
-
-        // 닫기 → 나에게만 사라진다 · 수정하면 다시 보인다
-        mvc.perform(post("/admin/notices/" + noticeId + "/dismiss").session(session).with(csrf()).param("back", "/admin/posts"))
-                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/admin/posts"));
-        assertThat(mvc.perform(get("/admin/posts").session(session)).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
-                .doesNotContain("10/15 22시 서버 점검");
-        mvc.perform(post("/admin/notices/" + noticeId).session(session).with(csrf())
-                        .param("title", "10/15 22시 서버 점검 (변경)").param("level", "URGENT").param("active", "true"))
-                .andExpect(status().is3xxRedirection());
-        assertThat(mvc.perform(get("/admin/posts").session(session)).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
-                .contains("10/15 22시 서버 점검 (변경)").contains("nl-urgent");
-
-        // 고정 공지는 닫아도 남는다 · 내리면 사라진다
-        mvc.perform(post("/admin/notices").session(session).with(csrf())
-                        .param("title", "항상 보이는 안내").param("pinned", "true").param("active", "true"))
-                .andExpect(status().is3xxRedirection());
-        long pinnedId = jdbc.queryForObject("SELECT id FROM notices WHERE title = '항상 보이는 안내'", Long.class);
-        mvc.perform(post("/admin/notices/" + pinnedId + "/dismiss").session(session).with(csrf())).andExpect(status().is3xxRedirection());
-        assertThat(mvc.perform(get("/admin").session(session)).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
-                .contains("항상 보이는 안내");
-        mvc.perform(post("/admin/notices/" + pinnedId + "/toggle").session(session).with(csrf()).param("active", "false"))
-                .andExpect(status().is3xxRedirection());
-        assertThat(mvc.perform(get("/admin").session(session)).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
-                .doesNotContain("항상 보이는 안내");
-        mvc.perform(post("/admin/notices/" + noticeId + "/delete").session(session).with(csrf())).andExpect(status().is3xxRedirection());
-        mvc.perform(post("/admin/notices/" + pinnedId + "/delete").session(session).with(csrf())).andExpect(status().is3xxRedirection());
+        mvc.perform(get("/admin/notices").session(session)).andExpect(status().isNotFound());
+        assertThat(mvc.perform(get("/admin/posts").session(session)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).doesNotContain("notice-band");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.tables WHERE LOWER(table_name) IN ('notices', 'notice_dismissals')",
+                Integer.class)).isZero();
     }
 
     @Test
@@ -524,7 +501,7 @@ class BackofficeWebTest {
         mvc.perform(get("/admin/users").session(editor)).andExpect(status().isForbidden());
         mvc.perform(get("/admin/posts").session(editor)).andExpect(status().isOk());
 
-        // SUPPORT 는 게시물 등록·수정만 가능: 삭제·상태 변경·카테고리 변경·통계는 403
+        // 서포터즈는 본인 글 작성·수정과 전체 통계 조회 가능. 상태 변경·사이트 편집·휴지통은 관리자 이상.
         mvc.perform(post("/admin/users").session(session).with(csrf())
                         .param("loginId", "support1@aica-gj.kr").param("name", "서포터").param("role", "SUPPORT")
                         .param("active", "true").param("password", "support-pass-1"))
@@ -532,14 +509,14 @@ class BackofficeWebTest {
         MockHttpSession support = (MockHttpSession) mvc.perform(
                         formLogin("/login").user("loginId", "support1@aica-gj.kr").password("password", "support-pass-1"))
                 .andExpect(authenticated()).andReturn().getRequest().getSession(false);
-        mvc.perform(get("/admin").session(support)).andExpect(redirectedUrl("/admin/posts"));
+        mvc.perform(get("/admin").session(support)).andExpect(status().isOk());
         MvcResult created = mvc.perform(post("/admin/posts").session(support).with(csrf())
-                        .param("title", "서포터 글").param("status", "PENDING").param("thumbnailMode", "AUTO")
+                        .param("title", "서포터 글").param("status", "DRAFT").param("thumbnailMode", "AUTO")
                         .param("blocksJson", "[{\"type\":\"paragraph\",\"align\":\"left\",\"html\":\"질문\"}]"))
                 .andExpect(status().is3xxRedirection()).andReturn();
         String supportPostId = created.getResponse().getRedirectedUrl().replaceAll("\\D", "");
         mvc.perform(post("/admin/posts/" + supportPostId).session(support).with(csrf())
-                        .param("title", "서포터 글 수정").param("status", "PENDING").param("thumbnailMode", "AUTO")
+                        .param("title", "서포터 글 수정").param("status", "DRAFT").param("thumbnailMode", "AUTO")
                         .param("blocksJson", "[{\"type\":\"paragraph\",\"align\":\"left\",\"html\":\"수정\"}]"))
                 .andExpect(status().is3xxRedirection());
         mvc.perform(post("/admin/posts/" + supportPostId + "/delete").session(support).with(csrf()))
@@ -550,14 +527,12 @@ class BackofficeWebTest {
                 .andExpect(status().isForbidden());
         mvc.perform(post("/admin/templates").session(support).with(csrf()).param("name", "x").param("blocksJson", "[]"))
                 .andExpect(status().isForbidden());
-        mvc.perform(post("/admin/notices").session(support).with(csrf()).param("title", "x"))
-                .andExpect(status().isForbidden());
         mvc.perform(get("/admin/templates").session(support)).andExpect(status().isOk());
         mvc.perform(get("/admin/templates/api").session(support)).andExpect(status().isOk());
         mvc.perform(get("/admin/media").session(support)).andExpect(status().isOk());
-        mvc.perform(get("/admin/stats").session(support)).andExpect(status().isForbidden());
+        mvc.perform(get("/admin/stats").session(support)).andExpect(status().isOk());
         String list = mvc.perform(get("/admin/posts").session(support)).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(list).contains("서포터 글 수정").contains("답변대기");
+        assertThat(list).contains("서포터 글 수정").contains("임시저장");
     }
 }

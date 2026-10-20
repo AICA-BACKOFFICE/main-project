@@ -397,6 +397,49 @@ public class CategoryPageService {
         }
     }
 
+    /**
+     * 게시물 데이터 사본(life/js/life-data.js 등 — 백오피스가 꺼져 있을 때 사이트가 쓰는 파일)을 쓴다. 내용이 같으면 쓰지 않는다.
+     * 그 페이지 폴더가 사이트에 없으면(테스트 · 사이트 없이 켠 경우) 건너뛴다. 썼거나 이미 같으면 true
+     */
+    public boolean writeSiteData(String relative, String content) {
+        Path target = siteRoot.resolve(relative).normalize();
+        Path pageDir = siteRoot.resolve(relative.split("/")[0]).normalize();
+        if (!target.startsWith(siteRoot) || !Files.isDirectory(pageDir)) {
+            return false;
+        }
+        byte[] bytes = content.getBytes(UTF_8);
+        try {
+            if (Files.isRegularFile(target) && java.util.Arrays.equals(Files.readAllBytes(target), bytes)) {
+                return true;
+            }
+        } catch (IOException e) {
+            log.debug("사이트 데이터 사본을 읽지 못해 다시 씁니다: {}", target, e);
+        }
+        writeAtomic(target, bytes);
+        log.info("사이트 데이터 사본을 다시 썼습니다: {}", target);
+        return true;
+    }
+
+    /**
+     * 게시물 데이터 사본(window.X = {…};)의 {…} 부분. DB가 비어 있는 새 컴퓨터에서 처음 켤 때 사본의 내용을 DB로 옮기는 데 쓴다.
+     * 사본이 없거나 읽지 못하면 비어 있음
+     */
+    public Optional<String> siteDataJson(String relative) {
+        Path target = siteRoot.resolve(relative).normalize();
+        if (!target.startsWith(siteRoot) || !Files.isRegularFile(target)) {
+            return Optional.empty();
+        }
+        try {
+            String js = Files.readString(target, UTF_8);
+            int eq = js.indexOf("= {");
+            int end = js.lastIndexOf('}');
+            return eq < 0 || end < eq ? Optional.empty() : Optional.of(js.substring(eq + 2, end + 1));
+        } catch (IOException e) {
+            log.warn("사이트 데이터 사본을 읽지 못했습니다: {}", target, e);
+            return Optional.empty();
+        }
+    }
+
     // ── 편집 화면 ──
 
     /** 사이트 폴더 안의 파일(편집 화면이 읽는 CSS·JS·그림 등). 사이트 폴더 밖이나 숨김 파일(.git 등)은 열지 않는다. */

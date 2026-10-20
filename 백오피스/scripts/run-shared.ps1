@@ -22,4 +22,4 @@ Write-Host ''
 
 # 3) 모든 네트워크 인터페이스에서 수신하도록 실행
 $env:BACKOFFICE_BIND = '0.0.0.0'
-& .\mvnw.cmd -B -ntp spring-boot:run
+& .\mvnw.cmd -B -ntp -Pdev compile exec:java

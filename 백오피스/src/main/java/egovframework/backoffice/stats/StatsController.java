@@ -19,9 +19,6 @@ public class StatsController {
     /** 대시보드(로그인 후 첫 화면) */
     @GetMapping("/admin")
     public String dashboard(@AuthenticationPrincipal CurrentAdmin me, Model model) {
-        if (me != null && !me.getRole().canManageContent()) {
-            return "redirect:/admin/posts";
-        }
         model.addAttribute("menu", "dashboard");
         StatsService.Summary monthly = statsService.summary(30);
         model.addAttribute("stats", monthly);

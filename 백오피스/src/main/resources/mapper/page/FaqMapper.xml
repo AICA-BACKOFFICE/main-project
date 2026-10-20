@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.backoffice.page.FaqMapper">
+
+  <select id="findAll" resultType="FaqItem">
+    SELECT id, category, question, answer, sort_order, created_at, updated_at
+      FROM faq_items
+     ORDER BY sort_order, id
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO faq_items (category, question, answer, sort_order)
+    VALUES (#{category}, #{question}, #{answer}, #{sortOrder})
+  </insert>
+
+  <update id="update">
+    UPDATE faq_items
+       SET category = #{category}, question = #{question}, answer = #{answer}, sort_order = #{sortOrder}, updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id}
+  </update>
+
+  <delete id="delete">
+    DELETE FROM faq_items WHERE id = #{id}
+  </delete>
+</mapper>

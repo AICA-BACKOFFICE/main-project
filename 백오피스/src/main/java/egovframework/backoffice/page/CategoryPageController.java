@@ -4,6 +4,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  *   <li>/admin/pages/{id}/edit — 실제 페이지를 화면 그대로 보며 고치는 전용 편집 화면(글쓰기처럼 전체 화면)</li>
  *   <li>/admin/pages/site/** — 사이트 폴더의 파일. 편집 화면(iframe)은 실제 페이지와 같은 상대 경로로 CSS·그림을 읽는다.
  *       ?__bo=edit 이면 편집 중인 글(임시저장본 우선)에 편집기를 붙여 보내고, ?__bo=preview 면 편집 중인 글을 그대로 보낸다.
- *       붙이지 않으면 사이트에 반영된 파일 그대로(‘반영된 페이지 보기’).</li>
+ *       붙이지 않으면 사이트에 반영된 파일 그대로(‘반영된 페이지 보기’). 페이지가 부르는 공개 API(api/public/…)는 이 서버의 /api/public/… 로 보낸다.</li>
  * </ul>
  * 저장·반영 API 는 {@link CategoryPageApiController}.
  */
@@ -36,6 +38,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class CategoryPageController {
 
     static final String SITE_PREFIX = "/admin/pages/site/";
+    private static final String PUBLIC_API = "api/public/";
     private static final MediaType HTML = new MediaType("text", "html", UTF_8);
     private static final Map<String, MediaType> TYPES = Map.ofEntries(
             Map.entry("html", HTML),
@@ -87,6 +90,12 @@ public class CategoryPageController {
     @GetMapping("/admin/pages/site/**")
     public ResponseEntity<?> site(HttpServletRequest request, @RequestParam(name = "__bo", required = false) String mode) throws IOException {
         String relative = relativePath(request);
+        // 사이트 페이지가 부르는 공개 API(../api/public/… — 게시물 관리의 글)는 이 서버의 API에서
+        if (relative.startsWith(PUBLIC_API)) {
+            String uri = request.getRequestURI();
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(request.getContextPath() + "/" + uri.substring(uri.indexOf(PUBLIC_API)))).build();
+        }
         if ("edit".equals(mode) || "preview".equals(mode)) {
             Optional<CategoryPage> page = service.pageForFile(relative);
             if (page.isPresent()) {

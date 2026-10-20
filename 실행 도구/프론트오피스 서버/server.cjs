@@ -1,7 +1,8 @@
 'use strict';
 // 인사교 프론트오피스(실제 사이트) 로컬 서버.
 // 사이트 폴더(기본 dist)를 배포될 모습 그대로 보여 주고, 파일이 바뀌면(백오피스에서 반영 등) 열린 화면을 자동으로 새로고침합니다.
-// 실행: node frontoffice/server.cjs [--port 4181] [--dist 사이트폴더] [--page about/] [--open]
+// 게시물(선배들의 이야기 등)은 페이지가 백오피스 공개 API(/api/public/…)에서 DB의 글을 받아 그려요. 이 서버가 그 요청을 백오피스로 넘겨요.
+// 실행: node frontoffice/server.cjs [--port 4181] [--dist 사이트폴더] [--api http://127.0.0.1:8080] [--page about/] [--open]
 const http = require('node:http');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
@@ -36,7 +37,25 @@ async function checkFrontOffice(port, timeout = 1200) {
   }
 }
 
-function start({ port = 4181, distRoot = path.resolve(__dirname, '..', 'dist'), log = message => console.log(message) } = {}) {
+// 백오피스 공개 API(/api/public/…)는 백오피스로 넘겨요. 백오피스가 꺼져 있으면 503 — 페이지는 사본(…-data.js)으로 그려요.
+async function proxyApi(req, res, apiBase) {
+  const noStore = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
+  let upstream;
+  try {
+    upstream = await fetch(new URL(req.url, apiBase), {
+      method: req.method, headers: { accept: req.headers.accept || '*/*' }, redirect: 'manual', signal: AbortSignal.timeout(5000)
+    });
+  } catch {
+    res.writeHead(503, { ...noStore, 'Content-Type': 'text/javascript; charset=utf-8' });
+    return res.end(req.method === 'HEAD' ? undefined : '/* 백오피스에 연결하지 못했어요. 페이지는 사본으로 보여요. */');
+  }
+  const body = Buffer.from(await upstream.arrayBuffer());
+  const type = upstream.headers.get('content-type');
+  res.writeHead(upstream.status, { ...noStore, ...(type ? { 'Content-Type': type } : {}) });
+  res.end(req.method === 'HEAD' ? undefined : body);
+}
+
+function start({ port = 4181, distRoot = path.resolve(__dirname, '..', 'dist'), apiBase = 'http://127.0.0.1:8080/', log = message => console.log(message) } = {}) {
   distRoot = path.resolve(distRoot);
   const allowedHosts = new Set([`127.0.0.1:${port}`, `localhost:${port}`]);
   const url = `http://127.0.0.1:${port}/`;
@@ -187,6 +206,7 @@ function start({ port = 4181, distRoot = path.resolve(__dirname, '..', 'dist'), 
         res.writeHead(200, { 'Content-Type': types['.js'], 'Cache-Control': 'no-cache' });
         return res.end(await fsp.readFile(LIVE_SCRIPT));
       }
+      if (pathname.startsWith('/api/public/')) return await proxyApi(req, res, apiBase);
       return await serveStatic(req, res, pathname);
     } catch (error) {
       console.error(error);
@@ -229,11 +249,12 @@ function runCli(args = process.argv.slice(2)) {
   };
   const port = Number(option('--port') || args.find(arg => /^\d+$/.test(arg)) || 4181);
   const distRoot = option('--dist');
+  const apiBase = option('--api') || process.env.BACKOFFICE_API;
   const open = args.includes('--open');
   // --page about/ 처럼 주면 그 페이지를 엽니다(여러 페이지 사이트).
   const pagePath = String(option('--page') || '').replace(/^\/+/, '');
   const openUrl = base => new URL(pagePath, base).href;
-  return start({ port, ...(distRoot ? { distRoot } : {}) }).then(front => {
+  return start({ port, ...(distRoot ? { distRoot } : {}), ...(apiBase ? { apiBase } : {}) }).then(front => {
     console.log(`프론트오피스(실제 사이트): ${openUrl(front.url)}`);
     console.log(`Preview: ${front.url} (Ctrl+C to stop)`);
     console.log('백오피스에서 ‘사이트에 반영’하면 열린 화면이 자동으로 새로고침돼요. 종료하려면 Ctrl+C를 누르세요.');

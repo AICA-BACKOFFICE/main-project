@@ -1,6 +1,7 @@
 package egovframework.backoffice.post.version;
 
 import egovframework.backoffice.account.CurrentAdmin;
+import egovframework.backoffice.post.PostService;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -23,14 +24,17 @@ public class PostVersionController {
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final PostVersionService versions;
+    private final PostService posts;
 
-    public PostVersionController(PostVersionService versions) {
+    public PostVersionController(PostVersionService versions, PostService posts) {
         this.versions = versions;
+        this.posts = posts;
     }
 
     @GetMapping
     @ResponseBody
-    public List<Map<String, Object>> list(@PathVariable Long id) {
+    public List<Map<String, Object>> list(@PathVariable Long id, @AuthenticationPrincipal CurrentAdmin me) {
+        posts.getForEditing(id, me.getId());
         List<Map<String, Object>> out = new ArrayList<>();
         for (PostVersion v : versions.versionsOf(id)) {
             out.add(summary(v));
@@ -40,7 +44,8 @@ public class PostVersionController {
 
     @GetMapping("/{versionId}")
     @ResponseBody
-    public Map<String, Object> detail(@PathVariable Long id, @PathVariable Long versionId) {
+    public Map<String, Object> detail(@PathVariable Long id, @PathVariable Long versionId, @AuthenticationPrincipal CurrentAdmin me) {
+        posts.getForEditing(id, me.getId());
         PostVersion v = versions.version(id, versionId);
         Map<String, Object> m = summary(v);
         m.put("summary", v.getSummary());

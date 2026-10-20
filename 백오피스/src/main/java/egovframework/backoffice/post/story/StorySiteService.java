@@ -41,7 +41,8 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.core.annotation.Order;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
@@ -52,10 +53,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * 선배들의 이야기 사이트 반영. 게시중인 고정 양식 글(후기 · 인터뷰 · 프로젝트 · 기수 기록)을 최신 게시 순으로 모아
- * 사이트 폴더의 stories/js/stories-data.js 로 쓴다. 사이트(stories-render.js)가 이 파일로 목록 · 글 창 · 맨 위 대표 이야기를 그린다.
+ * 선배들의 이야기 사이트 반영. 게시중인 고정 양식 글(후기 · 인터뷰 · 프로젝트 · 기수 기록)을 DB에서 최신 게시 순으로 모은다.
+ * 사이트(stories-render.js)는 공개 API({@link #publishedScript()}, /api/public/stories.js)로 이 내용을 받아 목록 · 글 창 · 한눈에 보기를 그린다.
+ * 백오피스가 꺼져 있어도 보이도록 같은 내용을 사이트 폴더의 stories/js/stories-data.js 사본으로도 쓴다.
  * <ul>
- *   <li>게시물이 바뀌면(저장 · 게시 · 미게시 · 휴지통 · 복원 · 완전 삭제 · 버전 복원) 커밋 뒤 바로 다시 쓴다. 내용이 같으면 쓰지 않는다.</li>
+ *   <li>게시물이 바뀌면(저장 · 게시 · 미게시 · 휴지통 · 복원 · 완전 삭제 · 버전 복원) 커밋 뒤 바로 사본을 다시 쓴다. 내용이 같으면 쓰지 않는다.</li>
  *   <li>관리자가 올린 사진(/uploads/…)은 사이트의 stories/assets/uploads/post-… 로 복사해 사이트만으로도 보이게 한다.</li>
  *   <li>처음 켤 때 사이트 파일에만 있던 글(관리자 글 번호가 없는 글)을 게시물로 가져온다. 가져오기 전에는 사이트 파일을 덮어쓰지 않는다.</li>
  *   <li>미리보기: 사이트 화면 그대로, 데이터 파일만 '이 글을 넣은 내용'으로 바꿔 보여 준다(사이트 파일은 건드리지 않음).</li>
@@ -73,7 +75,11 @@ public class StorySiteService {
             StoryKind.PROJECT, "stories/projects.html", StoryKind.COHORT, "stories/cohorts.html");
     static final String UPLOAD_DIR = "stories/assets/uploads";
     static final String COPY_PREFIX = "post-";
-    private static final String HEADER = "/* 선배들의 이야기 글 데이터: 관리자 페이지(게시물 관리)가 게시·미게시·휴지통·복원할 때마다 다시 써요. 직접 고치지 마세요. */\n";
+    private static final String HEADER = "/* 선배들의 이야기 글 사본: 사이트는 백오피스 공개 API(/api/public/stories.js)로 DB의 글을 받아 그려요. "
+            + "이 파일은 백오피스가 꺼져 있을 때 쓰는 사본이라 게시물 관리가 게시·미게시·휴지통·복원할 때마다 다시 써요. 직접 고치지 마세요. */\n";
+    private static final String API_HEADER = "/* 선배들의 이야기 글: 백오피스 DB에서 지금 게시중인 글(게시물 관리) */\n";
+    /** 공개 API 주소(사이트 기준). 사이트 페이지는 ../api/public/stories.js 로 부른다 */
+    public static final String API_SCRIPT = "api/public/stories.js";
     private static final long PREVIEW_TTL_MS = 3 * 60 * 60 * 1000L;
     private static final int PREVIEW_MAX = 100;
     private static final Map<String, String> TYPES = Map.ofEntries(
@@ -149,7 +155,7 @@ public class StorySiteService {
         }
         Set<String> copies = new HashSet<>();
         Map<String, Object> data = build(posts.findPublishedStories(), null, src -> publishImage(src, copies));
-        String js = toJs(data);
+        String js = toJs(HEADER, data);
         String old = Files.isRegularFile(file) ? read(file) : null;
         if (!js.equals(old)) {
             writeAtomic(file, js.getBytes(UTF_8));
@@ -157,6 +163,20 @@ public class StorySiteService {
         }
         pruneCopies(copies);
         return true;
+    }
+
+    // ── 공개 API ──
+
+    /** 지금 게시중인 글(DB). 사진은 사이트 폴더에 복사해 둔 사본 주소로(사본이 없으면 지금 복사) */
+    public synchronized Map<String, Object> publishedData() {
+        Map<String, Object> data = build(posts.findPublishedStories(), null, src -> publishImage(src, new HashSet<>()));
+        data.put("source", "backoffice-api");
+        return data;
+    }
+
+    /** 사이트 페이지가 &lt;script&gt;로 바로 쓰는 모양: window.STORIES_DATA = {…} */
+    public String publishedScript() {
+        return toJs(API_HEADER, publishedData());
     }
 
     /** 사이트 데이터 내용(목록 4개). extra 가 있으면 그 글을 미리보기용으로 끼워 넣는다 */
@@ -298,9 +318,9 @@ public class StorySiteService {
         }
     }
 
-    private String toJs(Map<String, Object> data) {
+    private String toJs(String header, Map<String, Object> data) {
         try {
-            return HEADER + "window.STORIES_DATA = " + json.writerWithDefaultPrettyPrinter().writeValueAsString(data).replace("\r\n", "\n") + ";\n";
+            return header + "window.STORIES_DATA = " + json.writerWithDefaultPrettyPrinter().writeValueAsString(data).replace("\r\n", "\n") + ";\n";
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -320,7 +340,8 @@ public class StorySiteService {
 
     // ── 사이트에 있던 글 가져오기 ──
 
-    @EventListener(ApplicationReadyEvent.class)
+    @EventListener(ContextRefreshedEvent.class)
+    @Order(2)
     public void onReady() {
         try {
             int n = importSiteStories();
@@ -485,13 +506,13 @@ public class StorySiteService {
                     .ifPresent(e -> previews.remove(e.getKey()));
         }
         String token = UUID.randomUUID().toString().replace("-", "");
-        previews.put(token, new Preview(toJs(data), hash, note, now));
+        previews.put(token, new Preview(toJs(HEADER, data), hash, note, now));
         // 그 종류의 페이지가 있으면 그 페이지로(예전 한 페이지 사이트면 한 페이지로)
         String target = Files.isRegularFile(pages.siteRoot().resolve(KIND_PAGES.get(kind))) ? KIND_PAGES.get(kind) : STORIES_PAGE;
         return "/admin/posts/story-preview/" + token + "/" + target + hash;
     }
 
-    /** 미리보기 화면의 파일: 데이터 파일은 미리보기 내용으로, 선배들의 이야기 페이지에는 안내 띠를 붙이고, 나머지는 사이트 파일 그대로 */
+    /** 미리보기 화면의 파일: 데이터(사본 · 공개 API)는 미리보기 내용으로, 선배들의 이야기 페이지에는 안내 띠를 붙이고, 나머지는 사이트 파일 그대로 */
     public ResponseEntity<byte[]> previewFile(String token, String relative) {
         Preview preview = token == null ? null : previews.get(token);
         if (preview == null || System.currentTimeMillis() - preview.createdAt() > PREVIEW_TTL_MS) {
@@ -503,7 +524,8 @@ public class StorySiteService {
         if (path.isEmpty() || path.equals("stories") || path.equals("stories/")) {
             path = STORIES_PAGE;
         }
-        if (path.equals(DATA_FILE)) {
+        // 사본 · 공개 API 둘 다 '이 글을 넣은 내용'으로(페이지는 사본 다음에 API를 불러 덮어씀)
+        if (path.equals(DATA_FILE) || path.equals(API_SCRIPT)) {
             return file(preview.js().getBytes(UTF_8), "js");
         }
         Optional<Path> file = pages.siteFile(path);

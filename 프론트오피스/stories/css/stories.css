@@ -717,3 +717,32 @@ body .stories-page .st h3{font-size:16px}
 /* 끝 줄까지 적어야 함(절대 위치 자식은 auto면 격자 전체가 기준) */
 }
 /* 기수별 이모저모 카드: 같은 줄 카드 높이를 맞추고 기수 · 날짜 줄을 카드 맨 아래로(설명이 3줄인 카드만 줄이 23px 내려가 있던 것). 설명과의 간격 14px은 그대로 */
+
+/* ───────── 백오피스 글: 관리자가 맞춘 썸네일 · 글 안 사진 넘김 ───────── */
+/* 썸네일 맞추기(백오피스 게시물 관리에서 관리자가 맞춘 썸네일): 카드 틀 안에서 보일 위치(--fx · --fy)와 확대(--z). 마우스를 올렸을 때 커지는 효과도 그대로 */
+.stories-page img[data-fit]{object-position:var(--fx,50%) var(--fy,50%);transform-origin:var(--fx,50%) var(--fy,50%);scale:var(--z,1)}
+.stories-page a:hover .ph img[data-fit]{scale:calc(var(--z,1) * 1.05)}
+/* 사진 여러 장: 옆으로 넘겨 봐요(한 장이면 .one). 사진은 잘리지 않게 전체를(남는 곳은 회색 바탕) */
+.stories-page .phs{position:relative;margin:28px 0;border-radius:16px;overflow:hidden;background:#EEF0F3}
+.stories-page .phs-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.stories-page .phs-track::-webkit-scrollbar{display:none}
+.stories-page .phs-track:focus-visible{outline:3px solid #E5197F;outline-offset:-3px}
+.stories-page .phs-slide{flex:0 0 100%;margin:0;scroll-snap-align:center;scroll-snap-stop:always}
+.stories-page .phs-img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain}
+.stories-page .phs.one .phs-img{aspect-ratio:auto;max-height:72vh}
+.stories-page .phs-btn{position:absolute;top:50%;z-index:2;display:grid;place-items:center;width:42px;height:42px;margin-top:-21px;border:0;border-radius:50%;background:rgba(255,255,255,.94);color:#16171A;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer;transition:opacity .2s}
+.stories-page .phs-btn svg{width:20px;height:20px}
+.stories-page .phs-btn.prev{left:12px}
+.stories-page .phs-btn.next{right:12px}
+.stories-page .phs-btn:hover{background:#fff}
+.stories-page .phs-btn:disabled{opacity:0;pointer-events:none}
+.stories-page .phs-btn:focus-visible{outline:3px solid #E5197F;outline-offset:2px}
+.stories-page .phs-count{position:absolute;right:12px;bottom:12px;z-index:2;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.62);color:#fff;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.stories-page .phs-count b{font-weight:700}
+/* 자리마다: 인터뷰 · 프로젝트 상세 맨 위, 기수 기록 글 창 사진 칸(어두운 바탕) */
+.stories-page .ivhero .phs{margin:0;border-radius:0}
+.stories-page .cv3-m-media .phs{position:absolute;inset:0;margin:0;border-radius:0;background:#0B1020}
+.stories-page .cv3-m-media .phs-track,.stories-page .cv3-m-media .phs-slide{height:100%}
+.stories-page .cv3-m-media .phs-img{height:100%;aspect-ratio:auto}
+.stories-page .cv3-m-body .cv3-m-more{margin-top:10px}
+@media (max-width:640px){.stories-page .phs-btn{width:36px;height:36px;margin-top:-18px}.stories-page .phs-btn.prev{left:8px}.stories-page .phs-btn.next{right:8px}}

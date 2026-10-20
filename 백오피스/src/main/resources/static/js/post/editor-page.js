@@ -113,6 +113,7 @@
 
     // ---- 공개 상태 · 저장 버튼 ----
     var statusSel = document.getElementById('statusSelect');
+    var canManageStatus = cfg.canManageStatus !== 'false';
     var banner = document.getElementById('statusBanner');
     var BANNER = {
       DRAFT: ['임시저장', '아직 게시되지 않은 콘텐츠입니다. 저장만으로 공개되지 않습니다.'],
@@ -126,11 +127,15 @@
       banner.setAttribute('data-status', v);
       document.getElementById('bannerLabel').textContent = BANNER[v][0];
       document.getElementById('bannerText').textContent = BANNER[v][1];
-      document.getElementById('btnSave').textContent = v === 'PUBLISHED' ? '발행' : '저장';
+      document.getElementById('btnSave').textContent = v === 'PUBLISHED' && canManageStatus ? '발행' : '저장';
     }
     statusSel.value = statusEl.value || 'DRAFT';
     if (!statusSel.value) statusSel.value = 'DRAFT';
     syncStatus();
+    if (!canManageStatus && statusSel.value !== 'DRAFT') {
+      document.getElementById('btnDraft').textContent = '현재 상태로 저장';
+      document.getElementById('btnDraft').title = '게시 상태를 유지하고 변경 내용을 저장합니다 (Ctrl+S)';
+    }
     statusSel.addEventListener('change', function () { syncStatus(); markDirty(); });
 
     // 보내기 전에 로그인부터 확인해요. 관리자 서버를 다시 켜 로그인이 풀린 채 보내면 쓰던 글이 사라지니,
@@ -143,7 +148,8 @@
       });
     }
     document.getElementById('btnDraft').addEventListener('click', function () {
-      statusSel.value = 'DRAFT'; syncStatus();
+      if (canManageStatus) statusSel.value = 'DRAFT';
+      syncStatus();
       submitChecked();
     });
     document.getElementById('btnSave').addEventListener('click', function () {

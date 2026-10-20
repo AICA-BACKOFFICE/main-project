@@ -62,13 +62,13 @@
           <!--/* 제목 · 사진을 누르면 사이트에서 보이는 모습이 미리보기 창으로(창 안 '수정하기' · 오른쪽 '수정'으로 수정 화면) */-->
           <div class="title-cell">
             <a class="thumb-link" th:href="@{/admin/posts/{id}/preview(id=${p.id})}" target="_blank" rel="noopener" data-preview
-               th:data-title="${p.title}" th:data-edit="@{/admin/posts/{id}/edit(id=${p.id})}" tabindex="-1" aria-hidden="true">
+               th:data-title="${p.title}" th:data-edit="${me.role.canManageContent() or p.authorId == me.id} ? @{/admin/posts/{id}/edit(id=${p.id})} : null" tabindex="-1" aria-hidden="true">
               <img class="thumb" th:if="${p.thumbnailUrl != null}" th:src="${p.thumbnailUrl}" alt="">
               <span class="thumb empty" th:if="${p.thumbnailUrl == null}">no img</span>
             </a>
             <div>
               <a class="t" th:href="@{/admin/posts/{id}/preview(id=${p.id})}" target="_blank" rel="noopener" data-preview
-                 th:data-title="${p.title}" th:data-edit="@{/admin/posts/{id}/edit(id=${p.id})}" th:text="${p.title}" title="눌러서 미리보기">제목</a>
+                 th:data-title="${p.title}" th:data-edit="${me.role.canManageContent() or p.authorId == me.id} ? @{/admin/posts/{id}/edit(id=${p.id})} : null" th:text="${p.title}" title="눌러서 미리보기">제목</a>
               <div class="s" th:text="${p.summary}"></div>
             </div>
           </div>
@@ -80,7 +80,7 @@
         <td class="muted nowrap" th:text="${#temporals.format(p.updatedAt, 'yyyy-MM-dd HH:mm')}">-</td>
         <td class="right col-act">
           <div class="actions">
-            <a class="btn ghost xs" th:href="@{/admin/posts/{id}/edit(id=${p.id})}">수정</a>
+            <a class="btn ghost xs" th:if="${me.role.canManageContent() or p.authorId == me.id}" th:href="@{/admin/posts/{id}/edit(id=${p.id})}">수정</a>
             <form th:if="${me.role.canManageContent() and p.status.name() != 'PUBLISHED'}"
                   th:action="@{/admin/posts/{id}/status(id=${p.id})}" method="post">
               <input type="hidden" name="status" value="PUBLISHED">

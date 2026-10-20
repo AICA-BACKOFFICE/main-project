@@ -7,7 +7,9 @@
     var dt=(a.querySelector('.dt')||{}).textContent||'', m=dt.match(/(\d{4})\.\s*(\d{2})\.\s*(\d{2})/);
     return {coh:parseInt((a.querySelector('.cg')||{}).textContent,10)||0, date:dt.trim(), y:m?+m[1]:0, mo:m?+m[2]:0,
       title:(a.querySelector('h3')||{}).textContent||'', sum:(a.querySelector('p')||{}).textContent||'',
-      illu:a.querySelector('.illu'), yt:a.getAttribute('data-yt')||''};
+      illu:a.querySelector('.illu'), yt:a.getAttribute('data-yt')||'',
+      /* 백오피스 글: 글 번호(#st-번호로 열기) · 본문 문단 · 사진 여러 장(stories-render.js가 카드 안 template에 담아 둠) */
+      id:a.getAttribute('data-st')||'', body:a.querySelector('template.st-body'), photos:a.querySelector('template.st-photos')};
   });
   var COHS=[]; D.forEach(function(d){ var k=d.coh>=6?String(d.coh):'3-5'; if(COHS.indexOf(k)<0) COHS.push(k); });
   /* 가장 최근 기수(지금은 7기)만 인스타 스토리 그라데이션 링, 나머지는 회색 링(10-14) */
@@ -98,7 +100,9 @@
   var M=document.querySelector('.cv3-m'), cur=0, last=null;
   function fill(){
     var L=list(), d=L[cur]; if(!d) return;
-    var md=M.querySelector('.cv3-m-media'); md.innerHTML=''; md.classList.remove('can-zoom'); md.appendChild(media(d));
+    var md=M.querySelector('.cv3-m-media'); md.innerHTML=''; md.classList.remove('can-zoom');
+    if(!d.yt&&d.photos){ md.appendChild(d.photos.content.cloneNode(true)); }   /* 사진이 여러 장이면 넘겨 보기(백오피스) */
+    else { md.appendChild(media(d));
     if(d.yt){ var id=(d.yt.match(/[?&]v=([^&]+)/)||d.yt.match(/youtu\.be\/([^?]+)/)||[])[1];
       var p=document.createElement('button'); p.type='button'; p.className='cv3-play'; p.setAttribute('aria-label','영상 재생'); p.innerHTML='<i></i>';
       p.onclick=function(){ md.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&rel=0&playsinline=1" title="'+d.title.replace(/"/g,'')+'" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>'; };
@@ -107,10 +111,14 @@
       var z=document.createElement('button'); z.type='button'; z.className='cv3-zoom'; z.setAttribute('aria-label','사진 크게 보기');
       z.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>';
       z.onclick=openZ; md.firstChild.addEventListener('click',openZ); md.classList.add('can-zoom'); md.appendChild(z); }
+    }
     M.querySelector('.cv3-av').innerHTML='<b>'+d.coh+'</b>';
     M.querySelector('.cv3-m-acc').textContent=acc(d.coh);
     M.querySelector('h3').innerHTML='<b>'+acc(d.coh)+'</b> '+d.title;
     M.querySelector('.cv3-m-body p').textContent=d.sum;
+    /* 관리자가 쓴 본문 문단(있으면 요약 아래에) */
+    var bd=M.querySelector('.cv3-m-body'); [].slice.call(bd.querySelectorAll('.cv3-m-more')).forEach(function(x){ x.remove(); });
+    if(d.body) [].slice.call(d.body.content.querySelectorAll('p')).forEach(function(p){ var q=document.createElement('p'); q.className='cv3-m-more'; q.textContent=p.textContent; bd.appendChild(q); });
     M.querySelector('time').textContent=d.date;
     M.querySelectorAll('.cv3-like,.cv3-save').forEach(function(b){b.setAttribute('aria-pressed','false')});
     M.querySelector('.no').textContent=(cur+1)+' / '+L.length;
@@ -136,4 +144,14 @@
   document.addEventListener('keydown',function(e){ if(M.hidden) return; if(e.key==='Escape'){ if(!Z.hidden) closeZ(); else closeM(); return; } if(e.key==='ArrowLeft') M.querySelector('.pv').click(); if(e.key==='ArrowRight') M.querySelector('.nx').click(); if(!Z.hidden) zfill(); });
 
   draw();
+
+  /* 주소가 #st-글번호면(미리보기 · 한눈에 보기 · 공유 링크) 그 기록의 기수를 골라 글 창을 바로 열어요(백오피스) */
+  function openHash(){
+    var m=/^#st-(.+)$/.exec(location.hash); if(!m) return;
+    var id=decodeURIComponent(m[1]), d=D.filter(function(x){return x.id===id})[0]; if(!d) return;
+    st.coh=d.coh>=6?String(d.coh):'3-5'; st.mo=0; st.pg=1; st.diff=false; draw();
+    var i=list().indexOf(d); if(i>=0) openM(i);
+  }
+  openHash();
+  addEventListener('hashchange',openHash);
 })();

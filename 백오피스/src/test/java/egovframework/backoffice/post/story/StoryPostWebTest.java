@@ -23,8 +23,10 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
+import egovframework.backoffice.BackofficeApplication;
+import egovframework.testsupport.CmsMockMvcConfig;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockMultipartFile;
@@ -35,14 +37,14 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
  * 선배들의 이야기 게시물: 사이트에 있던 글 가져오기 → 고정 양식으로 쓰고 미리보기 → 발행하면 사이트 데이터에 바로 →
  * 미게시 · 휴지통이면 내려가고 복원하면 다시 → 사진은 사이트로 복사, 위험한 값은 버림. 임시 사이트 폴더로 검증한다.
  */
-@SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:backoffice-story-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+@TestPropertySource(properties = {
+        "datasource.url=jdbc:h2:mem:backoffice-story-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
         "backoffice.upload-dir=${java.io.tmpdir}/aica-story-test/uploads",
         "backoffice.pages.site-root=${java.io.tmpdir}/aica-story-test/site",
         "backoffice.pages.data-dir=${java.io.tmpdir}/aica-story-test/data",
         "backoffice.initial-admin.password=test-pass-1234"
 })
-@AutoConfigureMockMvc
+@SpringJUnitWebConfig({BackofficeApplication.class, CmsMockMvcConfig.class})
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StoryPostWebTest {
 
@@ -389,6 +391,43 @@ class StoryPostWebTest {
         try (Stream<Path> left = Files.list(DATA.getParent())) {
             assertThat(left.filter(p -> p.getFileName().toString().endsWith(".tmp"))).isEmpty();
         }
+    }
+
+    @Test
+    @Order(8)
+    void publicApiServesWhatIsPublishedInTheDatabase() throws Exception {
+        MockHttpSession session = login();
+        long id = save(session, null, "review", "API로 보이는 후기", "PUBLISHED", "{\"cat\":\"job\",\"cohort\":7,\"author\":\"박ㅇㅇ\","
+                + "\"track\":\"AI 모델링\",\"summary\":\"요약.\",\"body\":[\"본문\"]}");
+        // 로그인 없이(사이트 방문자) JSON · 스크립트 둘 다, 캐시 없이 DB의 지금 글
+        String body = mvc.perform(get("/api/public/stories")).andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+                .andReturn().getResponse().getContentAsString(UTF_8);
+        JsonNode api = json.readTree(body);
+        assertThat(api.get("source").asText()).isEqualTo("backoffice-api");
+        assertThat(api.get("reviews").get(0).get("id").asLong()).isEqualTo(id);
+        assertThat(api.get("reviews").get(0).get("title").asText()).isEqualTo("API로 보이는 후기");
+        String js = mvc.perform(get("/api/public/stories.js")).andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().contentTypeCompatibleWith("text/javascript"))
+                .andReturn().getResponse().getContentAsString(UTF_8);
+        assertThat(js).contains("window.STORIES_DATA = ").contains("API로 보이는 후기");
+        // 사본과 같은 글(출처 표시만 다름)
+        JsonNode copy = site();
+        ((com.fasterxml.jackson.databind.node.ObjectNode) api).put("source", copy.get("source").asText());
+        assertThat(api).isEqualTo(copy);
+
+        // 미게시하면 API에서도 바로 빠진다
+        mvc.perform(post("/admin/posts/" + id + "/status").session(session).with(csrf()).param("status", "HIDDEN")).andExpect(status().is3xxRedirection());
+        assertThat(mvc.perform(get("/api/public/stories.js")).andReturn().getResponse().getContentAsString(UTF_8)).doesNotContain("API로 보이는 후기");
+
+        // 페이지 편집 화면 · 미리보기 안에서 부르는 ../api/public/stories.js 도 같은 길로
+        mvc.perform(get("/admin/pages/site/api/public/stories.js").session(session)).andExpect(status().isFound())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/api/public/stories.js"));
+        String to = mvc.perform(get("/admin/posts/" + id + "/preview").session(session)).andExpect(status().is3xxRedirection())
+                .andReturn().getResponse().getRedirectedUrl();
+        String dir = to.substring(0, to.indexOf("stories/"));
+        assertThat(mvc.perform(get(dir + "api/public/stories.js").session(session)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(UTF_8)).contains("API로 보이는 후기");
     }
 
     private String upload(MockHttpSession session, String name, String base64) throws Exception {

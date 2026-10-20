@@ -299,3 +299,7 @@ html[data-nav="side"] .stories-hub{background:var(--surface)}
 @container hub (max-width:640px){.hb-ivg::after{top:-30px}}
 /* 섹션 제목 크기를 다른 페이지(후기 · 라이프 · 체크) 섹션 제목과 같게(10-14): 28 → clamp(28px,2.8vw,38px) */
 .stories-hub .hb-hd.sh h2{font-size:clamp(28px,2.8vw,38px);line-height:1.22;letter-spacing:-.025em}
+
+/* ───────── 백오피스 글: 관리자가 맞춘 썸네일 ───────── */
+/* 썸네일 맞추기(백오피스 게시물 관리에서 관리자가 맞춘 썸네일): 카드 틀 안에서 보일 위치(--fx · --fy)와 확대(--z). 마우스를 올렸을 때 커지는 효과도 그대로 */
+.stories-page img[data-fit]{object-position:var(--fx,50%) var(--fy,50%);transform-origin:var(--fx,50%) var(--fy,50%);scale:var(--z,1)}

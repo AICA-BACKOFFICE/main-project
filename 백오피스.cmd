@@ -3,7 +3,8 @@ chcp 65001 >nul
 title 인사교 백오피스 (관리자 페이지)
 rem 최종 백오피스: 이 폴더의 '백오피스'(관리자 페이지 · 카테고리 페이지 관리 · 게시물 관리).
 rem 고치는 사이트는 이 폴더의 '프론트오피스'예요. 편집 화면의 '반영된 페이지' 버튼은 프론트오피스(4181)를 열어요.
-rem 필요한 것: Java 17 이상. 처음 켤 때는 인터넷으로 Maven과 부품을 받아서 몇 분 걸려요.
+rem 관리자 데이터는 PostgreSQL에 저장돼요: 처음 켤 때 설치된 PostgreSQL 프로그램으로 백오피스 전용 서버(백오피스\data\postgres, 포트 5433)를 만들고, 켤 때마다 같이 켜요.
+rem 필요한 것: Java 17 이상, PostgreSQL 16 이상(설치만 — postgres 비밀번호는 안 써요). 처음 켤 때는 인터넷으로 Maven과 부품을 받아서 몇 분 걸려요.
 cd /d "%~dp0백오피스"
 rem Java 찾기: JAVA_HOME → Android Studio에 들어 있는 Java → PATH의 java
 if defined JAVA_HOME if not exist "%JAVA_HOME%\bin\java.exe" set "JAVA_HOME="
@@ -27,7 +28,9 @@ echo 프론트오피스: %BACKOFFICE_FRONT_URL%  (프론트오피스.cmd로 켜�
 rem 서버가 준비되면 바로 브라우저로 관리자 페이지를 열어요(BACKOFFICE_NO_BROWSER=1 이면 열지 않음).
 rem 그사이 이미 열어 둔 창에서 관리자 화면(로그인 화면 포함)을 열었으면 새 창은 열지 않아요(/launcher/browser-seen).
 if not "%BACKOFFICE_NO_BROWSER%"=="1" start "" /b powershell -NoProfile -WindowStyle Hidden -Command "$w = New-Object Net.WebClient; $w.Proxy = $null; for ($i = 0; $i -lt 2400; $i++) { try { $s = $w.DownloadString('http://127.0.0.1:%BACKOFFICE_PORT%/launcher/browser-seen'); if ($s -notmatch 'true') { Start-Process 'http://127.0.0.1:%BACKOFFICE_PORT%/' }; break } catch { Start-Sleep -Milliseconds 500 } }"
-call .\mvnw.cmd -B -ntp -Denforcer.skip=true spring-boot:run
+rem 지운 파일(없앤 기능의 화면 · DB 연결 파일 등)이 예전 빌드 결과물(target\classes)에 남아 있으면 백오피스가 켜지지 않아요. 켤 때마다 비우고 새로 만들어요.
+if exist "target\classes" rmdir /s /q "target\classes"
+call .\mvnw.cmd -B -ntp -Pdev compile exec:java
 pause
 exit /b
 :nojava

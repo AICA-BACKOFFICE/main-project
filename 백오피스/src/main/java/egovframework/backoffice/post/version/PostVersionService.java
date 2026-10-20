@@ -5,6 +5,7 @@ import egovframework.backoffice.post.Post;
 import egovframework.backoffice.post.PostAssembler;
 import egovframework.backoffice.post.PostForm;
 import egovframework.backoffice.post.PostMapper;
+import egovframework.backoffice.post.PostAccess;
 import egovframework.backoffice.post.story.StoryChangedEvent;
 import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,12 +27,14 @@ public class PostVersionService {
     private final PostMapper posts;
     private final PostAssembler assembler;
     private final ApplicationEventPublisher events;
+    private final PostAccess access;
 
-    public PostVersionService(PostVersionMapper mapper, PostMapper posts, PostAssembler assembler, ApplicationEventPublisher events) {
+    public PostVersionService(PostVersionMapper mapper, PostMapper posts, PostAssembler assembler, ApplicationEventPublisher events, PostAccess access) {
         this.mapper = mapper;
         this.posts = posts;
         this.assembler = assembler;
         this.events = events;
+        this.access = access;
     }
 
     private Post livePost(Long postId) {
@@ -69,6 +72,7 @@ public class PostVersionService {
      */
     public void restore(Long postId, Long versionId, Long adminId) {
         Post post = livePost(postId);
+        access.requireEditable(post, adminId);
         PostVersion v = version(postId, versionId);
         record(post, PostVersion.RESTORE_BACKUP, adminId);
 

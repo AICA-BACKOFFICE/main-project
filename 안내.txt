@@ -6,10 +6,11 @@
 
 [폴더]
   백오피스\        최종 관리자 페이지 코드
-                   관리자 데이터(게시물·사진·페이지 임시저장·반영 전 백업)는 백오피스\data 안에 있어요.
+                   관리자 데이터(게시물 · 계정 등)는 PostgreSQL에 있어요: 백오피스.cmd가 백오피스\data\postgres 의 백오피스 전용 서버(포트 5433)를 같이 켜요.
+                   올린 사진 · 페이지 임시저장 · 반영 전 백업은 백오피스\data 안에 있어요.
   프론트오피스\     최종 사이트 코드. 페이지마다 폴더가 따로예요.
      about\        인사교 알아보기   index.html · style.css · script.js · assets\
-     stories\      선배들의 이야기   index.html · css\ · js\ · assets\   (글 목록은 js\stories-data.js — 게시물 관리가 써요)
+     stories\      선배들의 이야기   index.html · css\ · js\ · assets\   (글은 백오피스 DB에서 받아 그려요. js\stories-data.js는 백오피스가 꺼져 있을 때 쓰는 사본)
      life\         인사교 라이프     index.html · css\ · js\ · assets\   (2026-10-13 박지원 1012버전 · 시안10-B로 교체)
      check\        지원 전 체크      index.html · css\ · js\ · assets\
      home\         홈
@@ -33,7 +34,7 @@
   · 코드를 직접 고칠 때: 프론트오피스\<페이지 폴더> 안의 파일은 그 페이지에만, common\ 은 모든 페이지에 적용돼요.
 
 [함께 작업 — GitHub AICA-BACKOFFICE/main-project]
-  이 폴더 전체가 GitHub 저장소예요(예전 파일\ 은 빼고). 다른 사람은 git clone으로 받아서 백오피스.cmd · 프론트오피스.cmd로 켜면 같은 화면 · 같은 데이터가 보여요.
+  이 폴더 전체가 GitHub 저장소예요(예전 파일\ 은 빼고). 다른 사람은 git clone으로 받아서 백오피스.cmd · 프론트오피스.cmd로 켜면 같은 화면이 보여요(PostgreSQL 16 이상 설치 필요 — 비밀번호는 안 써요).
   · 최신 내용 받기: 최신으로 받기.cmd 더블클릭 (이 컴퓨터에서 바뀐 파일은 지우지 않고 git stash에 보관해 둬요)
   · 내가 고친 것 올리기: 백오피스 창을 닫고 바뀐 파일을 커밋 → 푸시
-  · 관리자 데이터(백오피스\data)는 두 사람이 고친 걸 합칠 수 없어서, 관리자 페이지에서 고치는 사람은 한 번에 한 명으로 정해 주세요.
+  · 관리자 데이터는 각자 컴퓨터의 PostgreSQL에 있어서 GitHub로 같이 가지 않아요(처음 켤 때만 저장소의 예전 H2 데이터를 옮겨 와요).

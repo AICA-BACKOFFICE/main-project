@@ -134,6 +134,37 @@
     page.addEventListener('focusout', function(e){ if (e.target.matches('input.tr')) mark(e.target, false); });
   })();
 
+  /* ---------- 글 안 사진 넘김(.phs, 그리는 건 stories-render.js): 화살표 · 손가락으로 밀기 · 키보드 ←→ (백오피스) ---------- */
+  (function(){
+    function step(track, dir){ track.scrollBy({ left: dir * track.clientWidth, behavior: reduce ? 'instant' : 'smooth' }); }
+    function sync(track){
+      var box = track.closest('.phs'), n = track.children.length;
+      var i = Math.max(0, Math.min(n - 1, Math.round(track.scrollLeft / Math.max(1, track.clientWidth))));
+      var no = box.querySelector('.phs-count b'), prev = box.querySelector('.phs-btn.prev'), next = box.querySelector('.phs-btn.next');
+      if (no) no.textContent = i + 1;
+      if (prev) prev.disabled = i <= 0;
+      if (next) next.disabled = i >= n - 1;
+    }
+    document.addEventListener('click', function(e){
+      var b = e.target.closest && e.target.closest('.phs-btn'); if (!b) return;
+      e.preventDefault();
+      var track = b.closest('.phs').querySelector('.phs-track');
+      if (track) step(track, b.classList.contains('next') ? 1 : -1);
+    });
+    // 스크롤은 거품이 안 올라와서 잡는 단계(capture)에서 받아요
+    document.addEventListener('scroll', function(e){
+      var t = e.target;
+      if (!t || !t.classList || !t.classList.contains('phs-track')) return;
+      clearTimeout(t.phsTimer); t.phsTimer = setTimeout(function(){ sync(t); }, 50);
+    }, true);
+    document.addEventListener('keydown', function(e){
+      var t = e.target;
+      if (!t.classList || !t.classList.contains('phs-track') || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+      e.preventDefault(); e.stopPropagation();
+      step(t, e.key === 'ArrowRight' ? 1 : -1);
+    }, true);
+  })();
+
 })();
 
 /* 후기 글 창(모달) 색 = 그 창을 여는 후기 카드의 포스트잇 색(10-13). 카드 색은 unify.css가 자리 순서로 정함 */

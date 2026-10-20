@@ -21,12 +21,14 @@ public class PostService {
     private final PostVersionService versions;
     private final PostAssembler assembler;
     private final ApplicationEventPublisher events;
+    private final PostAccess access;
 
-    public PostService(PostMapper mapper, PostVersionService versions, PostAssembler assembler, ApplicationEventPublisher events) {
+    public PostService(PostMapper mapper, PostVersionService versions, PostAssembler assembler, ApplicationEventPublisher events, PostAccess access) {
         this.mapper = mapper;
         this.versions = versions;
         this.assembler = assembler;
         this.events = events;
+        this.access = access;
     }
 
     @Transactional(readOnly = true)
@@ -55,6 +57,7 @@ public class PostService {
     }
 
     public Post create(PostForm form, Long authorId) {
+        access.requireStatus(PostStatus.DRAFT, form.getStatus(), authorId);
         Post post = new Post();
         post.setAuthorId(authorId);
         apply(post, form);
@@ -69,6 +72,8 @@ public class PostService {
 
     public void update(Long id, PostForm form, Long adminId) {
         Post post = get(id);
+        access.requireEditable(post, adminId);
+        access.requireStatus(post.getStatus(), form.getStatus(), adminId);
         apply(post, form);
         if (post.getStatus() == PostStatus.PUBLISHED && post.getPublishedAt() == null) {
             post.setPublishedAt(LocalDateTime.now());
@@ -76,6 +81,13 @@ public class PostService {
         mapper.update(post);
         versions.record(post, reasonFor(post), adminId);
         events.publishEvent(new StoryChangedEvent(id));
+    }
+
+    @Transactional(readOnly = true)
+    public Post getForEditing(Long id, Long adminId) {
+        Post post = get(id);
+        access.requireEditable(post, adminId);
+        return post;
     }
 
     public void changeStatus(Long id, PostStatus status) {

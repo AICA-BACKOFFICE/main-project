@@ -11,6 +11,7 @@
     if (/^(r-|tg-)/.test(h)) to = 'reviews.html#' + h;
     else if (/^(iv-|q-)/.test(h)) to = 'interviews.html#' + h;
     else if (/^pj-/.test(h)) to = 'projects.html#' + h;
+    else if (/^st-/.test(h)) to = 'cohorts.html#' + h;   // 기수 기록 한 개(백오피스 글 번호, 미리보기 · 공유 주소)
   }
   if (to) location.replace(to);
   }

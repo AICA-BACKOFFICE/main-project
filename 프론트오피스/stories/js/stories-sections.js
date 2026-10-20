@@ -12,6 +12,9 @@
     var av=a.querySelector('.by .av'),c=av?parseInt(av.textContent,10):0,dur=a.querySelector('.ph .dur');
     return {a:a,c:c,v:!!dur,t:(a.querySelector('h3')||{}).textContent||'',s:(a.querySelector('.tb p')||{}).textContent||'',n:(a.querySelector('.by b')||{}).textContent||'',tr:(a.querySelector('.by em')||{}).textContent||''};
   });
+  // 기수 버튼: 3–5기만 한 묶음, 6기부터는 기수마다 따로(지금은 7기 · 6기 · 3–5기). 새 기수 인터뷰가 올라오면 버튼이 저절로 생겨요(백오피스)
+  var CS=D.map(function(d){return d.c}).filter(function(v,i,a){return v&&a.indexOf(v)===i}).sort(function(a,b){return b-a});
+  var COHS=CS.filter(function(v){return v>5}).map(String);if(CS.some(function(v){return v>=3&&v<=5}))COHS.push('3-5');COHS=COHS.concat(CS.filter(function(v){return v<3}).map(String));
   var STEP=6,pg=1,coh='all',view='grid';   // 10-13: '더 보기' → 기수별 이모저모와 같은 숫자 페이지(6개씩)
   try{view=localStorage.getItem('iva-view')||'grid'}catch(e){}
   var out=sec.querySelector('.iva-out'),more=sec.querySelector('.iva-more'),empty=sec.querySelector('.iva-empty');
@@ -19,7 +22,7 @@
   function chips(){
     var cb=sec.querySelector('[data-f=coh]');cb.innerHTML='';
     chip(cb,'all','전체 기수',coh);
-    [['7','7기'],['6','6기'],['3-5','3–5기']].forEach(function(g){chip(cb,g[0],g[1],coh)});
+    COHS.forEach(function(k){chip(cb,k,k.replace('-','–')+'기',coh)});
   }
   function card(d){
     var a=document.createElement('a');a.className='iva-c';a.href=d.a.getAttribute('href');
@@ -37,7 +40,7 @@
   function draw(){
     chips();
     sec.querySelectorAll('.iva-seg button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.v===view)});
-    var list=D.filter(function(d){return (coh==='all'||(coh==='3-5'?(d.c>=3&&d.c<=5):String(d.c)===coh))});
+    var list=D.filter(function(d){return (coh==='all'||(coh.indexOf('-')>0?(d.c>=+coh.split('-')[0]&&d.c<=+coh.split('-')[1]):String(d.c)===coh))});
     out.dataset.view=view;out.innerHTML='';
     var pages=Math.max(1,Math.ceil(list.length/STEP));if(pg>pages)pg=pages;
     list.slice((pg-1)*STEP,pg*STEP).forEach(function(d){out.appendChild(card(d))});
@@ -58,14 +61,15 @@
   draw();
 })();
 
-(function(){
-  var box=document.querySelector('#iv-7 .ivvid');if(!box)return;var orig=box.innerHTML;
+/* 영상 인터뷰: 재생 단추를 누르면 그 자리에서 유튜브가 재생(관리자가 올린 영상 인터뷰 모두) */
+[].forEach.call(document.querySelectorAll('.ivd .ivvid'),function(box){
+  var d=box.closest('.ivd'),orig=box.innerHTML,h=d.querySelector('h2');
   function bind(){var b=box.querySelector('.ivplay');if(b)b.onclick=function(){
     var f=document.createElement('iframe');f.src='https://www.youtube-nocookie.com/embed/'+box.dataset.yt+'?autoplay=1&rel=0&playsinline=1';
-    f.title='6기 수료생 인터뷰 — 인프라 직군';f.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';f.allowFullscreen=true;
+    f.title=h?h.textContent:'인터뷰 영상';f.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';f.allowFullscreen=true;
     var tag=box.querySelector('.ivtag');box.innerHTML='';if(tag)box.appendChild(tag);box.appendChild(f);f.focus();
   }}
   bind();
   // 다른 곳으로 가면 재생을 멈추고 처음 그림으로 되돌림
-  addEventListener('hashchange',function(){if(location.hash!=='#iv-7'&&box.querySelector('iframe')){box.innerHTML=orig;bind()}});
-})();
+  addEventListener('hashchange',function(){if(location.hash!=='#'+d.id&&box.querySelector('iframe')){box.innerHTML=orig;bind()}});
+});

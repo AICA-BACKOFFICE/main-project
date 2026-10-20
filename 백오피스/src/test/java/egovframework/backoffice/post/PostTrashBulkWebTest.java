@@ -12,21 +12,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
+import egovframework.backoffice.BackofficeApplication;
+import egovframework.testsupport.CmsMockMvcConfig;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest(properties = {
-    "spring.datasource.url=jdbc:h2:mem:trash-bulk-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+@TestPropertySource(properties = {
+    "datasource.url=jdbc:h2:mem:trash-bulk-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
     "backoffice.pages.site-root=${java.io.tmpdir}/aica-trash-bulk-test/site",
     "backoffice.pages.data-dir=${java.io.tmpdir}/aica-trash-bulk-test/data",
     "backoffice.upload-dir=${java.io.tmpdir}/aica-trash-bulk-test/uploads",
     "backoffice.initial-admin.password=test-pass-1234"
 })
-@AutoConfigureMockMvc
+@SpringJUnitWebConfig({BackofficeApplication.class, CmsMockMvcConfig.class})
 @Transactional
 class PostTrashBulkWebTest {
     @Autowired MockMvc mvc;

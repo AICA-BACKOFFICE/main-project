@@ -6,8 +6,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
+import egovframework.backoffice.BackofficeApplication;
+import egovframework.testsupport.CmsMockMvcConfig;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -15,11 +17,14 @@ import org.springframework.test.web.servlet.MockMvc;
  * 실행 파일이 브라우저를 열지 묻는 곳: 서버가 켜진 뒤 브라우저가 화면(로그인 화면 포함)을 열기 전에는 seen=false,
  * 연 뒤에는 seen=true(이미 열어 둔 창이 있으니 새 창을 열지 않음). 로그인 없이 물을 수 있다.
  */
-@SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:backoffice-launcher-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+@TestPropertySource(properties = {
+        "datasource.url=jdbc:h2:mem:backoffice-launcher-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+        "backoffice.pages.site-root=${java.io.tmpdir}/aica-launcherwebtest/site",
+        "backoffice.pages.data-dir=${java.io.tmpdir}/aica-launcherwebtest/data",
+        "backoffice.upload-dir=${java.io.tmpdir}/aica-launcherwebtest/uploads",
         "backoffice.initial-admin.password=test-pass-1234"
 })
-@AutoConfigureMockMvc
+@SpringJUnitWebConfig({BackofficeApplication.class, CmsMockMvcConfig.class})
 class LauncherWebTest {
 
     @Autowired MockMvc mvc;

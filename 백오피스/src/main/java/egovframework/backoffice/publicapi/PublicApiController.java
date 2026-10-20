@@ -3,15 +3,21 @@ package egovframework.backoffice.publicapi;
 import egovframework.backoffice.category.Category;
 import egovframework.backoffice.category.CategoryService;
 import egovframework.backoffice.common.NotFoundException;
+import egovframework.backoffice.page.CheckFaqService;
+import egovframework.backoffice.page.LifeTipService;
 import egovframework.backoffice.post.Post;
 import egovframework.backoffice.post.PostMapper;
 import egovframework.backoffice.post.PostService;
+import egovframework.backoffice.post.story.StorySiteService;
 import egovframework.backoffice.stats.StatsService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +33,10 @@ import org.springframework.web.bind.annotation.RestController;
  *  - GET  /api/public/categories                : 활성 카테고리
  *  - GET  /api/public/posts?category=slug&page= : 게시중 목록
  *  - GET  /api/public/posts/{id}                : 게시물 본문(블록)
+ *  - GET  /api/public/stories                   : 선배들의 이야기 게시중 글(후기 · 인터뷰 · 프로젝트 · 기수 기록)
+ *  - GET  /api/public/stories.js                : 같은 내용을 사이트 페이지가 &lt;script&gt;로 쓰는 모양(window.STORIES_DATA)
+ *  - GET  /api/public/life(.js)                 : 인사교 라이프 생활 꿀팁(식당 · 카페 · 바람 쐬러 갈 곳) — window.LIFE_DATA
+ *  - GET  /api/public/faq(.js)                  : 지원 전 체크 자주 묻는 질문 — window.FAQ_DATA
  *  - POST /api/public/track/visit               : 방문 기록 {visitorKey, path}
  *  - POST /api/public/track/posts/{id}/view     : 게시물 조회 기록 {visitorKey}
  */
@@ -34,17 +44,68 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/public")
 public class PublicApiController {
 
+    private static final MediaType JS = MediaType.parseMediaType("text/javascript;charset=UTF-8");
+
     private final CategoryService categoryService;
     private final PostService postService;
     private final PostMapper postMapper;
     private final StatsService statsService;
+    private final StorySiteService storySite;
+    private final LifeTipService lifeTips;
+    private final CheckFaqService faq;
 
-    public PublicApiController(CategoryService categoryService, PostService postService,
-                               PostMapper postMapper, StatsService statsService) {
+    public PublicApiController(CategoryService categoryService, PostService postService, PostMapper postMapper, StatsService statsService,
+                               StorySiteService storySite, LifeTipService lifeTips, CheckFaqService faq) {
         this.categoryService = categoryService;
         this.postService = postService;
         this.postMapper = postMapper;
         this.statsService = statsService;
+        this.storySite = storySite;
+        this.lifeTips = lifeTips;
+        this.faq = faq;
+    }
+
+    @GetMapping("/stories")
+    public ResponseEntity<Map<String, Object>> stories() {
+        return json(storySite.publishedData());
+    }
+
+    @GetMapping("/stories.js")
+    public ResponseEntity<byte[]> storiesScript() {
+        return script(storySite.publishedScript());
+    }
+
+    @GetMapping("/life")
+    public ResponseEntity<Map<String, Object>> life() {
+        Map<String, Object> data = lifeTips.publicData();
+        data.put("source", "backoffice-api");
+        return json(data);
+    }
+
+    @GetMapping("/life.js")
+    public ResponseEntity<byte[]> lifeScript() {
+        return script(lifeTips.publicScript());
+    }
+
+    @GetMapping("/faq")
+    public ResponseEntity<Map<String, Object>> faq() {
+        Map<String, Object> data = faq.publicData();
+        data.put("source", "backoffice-api");
+        return json(data);
+    }
+
+    @GetMapping("/faq.js")
+    public ResponseEntity<byte[]> faqScript() {
+        return script(faq.publicScript());
+    }
+
+    /** 사이트 데이터는 늘 DB의 지금 내용(캐시 안 함) */
+    private static ResponseEntity<Map<String, Object>> json(Map<String, Object> body) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);
+    }
+
+    private static ResponseEntity<byte[]> script(String js) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(JS).body(js.getBytes(StandardCharsets.UTF_8));
     }
 
     @GetMapping("/categories")

@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="css/home.css">
 <script src="../common/js/menu.js" defer></script>
 <script src="../common/js/site.js" defer></script>
+<script src="js/ticker-render.js" defer></script>
 <script src="js/home.js" defer></script>
 </head>
 <body>
@@ -102,11 +103,11 @@
     <a class="ix" data-cat="1" href="../about/index.html" style="--c:var(--n-yellow)"><b>01</b><span>인사교 알아보기</span><i>/about</i></a><a class="ix" data-cat="2" href="../stories/index.html" style="--c:var(--n-magenta)"><b>02</b><span>선배들의 이야기</span><i>/stories</i></a><a class="ix" data-cat="3" href="../life/index.html" style="--c:var(--n-cyan)"><b>03</b><span>인사교 라이프</span><i>/real-life</i></a><a class="ix" data-cat="4" href="../check/index.html" style="--c:var(--n-lime)"><b>04</b><span>지원 전 체크</span><i>/check</i></a>
   </nav>
 
-  <!-- 전광판: 선배들이 남긴 한 줄이 첫 화면 맨 아래(모바일은 제목 위)로 흐름 -->
+  <!-- 전광판: 선배들이 남긴 한 줄이 첫 화면 맨 아래(모바일은 제목 위)로 흐름. 한 줄은 선배들의 이야기 후기 게시물(백오피스 DB)의 흐르는 한마디로 js/ticker-render.js가 채움 -->
   <div class="tk" aria-label="선배들이 남긴 한 줄">
     <div class="tk-track">
-      <ul class="tk-list"><li><span class="tk-p">[7기] 김민서 &gt;</span> 교통비 6만원, 점심값 20만원.</li><li><span class="tk-p">[6기] 정하윤 &gt;</span> 의료 데이터는 전처리가 8할입니다.</li><li><span class="tk-p">[6기] 장우석 &gt;</span> 코드를 짜는 시간보다 왜 그렇게 짜는지 듣는 시간이 길었습니다.</li><li><span class="tk-p">[7기] 이준호 &gt;</span> 도시락 데우는 줄에서 만난 네 명이 그대로 팀이 됐습니다.</li><li><span class="tk-p">[6기] 박서연 &gt;</span> 인기 시간대는 전날 밤에 다 나갑니다.</li><li><span class="tk-p">[6기] 신예린 &gt;</span> 화면을 세 번 갈아엎고 나서야 통과됐습니다.</li><li><span class="tk-p">[7기] 조민규 &gt;</span> 방향을 정하는 것도 팀의 일입니다.</li><li><span class="tk-p">[6기] 최도현 &gt;</span> 결국 절반 이상은 여기서 먹었습니다.</li></ul>
-      <ul class="tk-list" aria-hidden="true"><li><span class="tk-p">[7기] 김민서 &gt;</span> 교통비 6만원, 점심값 20만원.</li><li><span class="tk-p">[6기] 정하윤 &gt;</span> 의료 데이터는 전처리가 8할입니다.</li><li><span class="tk-p">[6기] 장우석 &gt;</span> 코드를 짜는 시간보다 왜 그렇게 짜는지 듣는 시간이 길었습니다.</li><li><span class="tk-p">[7기] 이준호 &gt;</span> 도시락 데우는 줄에서 만난 네 명이 그대로 팀이 됐습니다.</li><li><span class="tk-p">[6기] 박서연 &gt;</span> 인기 시간대는 전날 밤에 다 나갑니다.</li><li><span class="tk-p">[6기] 신예린 &gt;</span> 화면을 세 번 갈아엎고 나서야 통과됐습니다.</li><li><span class="tk-p">[7기] 조민규 &gt;</span> 방향을 정하는 것도 팀의 일입니다.</li><li><span class="tk-p">[6기] 최도현 &gt;</span> 결국 절반 이상은 여기서 먹었습니다.</li></ul>
+      <ul class="tk-list"></ul>
+      <ul class="tk-list" aria-hidden="true"></ul>
     </div>
   </div>
 </section>

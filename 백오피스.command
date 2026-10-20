@@ -21,5 +21,7 @@ if [ "$BACKOFFICE_NO_BROWSER" != "1" ]; then
     done ) &
 fi
 chmod +x ./mvnw 2>/dev/null
-./mvnw -B -ntp -Denforcer.skip=true spring-boot:run
+# 지운 파일(없앤 기능의 화면 · DB 연결 파일 등)이 예전 빌드 결과물(target/classes)에 남아 있으면 백오피스가 켜지지 않아요. 켤 때마다 비우고 새로 만들어요.
+rm -rf target/classes
+./mvnw -B -ntp -Pdev compile exec:java
 read -r -p "엔터를 누르면 닫혀요" _

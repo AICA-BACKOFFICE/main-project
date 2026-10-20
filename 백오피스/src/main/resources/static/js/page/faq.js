@@ -1,7 +1,7 @@
 /*
  * 게시물 관리 › 지원 전 Check FAQ 관리 (templates/faq/index.html)
  *   지원 전 체크 페이지의 자주 묻는 질문을 분류별로 보고, 새로 쓰기 · 고치기 · 순서 바꾸기 · 지우기를 한 뒤 '저장'을 누르면
- *   서버(CheckFaqService)가 사이트 파일(check/index.html)의 질문 목록과 분류 칩의 질문 수만 고쳐 반영한다.
+ *   서버(CheckFaqService)가 DB에 저장하고, 사이트는 공개 API로 질문을 받아 목록과 분류 칩의 질문 수를 그린다.
  *   답은 굵게 · 링크만 쓸 수 있는 간단한 입력 칸(Enter는 줄바꿈, 붙여 넣으면 글자만).
  */
 (function () {
@@ -51,7 +51,7 @@
 
   function take(m) {
     model = m;
-    items = m.items.map(function (i) { return { cat: i.cat, question: i.question, answer: i.answer }; });
+    items = m.items.map(function (i) { return { id: i.id, cat: i.cat, question: i.question, answer: i.answer }; });
     original = snapshot();
     editing = -1;
     backup = null;
@@ -248,7 +248,8 @@
     render();
     request(API, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ baseHash: model.hash, items: items.map(function (i) { return { cat: i.cat, question: i.question, answer: i.answer }; }) })
+      // 질문 번호(id)도 보내요: DB에서 같은 질문은 고치고, 새 질문은 더하고, 빠진 질문은 지워요
+      body: JSON.stringify({ baseHash: model.hash, items: items.map(function (i) { return { id: i.id || null, cat: i.cat, question: i.question, answer: i.answer }; }) })
     }).then(function (m) {
       busy = false;
       take(m);
