@@ -8,7 +8,7 @@
   <meta name="_csrf" th:content="${_csrf != null} ? ${_csrf.token} : ''">
   <meta name="_csrf_header" th:content="${_csrf != null} ? ${_csrf.headerName} : 'X-CSRF-TOKEN'">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
-  <link rel="stylesheet" th:if="${menu == 'dashboard' or menu == 'stats'}" th:href="@{/css/dashboard.css}">
+  <link rel="stylesheet" th:if="${menu == 'dashboard'}" th:href="@{/css/dashboard.css}">
   <link rel="stylesheet" th:if="${menu == 'life-photos'}" th:href="@{/css/page/life-photos.css(v='20261019')}">
   <link rel="stylesheet" th:if="${menu == 'faq'}" th:href="@{/css/page/faq.css}">
 </head>
@@ -58,8 +58,9 @@
     <details class="write-box">
       <summary>쓰기 <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary>
       <div class="write-drop">
-        <a th:href="@{/admin/posts/new}">게시물 작성</a>
-        <a th:href="@{/admin/media}">미디어 업로드</a>
+        <a th:href="@{/admin/posts/new(kind='review')}">후기 쓰기</a>
+        <a th:href="@{/admin/posts/new(kind='interview')}">인터뷰 쓰기</a>
+        <a th:href="@{/admin/posts/new(kind='project')}">프로젝트 쓰기</a>
       </div>
     </details>
 
@@ -99,7 +100,6 @@
             <a th:classappend="${menu == 'posts' and storyKind == 'review'} ? 'on'" th:href="@{/admin/posts(kind='review')}">선배 후기</a>
             <a th:classappend="${menu == 'posts' and storyKind == 'interview'} ? 'on'" th:href="@{/admin/posts(kind='interview')}">선배 인터뷰</a>
             <a th:classappend="${menu == 'posts' and storyKind == 'project'} ? 'on'" th:href="@{/admin/posts(kind='project')}">프로젝트</a>
-            <a th:classappend="${menu == 'posts' and storyKind == 'cohort'} ? 'on'" th:href="@{/admin/posts(kind='cohort')}">기수별 모아보기</a>
           </div>
         </div>
         <div class="lnb-tree" data-tree="life" th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'life-photos'} ? 'open'">
@@ -117,22 +117,6 @@
           </div>
         </div>
         <a th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'faq'} ? 'on'" th:href="@{/admin/faq}">지원 전 Check FAQ 관리</a>
-      </div>
-
-      <div class="lnb-group">
-        <div class="lnb-title">
-          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>
-          콘텐츠
-        </div>
-        <a th:classappend="${menu == 'media'} ? 'on'" th:href="@{/admin/media}">미디어 관리</a>
-      </div>
-
-      <div class="lnb-group" th:if="${me != null}">
-        <div class="lnb-title">
-          <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
-          통계
-        </div>
-        <a th:classappend="${menu == 'stats'} ? 'on'" th:href="@{/admin/stats}">방문 통계</a>
       </div>
 
       <div class="lnb-group">

@@ -14,10 +14,8 @@ import egovframework.backoffice.page.CategoryPageService;
 import egovframework.backoffice.post.Post;
 import egovframework.backoffice.post.PostAssembler;
 import egovframework.backoffice.post.PostForm;
-import egovframework.backoffice.post.PostMapper;
 import egovframework.backoffice.post.PostStatus;
-import egovframework.backoffice.post.version.PostVersion;
-import egovframework.backoffice.post.version.PostVersionService;
+import egovframework.backoffice.post.PostStore;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileSystemException;
@@ -53,13 +51,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * 선배들의 이야기 사이트 반영. 게시중인 고정 양식 글(후기 · 인터뷰 · 프로젝트 · 기수 기록)을 DB에서 최신 게시 순으로 모은다.
+ * 선배들의 이야기 사이트 반영. 게시중인 글(후기 · 인터뷰 · 프로젝트 표)을 DB에서 최신 게시 순으로 모은다. 기수별 모아보기는 사이트 HTML(2026-10-20부터).
  * 사이트(stories-render.js)는 공개 API({@link #publishedScript()}, /api/public/stories.js)로 이 내용을 받아 목록 · 글 창 · 한눈에 보기를 그린다.
  * 백오피스가 꺼져 있어도 보이도록 같은 내용을 사이트 폴더의 stories/js/stories-data.js 사본으로도 쓴다.
  * <ul>
- *   <li>게시물이 바뀌면(저장 · 게시 · 미게시 · 휴지통 · 복원 · 완전 삭제 · 버전 복원) 커밋 뒤 바로 사본을 다시 쓴다. 내용이 같으면 쓰지 않는다.</li>
+ *   <li>게시물이 바뀌면(저장 · 게시 · 미게시 · 휴지통 · 복원 · 완전 삭제) 커밋 뒤 바로 사본을 다시 쓴다. 내용이 같으면 쓰지 않는다.</li>
  *   <li>관리자가 올린 사진(/uploads/…)은 사이트의 stories/assets/uploads/post-… 로 복사해 사이트만으로도 보이게 한다.</li>
- *   <li>처음 켤 때 사이트 파일에만 있던 글(관리자 글 번호가 없는 글)을 게시물로 가져온다. 가져오기 전에는 사이트 파일을 덮어쓰지 않는다.</li>
+ *   <li>DB에 글이 하나도 없을 때(새 컴퓨터 · 새 서버) 켜면 사이트 사본의 글을 게시물로 가져온다. DB에 글이 있으면 DB가 기준이다.</li>
  *   <li>미리보기: 사이트 화면 그대로, 데이터 파일만 '이 글을 넣은 내용'으로 바꿔 보여 준다(사이트 파일은 건드리지 않음).</li>
  * </ul>
  */
@@ -72,7 +70,7 @@ public class StorySiteService {
     static final String STORIES_PAGE = "stories/index.html";
     /** 글 종류마다 그 글이 보이는 페이지(2026-10-14 사이트 새 시안: 한눈에 보기 + 종류별 페이지) */
     static final Map<StoryKind, String> KIND_PAGES = Map.of(StoryKind.REVIEW, "stories/reviews.html", StoryKind.INTERVIEW, "stories/interviews.html",
-            StoryKind.PROJECT, "stories/projects.html", StoryKind.COHORT, "stories/cohorts.html");
+            StoryKind.PROJECT, "stories/projects.html");
     static final String UPLOAD_DIR = "stories/assets/uploads";
     static final String COPY_PREFIX = "post-";
     private static final String HEADER = "/* 선배들의 이야기 글 사본: 사이트는 백오피스 공개 API(/api/public/stories.js)로 DB의 글을 받아 그려요. "
@@ -94,9 +92,8 @@ public class StorySiteService {
     /** 미리보기 한 번: 데이터 파일 내용과 열 주소(#…) */
     record Preview(String js, String hash, String note, long createdAt) { }
 
-    private final PostMapper posts;
+    private final PostStore posts;
     private final PostAssembler assembler;
-    private final PostVersionService versions;
     private final StoryContent stories;
     private final CategoryService categories;
     private final CategoryPageService pages;
@@ -106,12 +103,11 @@ public class StorySiteService {
     private final Path uploadRoot;
     private final Map<String, Preview> previews = new ConcurrentHashMap<>();
 
-    public StorySiteService(PostMapper posts, PostAssembler assembler, PostVersionService versions, StoryContent stories,
+    public StorySiteService(PostStore posts, PostAssembler assembler, StoryContent stories,
                             CategoryService categories, CategoryPageService pages, AdminUserMapper admins, ObjectMapper json,
                             TransactionTemplate tx, BackofficeProperties properties) {
         this.posts = posts;
         this.assembler = assembler;
-        this.versions = versions;
         this.stories = stories;
         this.categories = categories;
         this.pages = pages;
@@ -142,17 +138,12 @@ public class StorySiteService {
         return regenerate(false);
     }
 
-    /** imported: 방금 사이트 글을 모두 가져온 뒤라 글 번호 없는 글이 있어도 덮어써도 된다 */
+    /** DB의 게시중인 글로 사본을 다시 쓴다(DB가 기준. 사본을 손으로 고친 내용은 DB가 비어 있을 때만 가져온다) */
     private synchronized boolean regenerate(boolean imported) {
         if (!enabled()) {
             return false;
         }
         Path file = pages.siteRoot().resolve(DATA_FILE);
-        Map<String, Object> current = imported ? null : readData(file);
-        if (current != null && hasUnnumbered(current)) {
-            log.warn("사이트 데이터에 아직 가져오지 않은 글이 있어 덮어쓰지 않았습니다: {}", file);
-            return false;
-        }
         Set<String> copies = new HashSet<>();
         Map<String, Object> data = build(posts.findPublishedStories(), null, src -> publishImage(src, copies));
         String js = toJs(HEADER, data);
@@ -179,13 +170,15 @@ public class StorySiteService {
         return toJs(API_HEADER, publishedData());
     }
 
-    /** 사이트 데이터 내용(목록 4개). extra 가 있으면 그 글을 미리보기용으로 끼워 넣는다 */
+    /** 사이트 데이터 내용(목록 3개: reviews · interviews · projects). extra 가 있으면 그 글을 미리보기용으로 끼워 넣는다 */
     private Map<String, Object> build(List<Post> published, Post extra, UnaryOperator<String> images) {
         List<Post> list = new ArrayList<>(published);
         if (extra != null) {
             int at = -1;
             for (int i = 0; i < list.size(); i++) {
-                if (extra.getId() != null && extra.getId().equals(list.get(i).getId())) {
+                // 글 번호는 표마다 1번부터라 종류까지 같아야 같은 글
+                if (extra.getId() != null && extra.getId().equals(list.get(i).getId())
+                        && java.util.Objects.equals(extra.getCategorySlug(), list.get(i).getCategorySlug())) {
                     at = i;
                 }
             }
@@ -210,8 +203,6 @@ public class StorySiteService {
                 log.warn("게시물 {} 의 글 양식을 읽지 못해 사이트 데이터에서 뺐습니다.", p.getId(), e);
             }
         }
-        // 기수 기록은 행사 날짜가 최근인 순(날짜가 같으면 최근 게시 순)
-        groups.get(StoryKind.COHORT).sort(Comparator.comparingLong((Map<String, Object> m) -> dateKey(m.get("date"))).reversed());
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("version", 1);
         data.put("source", "backoffice");
@@ -221,20 +212,28 @@ public class StorySiteService {
         return data;
     }
 
-    /** 게시물 하나 → 사이트 글 하나: 글 번호 · 주소 · 제목 + 양식 값(사진 주소는 사이트 기준으로) */
+    /** 프로젝트 칸 중 사이트에는 합쳐서(팀 · 전공 · 기수 · 반) 보내는 칸 */
+    private static final Set<String> PROJECT_PARTS = Set.of("cohort", "className", "major", "teamName", "teamSize");
+
+    /** 게시물 하나 → 사이트 글 하나: 글 번호 · 주소(#r-p12) · 제목 + 양식 값(사진 주소는 사이트 기준으로) */
     private Map<String, Object> item(StoryKind kind, Post p, UnaryOperator<String> images) {
         Map<String, Object> story = stories.parse(p.getStoryJson());
         String key = p.getId() == null ? "new" : String.valueOf(p.getId());
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("id", p.getId() == null ? "new" : p.getId());
-        if (kind != StoryKind.COHORT) {
-            Object anchor = story.get("anchor");
-            out.put("anchor", anchor instanceof String a && !a.isBlank() ? a : kind.anchorFor(key));
-        }
+        out.put("anchor", kind.anchorFor(key));
         out.put("title", p.getTitle());
+        if (kind == StoryKind.PROJECT) {
+            StoryContent.projectMeta(story).forEach((k, v) -> {
+                if (!v.isEmpty()) {
+                    out.put(k, v);
+                }
+            });
+        }
         for (var e : story.entrySet()) {
             String k = e.getKey();
-            if (k.equals("anchor") || k.equals("id") || k.equals("title") || k.equals("cover")) {
+            if (k.equals("anchor") || k.equals("id") || k.equals("title") || k.equals("cover")
+                    || (kind == StoryKind.PROJECT && PROJECT_PARTS.contains(k))) {
                 continue;
             }
             Object value = e.getValue();
@@ -326,18 +325,6 @@ public class StorySiteService {
         }
     }
 
-    /** "2026. 08. 20" → 20260820 (정렬용). 못 읽으면 0 */
-    static long dateKey(Object date) {
-        String digits = date == null ? "" : String.valueOf(date).replaceAll("[^0-9]+", " ").trim();
-        String[] parts = digits.isEmpty() ? new String[0] : digits.split(" ");
-        try {
-            long y = parts.length > 0 ? Long.parseLong(parts[0]) : 0, m = parts.length > 1 ? Long.parseLong(parts[1]) : 0, d = parts.length > 2 ? Long.parseLong(parts[2]) : 0;
-            return y * 10000 + m * 100 + d;
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
     // ── 사이트에 있던 글 가져오기 ──
 
     @EventListener(ContextRefreshedEvent.class)
@@ -357,18 +344,19 @@ public class StorySiteService {
     }
 
     /**
-     * 사이트 데이터에 있지만 게시물에 없는 글(관리자 글 번호가 없거나, 그 번호의 글이 없는 글)을 게시중 게시물로 만든다.
-     * 순서(최신 순)는 게시 시각으로 지킨다. 다 가져오면 글 번호를 붙여 사이트 데이터를 다시 쓴다.
+     * DB에 글이 하나도 없을 때(새 컴퓨터 · 새 서버) 사이트 사본(stories-data.js)의 글을 모두 게시중 게시물로 만든다.
+     * 순서(최신 순)는 게시 시각으로 지키고, 번호는 표마다 오래된 글부터 1번. 다 가져오면 새 번호로 사본을 다시 쓴다.
+     * DB에 글이 있으면 DB가 기준이라 가져오지 않는다(사본의 번호가 DB와 달라도 글이 두 번 생기지 않게 — 2026-10-20).
      */
     public synchronized int importSiteStories() {
-        if (!enabled()) {
+        if (!enabled() || !posts.isEmpty()) {
             return 0;
         }
         Map<String, Object> data = readData(pages.siteRoot().resolve(DATA_FILE));
         if (data == null) {
             return 0;
         }
-        List<Map.Entry<StoryKind, List<Map<String, Object>>>> todo = pending(data);
+        List<Map.Entry<StoryKind, List<Map<String, Object>>>> todo = items(data);
         if (todo.isEmpty()) {
             return 0;
         }
@@ -387,7 +375,7 @@ public class StorySiteService {
                     continue;
                 }
                 List<Map<String, Object>> items = entry.getValue();
-                for (int i = 0; i < items.size(); i++) {
+                for (int i = items.size() - 1; i >= 0; i--) {   // 오래된 글부터 넣어 번호가 1번부터 오래된 순
                     createImported(entry.getKey(), category, items.get(i), base.minusMinutes(i), authorId);
                     n++;
                 }
@@ -415,37 +403,19 @@ public class StorySiteService {
         post.setStatus(PostStatus.PUBLISHED);
         post.setPublishedAt(publishedAt);
         posts.insert(post);
-        versions.record(post, PostVersion.PUBLISH, authorId);
     }
 
-    /** 아직 한 번도 가져오지 않은 글(글 번호 없음)이 있는지 — 있으면 가져오기 전까지 사이트 파일을 덮어쓰지 않는다 */
-    private static boolean hasUnnumbered(Map<String, Object> data) {
-        for (StoryKind kind : StoryKind.values()) {
-            if (data.get(kind.key()) instanceof List<?> list) {
-                for (Object o : list) {
-                    if (o instanceof Map<?, ?> m && !(m.get("id") instanceof Number)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    /** 가져와야 할 글: 글 번호(id)가 없거나 그 번호의 고정 양식 글이 없는 글. 목록 순서대로 */
-    private List<Map.Entry<StoryKind, List<Map<String, Object>>>> pending(Map<String, Object> data) {
+    /** 사본의 글 목록(종류마다, 사본 순서 = 최신 순) */
+    private static List<Map.Entry<StoryKind, List<Map<String, Object>>>> items(Map<String, Object> data) {
         List<Map.Entry<StoryKind, List<Map<String, Object>>>> out = new ArrayList<>();
         for (StoryKind kind : StoryKind.values()) {
             List<Map<String, Object>> items = new ArrayList<>();
             if (data.get(kind.key()) instanceof List<?> list) {
                 for (Object o : list) {
                     if (o instanceof Map<?, ?> m) {
-                        Object id = m.get("id");
-                        if (!(id instanceof Number n) || posts.countStoryById(n.longValue()) == 0) {
-                            Map<String, Object> copy = new LinkedHashMap<>();
-                            m.forEach((k, v) -> copy.put(String.valueOf(k), v));
-                            items.add(copy);
-                        }
+                        Map<String, Object> copy = new LinkedHashMap<>();
+                        m.forEach((k, v) -> copy.put(String.valueOf(k), v));
+                        items.add(copy);
                     }
                 }
             }
@@ -494,8 +464,7 @@ public class StorySiteService {
                 }
             }
         }
-        String hash = mine == null ? "#" + kind.key()
-                : kind == StoryKind.COHORT ? "#st-" + mine.get("id") : "#" + mine.get("anchor");
+        String hash = mine == null ? "#" + kind.key() : "#" + mine.get("anchor");
         String note = saved && post.getStatus() == PostStatus.PUBLISHED
                 ? "미리보기 · 지금 사이트에 게시중인 내용이에요"
                 : "미리보기 · 아직 사이트에 올라가지 않았어요. 발행하면 이렇게 보여요";
@@ -537,7 +506,7 @@ public class StorySiteService {
         String ext = name.contains(".") ? name.substring(name.lastIndexOf('.') + 1).toLowerCase() : "";
         try {
             byte[] bytes = Files.readAllBytes(f);
-            // 이야기 페이지(한눈에 보기 · 후기 · 인터뷰 · 프로젝트 · 기수별 이모저모)에는 미리보기 안내 띠
+            // 이야기 페이지(한눈에 보기 · 후기 · 인터뷰 · 프로젝트 · 기수별 모아보기)에는 미리보기 안내 띠
             if (f.getParent().equals(pages.siteRoot().resolve(STORIES_PAGE).normalize().getParent()) && "html".equals(ext)) {
                 bytes = withBanner(new String(bytes, UTF_8), preview.note()).getBytes(UTF_8);
             }

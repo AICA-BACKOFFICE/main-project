@@ -1,7 +1,5 @@
 package egovframework.backoffice.post;
 
-import egovframework.backoffice.page.LifeTipService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,32 +19,27 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class PostTrashController {
 
     private final PostTrashService trash;
-    private final LifeTipService lifeTips;
 
-    public PostTrashController(PostTrashService trash, LifeTipService lifeTips) {
+    public PostTrashController(PostTrashService trash) {
         this.trash = trash;
-        this.lifeTips = lifeTips;
     }
 
-    /** 휴지통: tab = posts 선배들의 이야기 게시물(기본) · life 인사교 라이프 카드 */
+    /** 휴지통: 후기 · 인터뷰 · 프로젝트 표에서 휴지통으로 옮긴 글 */
     @GetMapping("/trash")
-    public String trash(@ModelAttribute("search") PostSearch search, @RequestParam(defaultValue = "posts") String tab,
-                        Model model, HttpServletRequest request) {
+    public String trash(@ModelAttribute("search") PostSearch search, Model model) {
         if (search.getSize() < 1 || search.getSize() > 100) {
             search.setSize(20);
         }
         model.addAttribute("menu", "trash");
-        model.addAttribute("tab", "life".equals(tab) ? "life" : "posts");
         model.addAttribute("result", trash.search(search));
         var overview = trash.overview();
         model.addAttribute("trashTotal", overview.count());
         model.addAttribute("trashSnapshot", overview.token());
-        model.addAttribute("lifeTrash", lifeTips.trash(request.getContextPath()));
         return "post/trash";
     }
 
     @PostMapping("/trash/bulk")
-    public String bulk(@RequestParam(required = false) List<Long> ids, @RequestParam String action,
+    public String bulk(@RequestParam(required = false) List<String> ids, @RequestParam String action,
                        @RequestParam(defaultValue = "") String keyword, RedirectAttributes redirect) {
         int count = trash.bulk(ids, action);
         redirect.addFlashAttribute("toast", count + "개 게시물을 " + ("restore".equals(action) ? "복원했습니다." : "완전히 삭제했습니다."));
@@ -61,25 +54,26 @@ public class PostTrashController {
     }
 
     /** 휴지통으로 이동 (soft delete) */
-    @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes redirect) {
-        trash.moveToTrash(id);
-        redirect.addFlashAttribute("toast", "게시물을 휴지통으로 이동했습니다. 상태는 '미게시'로 바뀌어 프론트(사이트)에서 내려갑니다.");
+    @PostMapping("/{kind:review|interview|project}/{id:[0-9]+}/delete")
+    public String delete(@PathVariable String kind, @PathVariable Long id, RedirectAttributes redirect) {
+        trash.moveToTrash(PostKey.kind(kind), id);
+        redirect.addFlashAttribute("toast", "게시물을 휴지통으로 이동했습니다. 상태는 '삭제됨'으로 바뀌어 프론트(사이트)에서 내려갑니다.");
         return "redirect:/admin/posts";
     }
 
-    @PostMapping("/{id}/restore")
-    public String restore(@PathVariable Long id, RedirectAttributes redirect) {
-        var before = trash.restore(id);
-        PostStatus restored = before.getStatusBeforeTrash() == null ? before.getStatus() : before.getStatusBeforeTrash();
+    @PostMapping("/{kind:review|interview|project}/{id:[0-9]+}/restore")
+    public String restore(@PathVariable String kind, @PathVariable Long id, RedirectAttributes redirect) {
+        var before = trash.restore(PostKey.kind(kind), id);
+        // 옮기기 전 상태가 없으면(예전 글) 미게시로 — StoryTableMapper.restore 와 같은 규칙
+        PostStatus restored = before.getStatusBeforeTrash() == null ? PostStatus.HIDDEN : before.getStatusBeforeTrash();
         redirect.addFlashAttribute("toast", "게시물을 '" + restored.getLabel() + "' 상태로 복원했습니다."
                 + (restored == PostStatus.PUBLISHED ? " 프론트(사이트)에도 다시 올라갑니다." : ""));
         return "redirect:/admin/posts";
     }
 
-    @PostMapping("/{id}/purge")
-    public String purge(@PathVariable Long id, RedirectAttributes redirect) {
-        trash.purge(id);
+    @PostMapping("/{kind:review|interview|project}/{id:[0-9]+}/purge")
+    public String purge(@PathVariable String kind, @PathVariable Long id, RedirectAttributes redirect) {
+        trash.purge(PostKey.kind(kind), id);
         redirect.addFlashAttribute("toast", "게시물을 완전히 삭제했습니다.");
         return "redirect:/admin/posts/trash";
     }

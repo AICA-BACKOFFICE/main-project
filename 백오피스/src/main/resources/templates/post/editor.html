@@ -18,7 +18,7 @@
 <div class="toast ed-done" role="status" th:if="${toast}" th:text="${toast}"></div>
 
 <form id="postForm" th:object="${form}" method="post"
-      th:action="${form.id == null} ? @{/admin/posts} : @{/admin/posts/{id}(id=${form.id})}">
+      th:action="${form.id == null or post == null} ? @{/admin/posts} : @{/admin/posts/{kind}/{id}(kind=${post.kind}, id=${form.id})}">
   <input type="hidden" th:field="*{id}">
   <input type="hidden" th:field="*{blocksJson}" id="blocksJson">
   <input type="hidden" th:field="*{status}" id="statusField">
@@ -37,9 +37,6 @@
     <div class="ed-bar-right">
       <span class="ed-stats" id="edStats" title="공백 포함 글자 수 · 블록 수"></span>
       <span class="ed-autosave" id="autosaveMsg"></span>
-      <button class="ed-tool" type="button" id="btnHistory" th:if="${form.id != null}" title="저장·발행할 때마다 남는 이전 버전을 보고 되돌립니다">
-        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg> 버전 이력
-      </button>
       <button class="ed-tool" type="submit" th:formaction="@{/admin/posts/preview}" formtarget="_blank" formnovalidate data-preview-submit title="쓰고 있는 내용이 사이트에서 어떻게 보이는지 창으로 보기">
         <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기
       </button>
@@ -67,7 +64,7 @@
       <label class="ed-field-label" for="title">제목</label>
       <input class="ed-title" th:field="*{title}" placeholder="제목을 입력하세요" maxlength="200" autocomplete="off">
 
-      <!-- 선배들의 이야기(후기·인터뷰·프로젝트·기수별 모아보기) 고정 양식: 카테고리를 고르면 블록 편집기 대신 보임(post/story-form.js) -->
+      <!-- 선배들의 이야기(후기·인터뷰·프로젝트) 고정 양식: 글 종류마다 표(reviews · interviews · projects)의 칸에 맞춘 양식(post/story-form.js) -->
       <div id="storyForm" class="sf" hidden></div>
 
       <label class="ed-field-label ed-generic">본문</label>
@@ -89,19 +86,14 @@
 
 </form>
 
-<form id="deleteForm" th:if="${form.id != null and me.role.canManageContent()}" th:action="@{/admin/posts/{id}/delete(id=${form.id})}" method="post"
+<form id="deleteForm" th:if="${form.id != null and post != null and me.role.canManageContent()}" th:action="@{/admin/posts/{kind}/{id}/delete(kind=${post.kind}, id=${form.id})}" method="post"
       data-confirm="이 게시물을 휴지통으로 이동할까요? 목록과 프론트에서 제외되며 휴지통에서 복원할 수 있습니다."></form>
 <form id="restoreForm" th:if="${form.id != null}" method="post" hidden></form>
 
 <!-- 페이지 JS 설정값 (인라인 스크립트 대신 data-* 로 전달) -->
 <div id="editorConfig" hidden
      th:data-upload-url="@{/admin/images}"
-     th:data-recent-url="@{/admin/images/recent}"
-     th:data-categories-url="@{/admin/images/categories}"
-     th:data-templates-url="@{/admin/templates/api}"
-     th:data-templates-page="@{/admin/templates}"
-     th:data-versions-url="${form.id != null} ? @{/admin/posts/{id}/versions(id=${form.id})} : ''"
-     th:data-post-id="${form.id}" th:data-can-manage-status="${me.role.canManageContent()}"></div>
+     th:data-post-id="${form.id}" th:data-post-kind="${post != null} ? ${post.kind} : ''" th:data-can-manage-status="${me.role.canManageContent()}"></div>
 
 <script th:src="@{/js/admin.js}"></script>
 <script th:src="@{/js/preview-modal.js}"></script>
@@ -116,11 +108,10 @@
 <script th:src="@{/js/editor/image-editor.js}"></script>
 <script th:src="@{/js/editor/index.js}"></script>
 <!-- 글쓰기 페이지 로직 -->
-<script th:src="@{/js/post/editor-page.js}"></script>
-<script th:src="@{/js/post/history.js}"></script>
+<script th:src="@{/js/post/editor-page.js(v='20261020b')}"></script>
 <!-- 사진 편집 · 썸네일 맞추기 창(카테고리 페이지 관리 편집기와 같은 파일) -->
 <script th:src="@{/js/page/photo-editor.js}"></script>
-<script th:src="@{/js/post/story-form.js(v='20261019d')}"></script>
+<script th:src="@{/js/post/story-form.js(v='20261020d')}"></script>
 <script>PostEditorPage.init(document.getElementById('editorConfig').dataset);</script>
 </body>
 </html>

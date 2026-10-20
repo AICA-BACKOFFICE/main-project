@@ -12,13 +12,12 @@
        th:data-front="${frontLink}"
        th:data-editor="@{/admin/pages/life/edit}"
        th:data-section="${lifeSection}"
-       th:data-versions-api="@{/admin/pages/life-photos/api/versions}"
-       th:data-trash="@{/admin/posts/trash(tab='life')}">
+       th:data-draft-api="@{/admin/pages/api/draft(page='life')}">
     <div class="card lp-loading">사진을 불러오는 중이에요…</div>
   </div>
 </main>
 <th:block th:fragment="scripts">
-  <script th:src="@{/js/page/life-photos.js(v='20261019b')}"></script>
+  <script th:src="@{/js/page/life-photos.js(v='20261014c')}"></script>
 </th:block>
 </body>
 </html>

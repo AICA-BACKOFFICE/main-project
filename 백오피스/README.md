@@ -3,35 +3,27 @@
 블로그형 CMS **백오피스**입니다 (관리자 UI는 블로그 관리자 화면 형태, 글쓰기는 전용 화면). 프론트 오피스와 같은 콘텐츠 구조(카테고리 → 게시물 → 블록)를 관리자가 어렵지 않게 운영할 수 있도록, 디자인보다 사용성과 기능을 우선해 구성했습니다.
 
 Java 17 이상 / Spring Framework 6.2.6 MVC / Spring Security 6.4.5 / Thymeleaf / MyBatis 3.5.17 / Flyway / PostgreSQL 16 이상(개발 실행 시 백오피스 전용 서버를 저절로 켬, 테스트는 H2 메모리 DB).
-DB 스키마는 Flyway `V1`(기본) · `V2`(버전 이력) · `V3`(템플릿) · `V4`(이미지 폴더) · `V5`(글 레이아웃) · `V6`(템플릿 레이아웃) · `V7`(카테고리 2단 구조·세부 카테고리) · `V8`(운영진 공지·휴지통 상태·미디어 종류/표시 이름) · `V9`(미디어 분류를 게시물 카테고리로 통일) · `V10`(이메일 로그인 ID) · `V11`(선배들의 이야기 고정 양식 값) · `V12`(후기 취업 성공 · 진로 고민) · `V13`(인사교 라이프 생활 꿀팁 카드 · 지원 전 체크 FAQ) · `V14`(운영진 공지 표 삭제 — 공지 기능 없앰) · `V15`(인사교 라이프 카드 휴지통 · 버전 기록 · 시설 둘러보기 사진 DB)로 관리합니다. 0단계 기술 검증 기록은 [docs/STAGE0_VERIFICATION.md](docs/STAGE0_VERIFICATION.md)에 남아 있습니다(검증 코드는 정리됨).
+DB 스키마는 Flyway `V1`~`V16`으로 관리합니다. **2026-10-20 `V16`부터 표는 4개뿐입니다**: `admin_users`(관리자 계정) · `reviews`(후기, 분야 `category`로 나눔) · `interviews`(인터뷰, 기수 `cohort`로 나눔) · `projects`(프로젝트, 기수 · 반 · 전공 · 팀 칸). 글 번호는 **표마다 1번부터**(`V19`, `reviews_id_seq` 등)라 관리 화면 주소에 글 종류가 들어갑니다(`/admin/posts/project/1/edit`). 상태(`status`)는 임시저장 · 게시중 · 미게시 · 삭제됨(휴지통) 넷이고, 휴지통으로 옮기기 전 상태는 `status_before_trash`, 옮긴 시각은 `deleted_at`에 적습니다. 그 밖에 Flyway가 스스로 쓰는 기록 표 `flyway_schema_history`가 있습니다(지우면 안 됨). 예전 표(카테고리 · 버전 이력 · 템플릿 · 미디어 · 방문 기록 · 라이프 · FAQ)는 `V16`에서 지웠고, 지우기 전 백업은 `data/db-backups/`에 있습니다. 0단계 기술 검증 기록은 [docs/STAGE0_VERIFICATION.md](docs/STAGE0_VERIFICATION.md)에 남아 있습니다(검증 코드는 정리됨).
 
 ## 주요 기능
 
 | 메뉴 | 기능 |
 | --- | --- |
-| 관리자 홈 | 오늘·어제·누적 방문수, 최근 30일 일별 방문 그래프, 최근 7일 인기글·게시물 현황 |
+| 관리자 홈 | 후기 · 인터뷰 · 프로젝트 표마다 글 수(게시중 · 임시저장 · 미게시), 후기 분야별 · 인터뷰/프로젝트 기수별 글 수, 최근 글 8개, 휴지통 글 수 |
 | 카테고리 페이지 관리 | 사이드바 **인사교 알아보기 · 선배들의 이야기 · 인사교 라이프 · 지원 전 체크** → 실제 페이지를 화면 그대로 보며 고치는 전용 편집 화면(글자·사진·아이콘 교체, 카드·항목 추가·이동·삭제, 글자 서식, 마우스로 위치 옮기기·열/행 맞춤, PC·태블릿·모바일 보기), 자동 임시저장, **사이트에 반영**(반영 전 파일 자동 백업 · 버전 기록에서 되돌리기) — ADMIN 이상. [사이트 폴더 연결](#카테고리-페이지-관리-사이트-폴더-연결) 참고 |
-| 게시물 관리 | 왼쪽 메뉴 **선배들의 이야기 게시물 관리 · 인사교 라이프 게시물 관리** 왼쪽 화살표로 세부 카테고리 펼치기(선배 후기 · 선배 인터뷰 · 프로젝트 · 기수별 모아보기 → `/admin/posts?kind=` / 시설 사진 · 오늘 점심 · 바람 쐬러 → `/admin/pages/life-photos?section=`) / 목록(상태 · **카테고리 → 세부 카테고리** 연동 필터 · 키워드(제목·요약·**작성자 이름/이메일**) · 작성자 링크로 좁히기, 페이징) / 제목 클릭 시 미리보기 / 수정 · 게시 · 미게시 · 휴지통 이동(**이동 시 미게시로 전환**, 이전 상태 기록, 복원하면 이동 전 상태로) / 후기 · 인터뷰 · 프로젝트 · 기수별 모아보기는 **고정 양식**으로 쓰고, 게시 상태가 바뀔 때마다 사이트의 `stories/js/stories-data.js`에 바로 반영(`post/story/`) / 인사교 라이프 게시물 관리: 시설 사진 · 오늘 점심 · 바람 쐬러 가요 모두 DB(`life_facility_photos` · `life_foods` · `life_spots`), 저장할 때마다 바로 전 모습을 **버전 기록**(`life_versions`, 묶음마다 최근 50개)에 남겨 되돌리기, 목록에서 뺀 카드는 **휴지통 › 인사교 라이프 카드** 탭에서 꺼내기 · 완전 삭제(최상위 관리자) |
-| 휴지통 | 삭제한 글 목록 / 복원은 관리자 이상, 개별·선택 영구 삭제와 전체 비우기는 최상위 관리자 전용 |
+| 게시물 관리 | 왼쪽 메뉴 **선배들의 이야기 게시물 관리**(선배 후기 · 선배 인터뷰 · 프로젝트 → `/admin/posts?kind=`) / 목록(상태 · 종류 → 후기 분야 연동 필터 · 키워드(제목·요약·**작성자 이름/이메일**) · 작성자 링크로 좁히기, 페이징) / 제목 클릭 시 미리보기 / 수정 · 게시 · 미게시 · 휴지통 이동(**이동 시 미게시로 전환**, 이전 상태 기록, 복원하면 이동 전 상태로) / 후기 · 인터뷰 · 프로젝트는 **고정 양식**으로 쓰고 종류별 표(`reviews` · `interviews` · `projects`)의 칸에 나눠 저장(`post/PostStore` · `StoryTableMapper`), 게시 상태가 바뀔 때마다 사이트의 `stories/js/stories-data.js`에 바로 반영(`post/story/`) / 후기 분야 · 인터뷰 기수는 표의 분류 칸이라 임시저장할 때도 필요 / **인사교 라이프 게시물 관리**(시설 사진 · 오늘 점심 · 바람 쐬러 가요)와 **지원 전 Check FAQ 관리**는 사이트 HTML(`life/index.html` · `check/index.html`)을 직접 고쳐요(DB 아님) |
+| 휴지통 | 세 표에서 휴지통으로 옮긴 글(`deleted_at`)을 모아 보기 / 복원은 관리자 이상, 개별·선택 영구 삭제와 전체 비우기는 최상위 관리자 전용 |
 | 글쓰기 | **블록 에디터**(제목·문단·이미지·인용·목록·표·코드·구분선), 서식(굵게·기울임·밑줄·취소선·크기·색·배경·정렬), **글꼴 7종**, 링크 대화상자(http/https 검증), 웹·워드 서식 유지 붙여넣기 → 블록 분할, `/` 블록 메뉴, 마크다운 단축(`# `, `> `, `- `, `1. `, `---`, ```` ``` ````), 키보드 블록 이동·복제, 이미지 업로드(붙여넣기·드래그, 큰 사진 자동 축소)·보관함(기수 폴더별)·정렬·링크, 브라우저 자동 백업·복구, 콘텐츠 속성 패널(공개 상태·카테고리·대표 이미지·요약), 템플릿 패널(불러오기 전용 — 본문 뼈대와 **레이아웃**이 함께 적용) |
-| 템플릿 관리 | 레이아웃(프리셋 6종 — 기본·넓게·히어로·매거진·좌/우 사이드바, 전체 정렬·글 영역 폭, 머리 요소 순서와 사이드바·하단 위젯(목차·프로필·최근 글·관련 글·공유)을 드래그로 구성) + 본문 뼈대(빠른 추가·뼈대 세트 4종·블록 에디터)를 템플릿으로 저장 / 미리보기(예시 데이터) / 수정 · 삭제 — 생성·수정·삭제는 ADMIN 이상. 글의 레이아웃은 프론트 미리보기와 공개 API `layout`/`toc` 에 반영 |
-| 버전 이력 | 임시저장·발행마다 스냅샷(발행 이력은 모두, 그 외 최근 20개), 내용 보기, 편집기에 불러오기, 복원(복원 전 백업 자동 기록) |
-| 템플릿 | 현재 글 구성을 템플릿으로 저장, 불러오기(교체) · 뒤에 추가 · 이름 변경 · 삭제 (최대 100개) |
 | 미리보기 | 저장 전·후 모두 프론트 게시물 화면과 같은 템플릿(`front/post.html` + `front/blocks.html`)으로 렌더링 |
-| 미디어 관리 | **게시물과 같은 카테고리 2단**(후기 › 생활… / 기수별 모아보기 › 3~5기·6기·7기)으로 분류해 **이미지(10MB) · 동영상 MP4/WEBM(200MB) · PDF(20MB)** 여러 개 업로드(버튼·드래그 앤 드롭, 큰 사진 자동 축소, 파일 시그니처로 형식 판별) / 카테고리·세부 탭 · 종류 탭 · 총 용량 / **표시 이름 변경**(저장 파일명·URL 불변) · 등록자 표시 · 분류 이동 · 주소 복사 · 완전 삭제 / 글쓰기 **보관함**에서 카테고리·세부 탭으로 이미지 꺼내 쓰기 — 분류 이동·이름 변경·삭제는 ADMIN 이상 |
-| FAQ 관리 | 메뉴·화면 틀만 준비 (기능 후속 구현), 게시물 상태 `답변대기` 사용 |
-| 이미지 업로드 | 에디터·대표 이미지에서 업로드 (JPG/PNG/GIF/WEBP, 10MB, 시그니처 검사), 1.5MB 초과·2000px 초과 사진은 브라우저에서 먼저 축소 |
-| 방문 통계 | 7/14/30일 고유 방문자·페이지뷰·게시물 조회 추이, 게시물별 누적 조회수 — 전체 역할 |
-| 관리자 계정 | SUPER_ADMIN 전용: 관리자 등록(**로그인 ID = 이메일**, 소문자 정규화)·역할(SUPER_ADMIN / ADMIN / SUPPORT=본인 글·업로드·통계)·활성 상태·비밀번호 재설정, 마지막 최상위 관리자 보호 |
+| 사진 올리기 | 글쓰기 양식에서 사진 여러 장 업로드 (JPG/PNG/GIF/WEBP, 10MB, 시그니처 검사) → 업로드 폴더에 파일로만 저장(`/uploads/…`, DB 표 없음, 미디어 관리 메뉴 없음), 1.5MB 초과·2000px 초과 사진은 브라우저에서 먼저 축소 |
+| 관리자 계정 | SUPER_ADMIN 전용: 관리자 등록(**로그인 ID = 이메일**, 소문자 정규화)·역할(SUPER_ADMIN / ADMIN / SUPPORT=본인 글·사진 올리기)·활성 상태·비밀번호 재설정, 마지막 최상위 관리자 보호 |
 | 비밀번호 변경 | 본인 비밀번호 변경 후 재로그인, 임시 비밀번호 상태면 비밀번호 변경 화면에 안내 |
 
 좌측 프로필 카드의 "AICA 홈페이지 이동" 버튼은 `backoffice.properties`의 `backoffice.front-base-url`(현재 `https://www.aica-gj.kr/main.php`)을 엽니다.
 
-프론트 오피스용 공개 API(인증 없음)도 포함되어 있습니다: `GET /api/public/categories`(2단 트리, children 포함), `GET /api/public/posts?category=&sub=&page=&size=`, `GET /api/public/posts/{id}`, `POST /api/public/track/visit`, `POST /api/public/track/posts/{id}/view`.
 
-사이트 페이지가 게시물을 그릴 때 쓰는 API(DB의 지금 내용, 캐시 없음). 같은 내용을 `.js`로 부르면 `window.STORIES_DATA` · `window.LIFE_DATA` · `window.FAQ_DATA`로 받습니다:
-`GET /api/public/stories(.js)`(선배들의 이야기 후기 · 인터뷰 · 프로젝트 · 기수 기록), `GET /api/public/life(.js)`(인사교 라이프 식당 · 카페 · 바람 쐬러 갈 곳 · 시설 둘러보기 사진), `GET /api/public/faq(.js)`(지원 전 체크 자주 묻는 질문).
-백오피스가 꺼져 있을 때를 위해 저장할 때마다 같은 내용을 사이트 폴더에 사본(`stories/js/stories-data.js` · `life/js/life-data.js` · `check/js/faq-data.js`)으로도 씁니다.
+사이트 페이지가 게시물을 그릴 때 쓰는 공개 API(인증 없음, DB의 지금 내용, 캐시 없음): `GET /api/public/stories(.js)` — 선배들의 이야기 후기 · 인터뷰 · 프로젝트(`.js`로 부르면 `window.STORIES_DATA`). 인사교 라이프 · 지원 전 체크 · 기수별 모아보기는 사이트 HTML에 적혀 있어 API가 없습니다.
+백오피스가 꺼져 있을 때를 위해 저장할 때마다 같은 내용을 사이트 폴더에 사본(`stories/js/stories-data.js`)으로도 씁니다. DB가 비어 있으면(새 서버 등) 켤 때 이 사본의 글을 표로 가져옵니다.
 
 ## 시작하기 (Windows PowerShell)
 
@@ -93,16 +85,14 @@ Java 패키지 · 매퍼 XML · 템플릿 · 정적 자원이 같은 기능 이�
 | 기능 | Java (`egovframework.backoffice.*`) | 매퍼 XML | 템플릿 | JS / CSS |
 | --- | --- | --- | --- | --- |
 | 인증·계정 | `account/` (로그인, 세션 사용자, 관리자 계정, 비밀번호, 최초 관리자) | `mapper/account/` | `templates/account/` | — |
-| 게시물 관리 | `post/` (목록·등록·수정·상태 `PostController`, 휴지통 `PostTrashController`, 미리보기 `PostPreviewController`) | `mapper/post/` | `templates/post/` | `css/admin.css` |
-| 버전 이력 | `post/version/` | `mapper/post/PostVersionMapper.xml` | (글쓰기 화면 안) | `js/post/history.js` |
+| 게시물 관리 | `post/` (목록·등록·수정·상태 `PostController`, 휴지통 `PostTrashController`, 미리보기 `PostPreviewController`, 관리자 홈 `DashboardController`, 표 읽고 쓰기 `PostStore` · `StoryTableMapper` · `StoryColumns`) | `mapper/post/StoryTableMapper.xml` | `templates/post/`, `templates/dashboard/` | `css/admin.css`, `css/dashboard.css` |
 | 글쓰기(블록 에디터) | `editor/BlockContent` (블록 JSON 정화 규칙) | — | `templates/post/editor.html` + `editor/_*.html` | `js/editor/*.js`(라이브러리), `js/post/*.js`(페이지), `css/editor.css`, `css/blocks.css` |
-| 템플릿 관리 | `template/` (관리 화면 `PostTemplatePageController`, 불러오기 JSON `PostTemplateController`), `editor/PostLayout`(레이아웃 규칙) | `mapper/template/` | `templates/template/`, `templates/post/editor/_template-panel.html`(글쓰기 불러오기), `front/widgets.html` | `js/template/*.js`, `js/post/templates.js` |
-| 미디어 관리 | `media/` | `mapper/media/` | `templates/media/` | `js/media/library.js`, `js/editor/core.js`(축소·업로드) |
-| 카테고리(조회 전용, 2단) | `category/` — 후기(생활·수업·프로젝트·취업·진로) · 인터뷰 · 프로젝트 · 기수별 모아보기(3~5기·6기·7기), 값은 V7 시드 | `mapper/category/` | — | `js/category-select.js`(연동 셀렉트) |
-| 통계 | `stats/` | `mapper/stats/` | `templates/dashboard/`, `templates/stats/` | `css/dashboard.css` |
-| 공개 API | `publicapi/` | — | — | — |
+| 사진 올리기 | `media/` (파일만 저장, DB 없음) | — | — | `js/editor/core.js`(축소·업로드) |
+| 카테고리(조회 전용, 2단) | `category/CategoryService` — 후기(생활·수업·프로젝트·취업 성공·진로 고민) · 인터뷰 · 프로젝트, 값은 코드에 정해 둠(DB 표 없음) | — | — | `js/category-select.js`(연동 셀렉트) |
+| 공개 API | `publicapi/` (`/api/public/stories(.js)`만) | — | — | — |
 | 카테고리 페이지 관리 | `page/` (편집 화면·사이트 파일 `CategoryPageController`, 저장·반영 API `CategoryPageApiController`, 파일 관리 `CategoryPageService`) | — | `templates/page/editor.html`, `layout/admin.html`(사이드바 메뉴) | `js/page/editor.js`(편집 화면), `js/page/canvas.js`(페이지 위 편집 도구), `js/page/icons.js`, `css/page/*.css` |
-| FAQ(자리표시) | `faq/` | — | `templates/faq/` | — |
+| 인사교 라이프 · FAQ | `page/LifePhotoService` · `LifeTipService` · `CheckFaqService` (사이트 HTML을 직접 고침) | — | `templates/page/life-photos.html`, `templates/faq/` | `js/page/life-photos.js`, `js/page/faq.js` |
+| DB 표 바꾸기 | `db/migration/V16__split_story_tables`(자바 마이그레이션: 표 4개로 나누고 글 옮기기) | `db/migration/V*.sql` | — | — |
 | 공통 | `common/`(예외·공통 모델), `config/`(보안·속성·정적 자원) | — | `templates/layout/`, `error.html` | `js/admin.js`, `css/admin.css`, `css/front.css` |
 
 - 블록 에디터 JS는 `js/editor/core → blocks → render → input → dialogs → toolbar → index` 순서로 로드해야 합니다(`editor.html` 참고).

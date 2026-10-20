@@ -57,27 +57,19 @@ public class BackofficeProperties {
         private String inertNotice = "분류 버튼과 검색은 질문 목록에 맞춰 자동으로 채워지는 곳이라 편집 화면에서는 누를 수 없어요. "
                 + "분류별 질문 수는 저장할 때 자동으로 맞춰지고, 동작은 ‘미리보기’에서 확인할 수 있어요.";
         /**
-         * 곳마다 따로 안내하는 '누를 수 없는 곳': [선택자, 안내]. 선배들의 이야기의 글 목록 · 글 창 · 한눈에 보기 미리보기,
-         * 인사교 라이프 생활 꿀팁 카드, 지원 전 체크 질문 목록은 게시물 관리의 DB 내용(공개 API)으로 그려지는 곳이라 페이지 편집에서는 고르지 못하게 한다.
+         * 곳마다 따로 안내하는 '누를 수 없는 곳': [선택자, 안내]. 선배들의 이야기의 후기 · 인터뷰 · 프로젝트 목록 · 글 창 · 한눈에 보기 미리보기는
+         * 게시물 관리의 DB 내용(공개 API)으로 그려지는 곳이라 페이지 편집에서는 고르지 못하게 한다.
+         * 기수별 모아보기 카드 · 인사교 라이프 · 지원 전 체크는 2026-10-20부터 다시 페이지 HTML이라 페이지 편집에서 고친다.
+         * 한눈에 보기의 큰 인터뷰 카드는 사진 · 제목 · 이름만 DB로 채우고, 꼬리표(em)와 인용(.hb-ivf-q)은 페이지 글이라 고를 수 있다.
          */
         private List<List<String>> inertNotices = new ArrayList<>(List.of(List.of(
                 ".stories-page .idgrid, .stories-page .rvlist, .stories-page .rev .pager, .stories-page .ov, "
                         + ".stories-page .ivgrid, .stories-page .ivdots, .stories-page .iva-out, .stories-page .iva-chips, .stories-page .cpager, .stories-page .ivd, "
-                        + ".stories-page .pjgrid, .stories-page .pjd, .stories-page .cv3, .stories-page .cv3-m, "
-                        + ".stories-hub .hb-ivg, .stories-hub .hb-lqw, .stories-hub .hb-pis, .stories-hub .hb-pjs, .stories-hub .hb-mos",
-                "이 부분은 ‘선배들의 이야기 게시물 관리’에 올린 후기 · 인터뷰 · 프로젝트 · 기수 기록으로 채워지는 곳이에요. "
-                        + "글을 쓰거나 고치려면 게시물 관리 › 선배들의 이야기 게시물 관리에서 해 주세요. 발행하면 이 자리에 바로 반영돼요."),
-                // 2026-10-19: 생활 꿀팁 카드 · 자주 묻는 질문도 DB에서(사이트가 공개 API로 받아 그림)
-                List.of("#fdList, #tp-fun .fsl, #tp-fun .fs-names",
-                        "이 부분은 ‘인사교 라이프 게시물 관리’의 식당 · 카페 · 바람 쐬러 갈 곳 카드로 채워지는 곳이에요. "
-                                + "카드를 더하거나 고치려면 게시물 관리 › 인사교 라이프 게시물 관리에서 해 주세요. 저장하면 이 자리에 바로 반영돼요."),
-                // 2026-10-19: 시설 둘러보기 사진도 DB에서(공간 이름 · 안내 글은 페이지에서 고침)
-                List.of("#pg-facility .bx9-ph, #pg-facility .bx9-th, #pg-facility .bx9-tt",
-                        "이 사진들은 ‘인사교 라이프 게시물 관리’의 시설 사진으로 채워지는 곳이에요. "
-                                + "사진을 바꾸거나 더하려면 게시물 관리 › 인사교 라이프 게시물 관리 › 시설 사진에서 해 주세요. 저장하면 이 자리에 바로 반영돼요."),
-                List.of("#faqList",
-                        "이 부분은 ‘지원 전 Check FAQ 관리’의 질문으로 채워지는 곳이에요. "
-                                + "질문을 더하거나 고치려면 게시물 관리 › 지원 전 Check FAQ 관리에서 해 주세요. 저장하면 이 자리에 바로 반영돼요.")));
+                        + ".stories-page .pjgrid, .stories-page .pjd, "
+                        + ".stories-hub .hb-ivf > .hb-ph, .stories-hub .hb-ivf > svg, .stories-hub .hb-ivf h3, .stories-hub .hb-ivf .hb-by, "
+                        + ".stories-hub .hb-ivl, .stories-hub .hb-lqw, .stories-hub .hb-pis, .stories-hub .hb-pjs",
+                "이 부분은 ‘선배들의 이야기 게시물 관리’에 올린 후기 · 인터뷰 · 프로젝트로 채워지는 곳이에요. "
+                        + "글을 쓰거나 고치려면 게시물 관리 › 선배들의 이야기 게시물 관리에서 해 주세요. 발행하면 이 자리에 바로 반영돼요.")));
         /** 글꼴 목록: [CSS font-family, 이름]. 사이트에 들어 있는 글꼴만 넣는다(배포해도 그대로 보이도록) */
         private List<List<String>> fonts = new ArrayList<>(List.of(
                 List.of("Pretendard, sans-serif", "프리텐다드"),

@@ -11,7 +11,6 @@
         <option value="DRAFT">임시저장 · 공개되지 않음</option>
         <option value="PUBLISHED">공개 · 프론트에 게시</option>
         <option value="HIDDEN">미게시 · 저장만, 프론트 미노출</option>
-        <option value="PENDING">답변대기 · FAQ 질문 등</option>
       </select>
 
       <p class="ed-help" th:if="${!me.role.canManageContent()}">게시 상태 변경은 관리자에게 요청해 주세요.</p>
@@ -24,9 +23,9 @@
                 th:text="${form.categoryId == null} ? '카테고리 없음 (예전 글)' : '숨긴 카테고리 (예전 글)'">카테고리 없음 (예전 글)</option>
         <option th:each="c : ${categoryTree}" th:value="${c.id}" th:text="${c.name}" th:attr="data-slug=${c.slug}"></option>
       </select>
-      <p class="ed-help sf-only" style="margin-top:8px">후기 분야 · 기수는 양식에서 고르면 세부 카테고리가 자동으로 정해져요.</p>
+      <p class="ed-help sf-only" style="margin-top:8px">후기는 양식에서 고른 분야, 인터뷰는 기수로 나눠 저장돼요. 이 둘은 임시저장할 때도 꼭 넣어 주세요.</p>
       <div class="ed-generic">
-      <label class="ed-props-label" for="subCategoryId">세부 카테고리 <span class="ed-help">후기 → 생활·수업·프로젝트·취업·진로 / 기수별 → 3~5기·6기·7기</span></label>
+      <label class="ed-props-label" for="subCategoryId">세부 카테고리 <span class="ed-help">후기 → 생활·수업·프로젝트·취업 성공·진로 고민</span></label>
       <select class="ed-select" th:field="*{subCategoryId}" id="subCategoryId">
         <option value="">세부 카테고리</option>
         <th:block th:each="c : ${categoryTree}">
@@ -55,7 +54,7 @@
       </div>
 
       <hr class="ed-props-hr">
-      <p class="ed-props-note">입력 내용은 브라우저에 자동 백업됩니다. <b>임시저장</b>·<b>저장</b>을 누르면 서버에 저장되고 버전 이력에도 남습니다.</p>
+      <p class="ed-props-note">입력 내용은 브라우저에 자동 백업됩니다. <b>임시저장</b>·<b>저장</b>을 누르면 서버(DB)에 저장됩니다.</p>
       <div class="ed-props-actions" th:if="${form.id != null and me.role.canManageContent()}">
         <button class="ed-tool danger" type="submit" form="deleteForm">
           <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg> 휴지통으로 이동

@@ -52,10 +52,3 @@
 .lp-unit .input { width: 70px; }
 .lp-ta { height: auto; padding: 6px 10px; line-height: 1.5; resize: vertical; font: inherit; font-size: 13px; }
 .lp-ex { color: #b5651d; font-size: 11px; }
-/* 버전 기록 칸(저장할 때마다 바로 전 모습) */
-.lp-hist { margin: 0 0 16px; border-color: #cfe3e6; }
-.lp-hist-list { list-style: none; margin: 0; padding: 0; }
-.lp-hist-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid #eef0f4; font-size: 13px; }
-.lp-hist-list li .muted { font-size: 12px; }
-.lp-hist-sum { margin-top: 2px; color: #555; font-size: 12px; }
-.lp-hist-empty { margin: 0; padding: 18px 16px; color: var(--muted); font-size: 13px; border-top: 1px solid #eef0f4; }

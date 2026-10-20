@@ -41,7 +41,7 @@
         <th>게시물</th>
         <th style="width:140px">카테고리</th>
         <th style="width:90px">상태</th>
-        <th style="width:72px" class="right">조회수</th>
+        <th style="width:100px">게시일</th>
         <th style="width:110px">작성자</th>
         <th style="width:140px">수정일</th>
         <th class="right col-act">액션</th>
@@ -61,37 +61,37 @@
         <td>
           <!--/* 제목 · 사진을 누르면 사이트에서 보이는 모습이 미리보기 창으로(창 안 '수정하기' · 오른쪽 '수정'으로 수정 화면) */-->
           <div class="title-cell">
-            <a class="thumb-link" th:href="@{/admin/posts/{id}/preview(id=${p.id})}" target="_blank" rel="noopener" data-preview
-               th:data-title="${p.title}" th:data-edit="${me.role.canManageContent() or p.authorId == me.id} ? @{/admin/posts/{id}/edit(id=${p.id})} : null" tabindex="-1" aria-hidden="true">
+            <a class="thumb-link" th:href="@{/admin/posts/{kind}/{id}/preview(kind=${p.kind}, id=${p.id})}" target="_blank" rel="noopener" data-preview
+               th:data-title="${p.title}" th:data-edit="${me.role.canManageContent() or p.authorId == me.id} ? @{/admin/posts/{kind}/{id}/edit(kind=${p.kind}, id=${p.id})} : null" tabindex="-1" aria-hidden="true">
               <img class="thumb" th:if="${p.thumbnailUrl != null}" th:src="${p.thumbnailUrl}" alt="">
               <span class="thumb empty" th:if="${p.thumbnailUrl == null}">no img</span>
             </a>
             <div>
-              <a class="t" th:href="@{/admin/posts/{id}/preview(id=${p.id})}" target="_blank" rel="noopener" data-preview
-                 th:data-title="${p.title}" th:data-edit="${me.role.canManageContent() or p.authorId == me.id} ? @{/admin/posts/{id}/edit(id=${p.id})} : null" th:text="${p.title}" title="눌러서 미리보기">제목</a>
+              <a class="t" th:href="@{/admin/posts/{kind}/{id}/preview(kind=${p.kind}, id=${p.id})}" target="_blank" rel="noopener" data-preview
+                 th:data-title="${p.title}" th:data-edit="${me.role.canManageContent() or p.authorId == me.id} ? @{/admin/posts/{kind}/{id}/edit(kind=${p.kind}, id=${p.id})} : null" th:text="${p.title}" title="눌러서 미리보기">제목</a>
               <div class="s" th:text="${p.summary}"></div>
             </div>
           </div>
         </td>
         <td class="cat-cell" th:text="${p.categoryPath ?: '-'}">카테고리</td>
         <td><span class="badge" th:classappend="${p.status.css}" th:text="${p.status.label}">상태</span></td>
-        <td class="right" th:text="${#numbers.formatInteger(p.viewCount, 1, 'COMMA')}">0</td>
+        <td class="muted nowrap" th:text="${p.publishedAt != null} ? ${#temporals.format(p.publishedAt, 'yyyy-MM-dd')} : '-'">-</td>
         <td class="nowrap"><a class="author-link" th:href="@{/admin/posts(authorId=${p.authorId})}" th:text="${p.authorName}" th:title="'이 작성자의 글만 보기'">작성자</a></td>
         <td class="muted nowrap" th:text="${#temporals.format(p.updatedAt, 'yyyy-MM-dd HH:mm')}">-</td>
         <td class="right col-act">
           <div class="actions">
-            <a class="btn ghost xs" th:if="${me.role.canManageContent() or p.authorId == me.id}" th:href="@{/admin/posts/{id}/edit(id=${p.id})}">수정</a>
+            <a class="btn ghost xs" th:if="${me.role.canManageContent() or p.authorId == me.id}" th:href="@{/admin/posts/{kind}/{id}/edit(kind=${p.kind}, id=${p.id})}">수정</a>
             <form th:if="${me.role.canManageContent() and p.status.name() != 'PUBLISHED'}"
-                  th:action="@{/admin/posts/{id}/status(id=${p.id})}" method="post">
+                  th:action="@{/admin/posts/{kind}/{id}/status(kind=${p.kind}, id=${p.id})}" method="post">
               <input type="hidden" name="status" value="PUBLISHED">
               <button class="btn ghost xs accent" type="submit">게시</button>
             </form>
             <form th:if="${me.role.canManageContent() and p.status.name() == 'PUBLISHED'}"
-                  th:action="@{/admin/posts/{id}/status(id=${p.id})}" method="post">
+                  th:action="@{/admin/posts/{kind}/{id}/status(kind=${p.kind}, id=${p.id})}" method="post">
               <input type="hidden" name="status" value="HIDDEN">
               <button class="btn ghost xs" type="submit">미게시</button>
             </form>
-            <form th:if="${me.role.canManageContent()}" th:action="@{/admin/posts/{id}/delete(id=${p.id})}" method="post" data-confirm="이 게시물을 휴지통으로 이동할까요? 목록과 프론트에서 제외되며 휴지통에서 복원할 수 있습니다.">
+            <form th:if="${me.role.canManageContent()}" th:action="@{/admin/posts/{kind}/{id}/delete(kind=${p.kind}, id=${p.id})}" method="post" data-confirm="이 게시물을 휴지통으로 이동할까요? 목록과 프론트에서 제외되며 휴지통에서 복원할 수 있습니다.">
               <button class="btn danger xs" type="submit" title="휴지통으로 이동">휴지통</button>
             </form>
           </div>

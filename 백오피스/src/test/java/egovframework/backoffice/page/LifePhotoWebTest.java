@@ -36,10 +36,8 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * 게시물 관리 › 인사교 라이프 게시물 관리. 시설 사진 · 오늘 점심 · 바람 쐬러 가요 카드 모두 처음 켤 때 페이지에서 DB로 옮기고,
- * 저장하면 DB · 공개 API · 사본이 바뀐다(페이지 파일은 그대로, 페이지 편집 임시저장과도 상관없음). 그사이 내용이 바뀌었으면 저장하지 않는다.
- * 목록에서 뺀 카드는 휴지통(휴지통 › 인사교 라이프 카드)으로 가서 꺼내거나 완전 삭제할 수 있고,
- * 바꿀 때마다 바로 전 모습이 버전 기록에 남아 그 모습으로 되돌릴 수 있다.
+ * 콘텐츠 › 인사교 라이프 시설 사진 관리: 공간의 사진을 읽고, 새 사진을 올려 순서 · 설명 · 위치 · 표시를 바꿔 저장하면
+ * 그 공간의 사진 부분만 바뀌고(나머지 글자 · 줄바꿈 · 문자 참조는 그대로) 반영 전 파일은 백업된다. 임시저장이 있거나 그사이 파일이 바뀌면 저장하지 않는다.
  */
 @TestPropertySource(properties = {
         "datasource.url=jdbc:h2:mem:backoffice-life-photos-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
@@ -276,243 +274,119 @@ class LifePhotoWebTest {
                 + "{\"cls\":\"im-classroom\",\"caption\":\"강의실 전경\"}]", "")
                 .andExpect(status().isOk()).andExpect(jsonPath("$.saved").value(true));
 
-        // 사진은 DB에: 페이지 파일은 그대로, 사이트는 공개 API · 사본으로 그림
-        assertThat(Files.readString(LIFE, UTF_8)).isEqualTo(PAGE);
-        JsonNode fac = publicLife().get("fac");
-        assertThat(fac.at("/bx9s-23-0/badge").asText()).isEmpty();
-        assertThat(fac.at("/bx9s-23-0/photos")).hasSize(3);
-        assertThat(fac.at("/bx9s-23-0/photos/0/src").asText()).isEqualTo(path);
-        assertThat(fac.at("/bx9s-23-0/photos/0/bp").asText()).isEqualTo("40% 60%");
-        assertThat(fac.at("/bx9s-23-0/photos/0/caption").asText()).isEqualTo("새 강의실 <사진>");
-        assertThat(fac.at("/bx9s-23-0/photos/1/cls").asText()).isEqualTo("im-b_class");
-        assertThat(fac.at("/bx9s-23-0/photos/1/bs").asText()).isEqualTo("240%");
-        // 다른 공간은 그대로
-        assertThat(fac.at("/bx9s-8-0/photos")).hasSize(1);
-        assertThat(fac.at("/bx9s-8-0/badge").asText()).isEmpty();
-        JsonNode copy = copy();
-        assertThat(copy.get("fac")).isEqualTo(fac);
-        JsonNode space = model(session).at("/floors/0/spaces/0");
-        assertThat(space.get("photos")).hasSize(3);
-        assertThat(space.at("/photos/0/url").asText()).isEqualTo("/admin/pages/site/life/" + path);
-        // 바로 전 모습(사진 2장)이 버전 기록에
-        JsonNode versions = versions(session, "fac");
-        assertThat(versions).hasSize(1);
-        assertThat(versions.at("/0/reason").asText()).isEqualTo("저장 전");
-        assertThat(versions.at("/0/summary").asText()).isEqualTo("사진 3장 (공간 2곳)");
+        String out = Files.readString(LIFE, UTF_8);
+        String slide = "<div class=\"bx9-sl\" style=\"background-image:url(" + path + ");--bp:40% 60%;\" role=\"img\" aria-label=\"새 강의실 &lt;사진&gt;\"></div>";
+        assertThat(out).contains("                <div class=\"bx9-tr\">\r\n                  " + slide + "\r\n"
+                + "                  <div class=\"bx9-sl im-b_class\" style=\"--bs:240%;--bp:28% 72%;\" role=\"img\" aria-label=\"노트북 자리\"></div>\r\n"
+                + "                  <div class=\"bx9-sl im-classroom\" role=\"img\" aria-label=\"강의실 전경\"></div>\r\n"
+                + "                </div>\r\n                <button type=\"button\" class=\"bx9-a prev\"");
+        assertThat(out).doesNotContain("bx-ex");
+        assertThat(out).contains("<p class=\"bx9-cap\"><span>새 강의실 &lt;사진&gt;</span><span class=\"bx9-n\"><b>1</b> / 3</span></p>");
+        assertThat(out).contains("aria-label=\"강의실 사진 3장\"");
+        assertThat(out).contains("<button type=\"button\" class=\"bx9-tb\" style=\"background-image:url(" + path + ");--bp:40% 60%;\" aria-label=\"새 강의실 &lt;사진&gt; 보기\" aria-current=\"true\"></button>");
+        assertThat(out).contains("<span class=\"bx9-tt\" aria-hidden=\"true\" style=\"background-image:url(" + path + ");--bp:40% 60%;\"></span><b>강의실</b>");
+        assertThat(out.split("bx9-tb", -1)).hasSize(5);   // 작은 사진: 강의실 3 + 구내식당 1
+        // 다른 곳은 그대로: 문자 참조 · 줄바꿈(CRLF)
+        assertThat(out).contains("<li>평일 &middot; 9시</li>");
+        assertThat(out.replace("\r\n", "")).doesNotContain("\n");
+        // 반영 전 파일은 버전 기록(백업)으로
+        mvc.perform(get("/admin/pages/api/backups").param("page", "life").session(session))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
 
-        // 표시를 '임시 사진'으로
+        // 표시를 다시 '임시 사진'으로: 사진 넘김 바로 뒤 한 줄
         String hash2 = model(session).get("hash").asText();
         save(session, hash2, "[{\"cls\":\"im-classroom\",\"caption\":\"강의실 전경\"}]", "tmp").andExpect(status().isOk());
-        assertThat(publicLife().at("/fac/bx9s-23-0/badge").asText()).isEqualTo("tmp");
-        assertThat(publicLife().at("/fac/bx9s-23-0/photos")).hasSize(1);
+        String out2 = Files.readString(LIFE, UTF_8);
+        assertThat(out2).contains("                </div>\r\n                <span class=\"bx-ex tmp\">임시 사진</span>\r\n                <button type=\"button\" class=\"bx9-a prev\"");
+        assertThat(out2).contains("aria-label=\"강의실 사진 1장\"").contains("<span class=\"bx9-tt im-classroom\" aria-hidden=\"true\"></span>");
 
-        // 탭 없는 공간도 저장
+        // 탭 없는 공간도 저장(아이콘은 없으니 그대로)
         String hash3 = model(session).get("hash").asText();
         String body8 = "{\"baseHash\":\"" + hash3 + "\",\"spaces\":[{\"id\":\"bx9s-8-0\",\"badge\":\"tmp\",\"photos\":[{\"cls\":\"im-classroom\",\"caption\":\"구내식당 전경\"},{\"src\":\"" + path + "\",\"caption\":\"배식대\"}]}]}";
         mvc.perform(post("/admin/pages/life-photos/api").session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body8))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.saved").value(true));
-        assertThat(publicLife().at("/fac/bx9s-8-0/photos")).hasSize(2);
-        // 페이지에 없는 공간은 받지 않음
-        String bad = "{\"baseHash\":\"" + model(session).get("hash").asText() + "\",\"spaces\":[{\"id\":\"bx9s-9-9\",\"badge\":\"\",\"photos\":[{\"cls\":\"im-classroom\",\"caption\":\"x\"}]}]}";
-        mvc.perform(post("/admin/pages/life-photos/api").session(session).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(bad))
-                .andExpect(status().isBadRequest());
+        assertThat(Files.readString(LIFE, UTF_8)).contains("aria-label=\"구내식당 사진 2장\"").contains("<span class=\"bx-ex tmp\">임시 사진</span>");
 
-        // 그사이 내용이 바뀌었으면(옛 hash) 저장하지 않음
+        // 그사이 파일이 바뀌었으면(옛 hash) 저장하지 않음
         save(session, hash, "[{\"cls\":\"im-classroom\",\"caption\":\"강의실\"}]", "").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("새로 고친")));
-        assertThat(Files.readString(LIFE, UTF_8)).isEqualTo(PAGE);
     }
 
     @Test
     @Order(3)
-    void pageEditorDraftDoesNotBlockFacilityPhotos() throws Exception {
+    void pageEditorDraftBlocksSaving() throws Exception {
         MockHttpSession session = login();
+        String hash = model(session).get("hash").asText();
         String draft = Files.readString(LIFE, UTF_8).replace("<h4>강의실</h4>", "<h4>강의실(고침)</h4>");
         mvc.perform(put("/admin/pages/api/draft").param("page", "life").session(session).with(csrf()).content(draft.getBytes(UTF_8)))
                 .andExpect(status().isOk());
-        JsonNode m = model(session);
-        assertThat(m.get("hasDraft").asBoolean()).isFalse();
-        save(session, m.get("hash").asText(), "[{\"cls\":\"im-b_class\",\"caption\":\"노트북 자리\"}]", "").andExpect(status().isOk())
-                .andExpect(jsonPath("$.saved").value(true));
+        save(session, hash, "[{\"cls\":\"im-b_class\",\"caption\":\"노트북 자리\"}]", "").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("임시저장")));
+        assertThat(model(session).get("hasDraft").asBoolean()).isTrue();
         mvc.perform(delete("/admin/pages/api/draft").param("page", "life").session(session).with(csrf())).andExpect(status().isOk());
-        assertThat(publicLife().at("/fac/bx9s-23-0/photos/0/caption").asText()).isEqualTo("노트북 자리");
+        save(session, hash, "[{\"cls\":\"im-b_class\",\"caption\":\"노트북 자리\"}]", "").andExpect(status().isOk());
     }
     @Test
     @Order(4)
-    void lunchAndOutingCardsAreMovedIntoTheDatabaseAndSavedThere() throws Exception {
+    void lunchAndOutingCardsCanBeAddedEditedReorderedAndDeleted() throws Exception {
         MockHttpSession session = login();
-        // 처음 켤 때 페이지에 적혀 있던 카드를 DB로 옮김(메뉴의 줄바꿈 없는 띄어쓰기는 보통 띄어쓰기로)
         JsonNode m = model(session);
         assertThat(m.get("food")).hasSize(3);
-        assertThat(m.at("/food/0/id").isNumber()).isTrue();
         assertThat(m.at("/food/0/menu").asText()).isEqualTo("국밥 · 동명동");
         assertThat(m.at("/food/0/example").asBoolean()).isTrue();
         assertThat(m.at("/fun/0/k").asText()).isEqualTo("walk");
-        assertThat(m.at("/fun/0/title").asText()).isEqualTo("근처 산책길");
         assertThat(m.at("/fun/0/cards/1/cls").asText()).isEqualTo("im-b_class");
-        assertThat(m.at("/fun/0/cards/1/url").asText()).isEqualTo("/admin/pages/site/life/assets/b_class.webp");
-        long gukbap = m.at("/food/0/id").asLong(), gogi = m.at("/food/1/id").asLong(), cafe = m.at("/food/2/id").asLong();
-        long green = m.at("/fun/0/cards/0/id").asLong(), river = m.at("/fun/0/cards/1/id").asLong();
         String hash = m.get("hash").asText();
-        String page = Files.readString(LIFE, UTF_8);
         String path = json.readTree(mvc.perform(post("/admin/pages/api/upload").param("page", "life").param("name", "food.png")
                         .session(session).with(csrf()).content(PNG)).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(UTF_8)).get("path").asText();
-        // 고깃집 지움 · 국밥집 후기 고침('예시' 빠짐) · 새 카페(사진 있음) · 새 식당(후기 없음). 카드 번호(id)로 같은 카드를 알아봄
-        String food = ("[{\"t\":\"cafe\",\"g\":\"group\",\"w\":3,\"category\":\"카페\",\"name\":\"새 카페 & 빵\",\"menu\":\"라떼 · 소금빵 ·충장동\",\"review\":\"\",\"example\":false,\"src\":\"@PATH@\"},"
-                + "{\"id\":@GUKBAP@,\"t\":\"food\",\"g\":\"solo\",\"w\":4,\"category\":\"한식\",\"name\":\"국밥집\",\"menu\":\"국밥 · 동명동\",\"review\":\"진짜 후기예요.\",\"example\":true,\"src\":\"\"},"
-                + "{\"id\":@CAFE@,\"t\":\"cafe\",\"g\":\"solo\",\"w\":10,\"category\":\"카페\",\"name\":\"카페 하나\",\"menu\":\"커피 · 동명동\",\"review\":\"조용해요.\",\"example\":true,\"src\":\"\"},"
-                + "{\"t\":\"food\",\"g\":\"group\",\"w\":12,\"category\":\"중식\",\"name\":\"새 중국집\",\"menu\":\"짜장면\",\"review\":\"\",\"example\":false,\"src\":\"\"}]")
-                .replace("@PATH@", path).replace("@GUKBAP@", String.valueOf(gukbap)).replace("@CAFE@", String.valueOf(cafe));
+        // 고깃집 지움 · 국밥집 후기 고침('예시' 빠짐) · 새 카페(사진 있음) · 새 식당(후기 없음)
+        String food = "[{\"t\":\"cafe\",\"g\":\"group\",\"w\":3,\"category\":\"카페\",\"name\":\"새 카페 & 빵\",\"menu\":\"라떼 · 소금빵 ·충장동\",\"review\":\"\",\"example\":false,\"src\":\"@PATH@\"},{\"t\":\"food\",\"g\":\"solo\",\"w\":4,\"category\":\"한식\",\"name\":\"국밥집\",\"menu\":\"국밥 · 동명동\",\"review\":\"진짜 후기예요.\",\"example\":true,\"src\":\"\"},{\"t\":\"cafe\",\"g\":\"solo\",\"w\":10,\"category\":\"카페\",\"name\":\"카페 하나\",\"menu\":\"커피 · 동명동\",\"review\":\"조용해요.\",\"example\":true,\"src\":\"\"},{\"t\":\"food\",\"g\":\"group\",\"w\":12,\"category\":\"중식\",\"name\":\"새 중국집\",\"menu\":\"짜장면\",\"review\":\"\",\"example\":false,\"src\":\"\"}]".replace("@PATH@", path);
         // 문화 · 여가: 순서 바꾸고 새 장소(올린 사진) 더함
-        String fun = ("[{\"k\":\"walk\",\"cards\":[{\"id\":@RIVER@,\"name\":\"광주천 산책로\",\"distance\":\"남쪽 · 약 1km\",\"fee\":\"무료\",\"summary\":\"하천 길이에요.\",\"cls\":\"im-b_class\",\"src\":\"\"},"
-                + "{\"id\":@GREEN@,\"name\":\"푸른길 공원\",\"distance\":\"동쪽 · 약 1km\",\"fee\":\"무료\",\"summary\":\"산책로예요.\",\"cls\":\"im-classroom\",\"src\":\"\"},"
-                + "{\"name\":\"새 <공원>\",\"distance\":\"북쪽 · 약 2km\",\"fee\":\"무료\",\"summary\":\"새로 생겼어요.\",\"cls\":\"\",\"src\":\"@PATH@\"}]}]")
-                .replace("@PATH@", path).replace("@RIVER@", String.valueOf(river)).replace("@GREEN@", String.valueOf(green));
+        String fun = "[{\"k\":\"walk\",\"cards\":[{\"name\":\"광주천 산책로\",\"distance\":\"남쪽 · 약 1km\",\"fee\":\"무료\",\"summary\":\"하천 길이에요.\",\"cls\":\"im-b_class\",\"src\":\"\"},{\"name\":\"푸른길 공원\",\"distance\":\"동쪽 · 약 1km\",\"fee\":\"무료\",\"summary\":\"산책로예요.\",\"cls\":\"im-classroom\",\"src\":\"\"},{\"name\":\"새 <공원>\",\"distance\":\"북쪽 · 약 2km\",\"fee\":\"무료\",\"summary\":\"새로 생겼어요.\",\"cls\":\"\",\"src\":\"@PATH@\"}]}]".replace("@PATH@", path);
 
-        // 확인: 이름 없음 · 사진 없는 문화 카드 · 카페 0곳 · 없는 그림 이름은 저장 안 함
+        // 확인: 이름 없음 · 사진 없는 문화 카드 · 카페 0곳은 저장 안 함
         tips(session, hash, food.replace("\"name\":\"새 중국집\"", "\"name\":\" \""), null).andExpect(status().isBadRequest());
         tips(session, hash, null, fun.replace("\"src\":\"" + path + "\"", "\"src\":\"\"")).andExpect(status().isBadRequest());
-        tips(session, hash, null, fun.replace("im-classroom", "im-nope")).andExpect(status().isBadRequest());
         tips(session, hash, "[{\"t\":\"food\",\"g\":\"solo\",\"w\":4,\"category\":\"한식\",\"name\":\"국밥집\",\"menu\":\"국밥\",\"review\":\"\",\"example\":false,\"src\":\"\"}]", null).andExpect(status().isBadRequest());
 
         tips(session, hash, food, fun).andExpect(status().isOk()).andExpect(jsonPath("$.saved").value(true));
-        // 사이트 페이지 파일은 그대로(카드는 사이트가 공개 API · 사본으로 그림)
-        assertThat(Files.readString(LIFE, UTF_8)).isEqualTo(page);
-        JsonNode api = json.readTree(mvc.perform(get("/api/public/life")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(UTF_8));
-        assertThat(api.get("source").asText()).isEqualTo("backoffice-api");
-        // 식당이 먼저(보낸 순서대로), 그다음 카페
-        assertThat(api.get("food").findValuesAsText("name")).containsExactly("국밥집", "새 중국집", "새 카페 & 빵", "카페 하나");
-        assertThat(api.at("/food/2/menu").asText()).isEqualTo("라떼 · 소금빵 · 충장동");
-        assertThat(api.at("/food/2/src").asText()).isEqualTo(path);
-        assertThat(api.at("/food/2/w").asInt()).isEqualTo(3);
-        // 고친 후기는 '예시' 표시 없음, 그대로인 후기는 그대로
-        assertThat(api.at("/food/0/example").asBoolean()).isFalse();
-        assertThat(api.at("/food/0/review").asText()).isEqualTo("진짜 후기예요.");
-        assertThat(api.at("/food/3/example").asBoolean()).isTrue();
-        assertThat(api.at("/food/1/review").asText()).isEmpty();
-        assertThat(api.toString()).doesNotContain("고깃집");
-        // 문화 · 여가: 새 순서 · 올린 사진
-        assertThat(api.at("/fun/walk").findValuesAsText("name")).containsExactly("광주천 산책로", "푸른길 공원", "새 <공원>");
-        assertThat(api.at("/fun/walk/2/src").asText()).isEqualTo(path);
-        assertThat(api.at("/fun/walk/2/cls").asText()).isEmpty();
-        // 사본(백오피스가 꺼져 있을 때 사이트가 씀)도 같은 내용
-        String js = Files.readString(LIFE.resolveSibling("js/life-data.js"), UTF_8);
-        JsonNode copy = json.readTree(js.substring(js.indexOf('{'), js.lastIndexOf('}') + 1));
-        assertThat(copy.get("food")).isEqualTo(api.get("food"));
-        assertThat(copy.get("fun")).isEqualTo(api.get("fun"));
-        assertThat(mvc.perform(get("/api/public/life.js")).andReturn().getResponse().getContentAsString(UTF_8)).contains("window.LIFE_DATA = ").contains("새 중국집");
-
-        // 같은 카드는 같은 번호 그대로, 지운 카드는 없음
-        JsonNode again = model(session);
-        assertThat(again.get("food")).hasSize(4);
-        assertThat(again.at("/food/0/id").asLong()).isEqualTo(gukbap);
-        assertThat(again.at("/food/3/id").asLong()).isEqualTo(cafe);
-        assertThat(again.get("food").findValuesAsText("id")).doesNotContain(String.valueOf(gogi));
-        assertThat(again.at("/fun/0/cards/0/id").asLong()).isEqualTo(river);
-        assertThat(again.at("/fun/0/cards/2/src").asText()).isEqualTo(path);
-
-        // 그대로 저장하면 바뀌는 것 없음
-        StringBuilder same = new StringBuilder("[");
-        for (JsonNode f : again.get("food")) {
-            com.fasterxml.jackson.databind.node.ObjectNode o = f.deepCopy();
-            o.remove("url");
-            same.append(same.length() > 1 ? "," : "").append(json.writeValueAsString(o));
-        }
-        tips(session, again.get("hash").asText(), same.append("]").toString(), null).andExpect(status().isOk()).andExpect(jsonPath("$.saved").value(false));
-
-        // 페이지 편집 임시저장이 있어도 카드는 DB라 저장돼요
-        mvc.perform(put("/admin/pages/api/draft").param("page", "life").session(session).with(csrf())
-                .content(page.replace("</main>", "<!-- 임시 --></main>").getBytes(UTF_8))).andExpect(status().isOk());
-        JsonNode withDraft = model(session);
-        tips(session, withDraft.get("hash").asText(), same.toString().replace("진짜 후기예요.", "임시저장이 있어도 저장"), null)
-                .andExpect(status().isOk()).andExpect(jsonPath("$.saved").value(true));
-        mvc.perform(delete("/admin/pages/api/draft").param("page", "life").session(session).with(csrf())).andExpect(status().isOk());
-
-        // 지운 고깃집은 휴지통에(사이트 · 목록에서는 빠짐)
-        assertThat(model(session).get("trashCount").asInt()).isEqualTo(1);
-        assertThat(mvc.perform(get("/admin/posts/trash").param("tab", "life").session(session)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(UTF_8))
-                .contains("인사교 라이프 카드").contains("고깃집").contains("/admin/posts/trash/life/food/" + gogi + "/restore");
-    }
-
-    @Test
-    @Order(5)
-    void trashedCardsCanBeRestoredOrPurged() throws Exception {
-        MockHttpSession session = login();
-        String trash = mvc.perform(get("/admin/posts/trash").param("tab", "life").session(session)).andReturn().getResponse().getContentAsString(UTF_8);
-        java.util.regex.Matcher id = java.util.regex.Pattern.compile("/admin/posts/trash/life/food/(\\d+)/restore").matcher(trash);
-        assertThat(id.find()).isTrue();
-        long gogi = Long.parseLong(id.group(1));
-        int before = versions(session, "food").size();
-
-        // 꺼내기: 식당 맨 뒤로 돌아오고 사이트에도 다시 보여요. 바로 전 목록은 버전 기록에
-        mvc.perform(post("/admin/posts/trash/life/food/" + gogi + "/restore").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection());
-        JsonNode m = model(session);
-        assertThat(m.get("trashCount").asInt()).isZero();
-        java.util.List<String> foods = m.get("food").findValuesAsText("name");
-        assertThat(foods).containsExactly("국밥집", "새 중국집", "고깃집", "새 카페 & 빵", "카페 하나");
-        assertThat(publicLife().toString()).contains("고깃집");
-        JsonNode versions = versions(session, "food");
-        assertThat(versions).hasSize(before + 1);
-        assertThat(versions.at("/0/reason").asText()).isEqualTo("휴지통에서 꺼내기 전");
-
-        // 다시 목록에서 빼면(저장) 휴지통으로 · 최상위 관리자는 완전 삭제
-        StringBuilder rest = new StringBuilder("[");
-        for (JsonNode f : m.get("food")) {
-            if (!f.get("name").asText().equals("고깃집")) {
-                com.fasterxml.jackson.databind.node.ObjectNode o = f.deepCopy();
-                o.remove("url");
-                rest.append(rest.length() > 1 ? "," : "").append(json.writeValueAsString(o));
+        String out = Files.readString(LIFE, UTF_8);
+        assertThat(out).contains("id=\"fdk-food\" aria-selected=\"true\" data-fk=\"food\">식당<span>2</span>").contains("data-fk=\"cafe\">카페<span>2</span>");
+        assertThat(out).doesNotContain("고깃집");
+        // 식당이 먼저, 카페는 처음에 숨김
+        assertThat(out.indexOf("새 중국집")).isLessThan(out.indexOf("새 카페 &amp; 빵"));
+        assertThat(out).contains("<li class=\"fdc\" data-t=\"cafe\" data-g=\"group\" data-w=\"3\" hidden>");
+        assertThat(out).contains("<div class=\"fdc-ph has-img\" role=\"img\" aria-label=\"새 카페 &amp; 빵 대표 메뉴 그림\" data-field=\"photo\"><img src=\"" + path + "\" alt=\"\" loading=\"lazy\">");
+        assertThat(out).contains("<p class=\"fdc-m\" data-field=\"menu\">라떼&nbsp;· 소금빵&nbsp;· 충장동</p>");
+        assertThat(out).contains("<div class=\"fdc-gw\"><p class=\"fdc-g group\">여럿이 가기 좋아요</p><span class=\"fdc-wk\" data-field=\"walk\">도보 약 3분</span></div>\r\n              <h3 data-field=\"name\">새 카페 &amp; 빵</h3>");
+        // 사진을 올린 카드는 사진 칸 안 그림(has-img), 다시 읽으면 그 그림 주소
+        String readBack = null;
+        for (JsonNode f : model(session).get("food")) {
+            if ("새 카페 & 빵".equals(f.get("name").asText())) {
+                readBack = f.get("src").asText();
             }
         }
-        tips(session, m.get("hash").asText(), rest.append("]").toString(), null).andExpect(status().isOk());
-        assertThat(model(session).get("trashCount").asInt()).isEqualTo(1);
-        mvc.perform(post("/admin/posts/trash/life/food/" + gogi + "/purge").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection());
-        assertThat(model(session).get("trashCount").asInt()).isZero();
-        assertThat(mvc.perform(get("/admin/posts/trash").param("tab", "life").session(session)).andReturn().getResponse().getContentAsString(UTF_8))
-                .doesNotContain("고깃집");
-    }
+        assertThat(readBack).isEqualTo(path);
+        // 고친 후기는 '예시' 표시 없음, 그대로인 후기는 그대로
+        assertThat(out).contains("<figcaption><b>선배 후기</b></figcaption>\r\n              <blockquote data-field=\"review\">진짜 후기예요.</blockquote>");
+        assertThat(out).contains("<figcaption><b>선배 후기</b><span class=\"bdg ex\">예시</span></figcaption>\r\n              <blockquote data-field=\"review\">조용해요.</blockquote>");
+        // 후기 없는 카드는 후기 칸 없이
+        assertThat(out.substring(out.indexOf("새 중국집"), out.indexOf("</li>", out.indexOf("새 중국집")))).doesNotContain("fdc-r");
+        // 문화 · 여가: 순서 · 회전 · 쌓임 · 펼쳐 보기 수 · 오른쪽 이름
+        assertThat(out).contains("<li class=\"fsc\" style=\"--i:0;--rt:-5deg;--z:3\">\r\n                <span class=\"fsc-ph im-b_class\" role=\"img\" aria-label=\"광주천 산책로\" data-field=\"photo\"></span>");
+        assertThat(out).contains("<li class=\"fsc\" style=\"--i:2;--rt:-2deg;--z:1\">\r\n                <span class=\"fsc-ph\" style=\"background-image:url(" + path + ")\" role=\"img\" aria-label=\"새 &lt;공원&gt;\" data-field=\"photo\"></span>");
+        assertThat(out).contains("<span class=\"o\">3곳 펼쳐 보기</span>");
+        assertThat(out).contains("<ul class=\"fs-names\"><li>광주천 산책로</li><li>푸른길 공원</li><li>새 &lt;공원&gt;</li></ul>");
+        assertThat(out.replace("\r\n", "")).doesNotContain("\n");
 
-    @Test
-    @Order(6)
-    void aVersionCanBeRestoredAndTheCurrentStateIsKept() throws Exception {
-        MockHttpSession session = login();
-        JsonNode list = versions(session, "fac");
-        // 가장 오래된 기록 = 처음 사진(강의실 2장)
-        JsonNode oldest = list.get(list.size() - 1);
-        assertThat(oldest.get("summary").asText()).isEqualTo("사진 3장 (공간 2곳)");
-        JsonNode m = json.readTree(mvc.perform(post("/admin/pages/life-photos/api/versions/" + oldest.get("id").asLong() + "/restore").session(session).with(csrf()))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(UTF_8));
-        assertThat(m.get("saved").asBoolean()).isTrue();
-        assertThat(m.get("restored").asText()).isEqualTo("fac");
-        JsonNode fac = publicLife().get("fac");
-        assertThat(fac.at("/bx9s-23-0/photos")).hasSize(2);
-        assertThat(fac.at("/bx9s-23-0/badge").asText()).isEqualTo("ex");
-        assertThat(fac.at("/bx9s-8-0/photos")).hasSize(1);
-        // 되돌리기 전 모습도 기록에 남아 다시 돌아갈 수 있어요
-        JsonNode after = versions(session, "fac");
-        assertThat(after).hasSize(list.size() + 1);
-        assertThat(after.at("/0/reason").asText()).isEqualTo("되돌리기 전");
-        // 모르는 묶음 · 없는 기록
-        mvc.perform(get("/admin/pages/life-photos/api/versions").param("section", "x").session(session)).andExpect(status().isNotFound());
-        mvc.perform(post("/admin/pages/life-photos/api/versions/999999/restore").session(session).with(csrf())).andExpect(status().isNotFound());
-    }
-
-    private JsonNode publicLife() throws Exception {
-        return json.readTree(mvc.perform(get("/api/public/life")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(UTF_8));
-    }
-
-    private JsonNode copy() throws IOException {
-        String js = Files.readString(LIFE.resolveSibling("js/life-data.js"), UTF_8);
-        return json.readTree(js.substring(js.indexOf('{'), js.lastIndexOf('}') + 1));
-    }
-
-    private JsonNode versions(MockHttpSession session, String section) throws Exception {
-        return json.readTree(mvc.perform(get("/admin/pages/life-photos/api/versions").param("section", section).session(session))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(UTF_8));
+        // 다시 읽으면 같은 내용 · 그대로 저장하면 바뀌는 것 없음
+        JsonNode again = model(session);
+        assertThat(again.get("food")).hasSize(4);
+        assertThat(again.at("/food/2/name").asText()).isEqualTo("새 카페 & 빵");
+        assertThat(again.at("/fun/0/cards/2/src").asText()).isEqualTo(path);
+        tips(session, again.get("hash").asText(), food.replace("\"example\":true,\"src\":\"\"},{\"t\":\"cafe\",\"g\":\"solo\"", "\"example\":false,\"src\":\"\"},{\"t\":\"cafe\",\"g\":\"solo\""), fun)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.saved").value(false));
     }
 
     private org.springframework.test.web.servlet.ResultActions tips(MockHttpSession session, String hash, String food, String fun) throws Exception {

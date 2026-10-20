@@ -348,26 +348,6 @@ public class CategoryPageService {
         return found;
     }
 
-    /**
-     * 미디어 관리의 그림을 이 페이지에서 쓰도록 페이지 폴더의 assets/uploads 에 복사한다(사이트는 사이트 폴더 안의 파일만 쓰므로).
-     * 같은 그림을 이미 가져왔으면 그 파일을 그대로 쓴다.
-     */
-    public String importImage(CategoryPage page, String name, byte[] data) {
-        Path dir = page.dir().resolve("assets").resolve("uploads");
-        if (data != null && Files.isDirectory(dir)) {
-            try (var files = Files.list(dir)) {
-                for (Path file : files.filter(Files::isRegularFile).toList()) {
-                    if (Files.size(file) == data.length && java.util.Arrays.equals(Files.readAllBytes(file), data)) {
-                        return "assets/uploads/" + file.getFileName();
-                    }
-                }
-            } catch (IOException e) {
-                throw storageError("그림을 가져오지 못했어요.", e);
-            }
-        }
-        return upload(page, name, data);
-    }
-
     /** 올린 그림은 편집 중인 페이지 폴더의 assets/uploads 에 둔다(페이지에서 assets/uploads/… 로 바로 씀). */
     public String upload(CategoryPage page, String originalName, byte[] data) {
         String name = safeUploadName(originalName);
@@ -502,8 +482,6 @@ public class CategoryPageService {
         config.put("frontMode", "static");
         config.put("initialPage", current.id());
         config.put("pageUrl", contextPath + "/admin/pages/{id}/edit");
-        // 이미지 바꾸기 창에서 미디어 관리의 그림도 고를 수 있게(올린 그림은 미디어 관리에도 함께 남아요)
-        config.put("media", Map.of("label", "미디어 관리", "url", contextPath + "/admin/media"));
         if (csrf != null) {
             config.put("csrf", Map.of("header", csrf.getHeaderName(), "token", csrf.getToken()));
         }

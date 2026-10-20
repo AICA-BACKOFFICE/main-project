@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -51,20 +50,11 @@ public class SecurityConfig {
                 .requestMatchers("/uploads/**", "/api/public/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/admin/users/**").hasRole(AdminRole.SUPER_ADMIN.name())
-                .requestMatchers("/admin/posts/*/purge", "/admin/posts/trash/empty", "/admin/posts/trash/life/*/*/purge").hasRole(AdminRole.SUPER_ADMIN.name())
-                // 서포터즈는 본인 게시글 작성·수정과 전체 통계 조회. 휴지통·상태 변경은 관리자 이상.
-                .requestMatchers("/admin/posts/trash", "/admin/posts/trash/**", "/admin/posts/*/delete", "/admin/posts/*/restore",
-                        "/admin/posts/*/status").hasAnyRole(
-                        AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
-                // 템플릿 관리: 보기·불러오기는 전원, 생성·수정·삭제는 관리자 이상
-                .requestMatchers(HttpMethod.POST, "/admin/templates/**").hasAnyRole(
-                        AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
-                .requestMatchers(HttpMethod.PUT, "/admin/templates/**").hasAnyRole(
-                        AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
-                .requestMatchers(HttpMethod.DELETE, "/admin/templates/**").hasAnyRole(
-                        AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
-                // 미디어 관리: 업로드·보기는 전원, 분류 이동·이름 변경·삭제는 관리자 이상
-                .requestMatchers("/admin/media/*/move", "/admin/media/*/rename", "/admin/media/*/delete").hasAnyRole(
+                // 글 주소는 /admin/posts/{종류}/{번호}/… (글 번호는 표마다 1번부터)
+                .requestMatchers("/admin/posts/*/*/purge", "/admin/posts/trash/empty").hasRole(AdminRole.SUPER_ADMIN.name())
+                // 서포터즈는 본인 게시글 작성·수정. 휴지통·상태 변경은 관리자 이상.
+                .requestMatchers("/admin/posts/trash", "/admin/posts/trash/**", "/admin/posts/*/*/delete", "/admin/posts/*/*/restore",
+                        "/admin/posts/*/*/status").hasAnyRole(
                         AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
                 // 카테고리 페이지 관리(사이트 페이지 편집·반영) · 지원 전 Check FAQ 관리(사이트 질문 목록 반영): 관리자 이상
                 .requestMatchers("/admin/pages/**", "/admin/faq", "/admin/faq/**").hasAnyRole(AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())

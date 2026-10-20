@@ -1,9 +1,10 @@
 /*
  * 글쓰기 화면 — 선배들의 이야기 고정 양식 (editor.html)
- *   카테고리가 후기 · 인터뷰 · 프로젝트 · 기수별 모아보기면 블록 편집기 대신 사이트 글 모양 그대로의 칸을 보여 준다.
- *   칸 값은 hidden input #storyJson 에 JSON 으로 담겨 저장되고(StoryContent 가 정리), 발행하면 사이트(stories-data.js)에 바로 올라간다.
- *   사이트에서 가져온 글이 들고 있는 값(anchor · heroImg · imgLarge · art · heroArt)은 화면에 없어도 그대로 지킨다.
- *   사진은 네 종류 모두 여러 장(photos)을 올리고 그중 하나를 대표(cover → img, 카드 썸네일)로 정한다.
+ *   카테고리가 후기 · 인터뷰 · 프로젝트면 블록 편집기 대신 사이트 글 모양 그대로의 칸을 보여 준다.
+ *   칸 값은 hidden input #storyJson 에 JSON 으로 담겨 저장되고(StoryContent 가 정리), 서버가 글 종류의 표(reviews · interviews · projects) 칸에 나눠 넣는다.
+ *   발행하면 사이트(stories-data.js · 공개 API)에 바로 올라간다. 후기 분야 · 인터뷰 기수는 표의 분류 칸이라 임시저장할 때도 꼭 넣는다.
+ *   사이트에서 가져온 글이 들고 있는 값(heroImg · imgLarge · art · heroArt)은 화면에 없어도 그대로 지킨다.
+ *   사진은 세 종류 모두 여러 장(photos)을 올리고 그중 하나를 대표(cover → img, 카드 썸네일)로 정한다.
  *   사진마다 '사진 편집'(자르기 · 회전 · 보정, 새 파일로 저장), 대표 사진은 '썸네일 맞추기'(카드에 보일 부분 · 확대 → fit)를 할 수 있다(page/photo-editor.js).
  */
 (function (global) {
@@ -11,29 +12,27 @@
   var P = global.PostEditorPage = global.PostEditorPage || {};
   P.modules = P.modules || [];
 
-  var KINDS = { review: '후기', interview: '인터뷰', project: '프로젝트', cohort: '기수 기록' };
+  var KINDS = { review: '후기', interview: '인터뷰', project: '프로젝트' };
   // 2026-10-14 사이트 새 시안: 취업·진로 → 취업 성공 · 진로 고민(예전 글의 career 는 사이트에서 취업 성공으로 보임)
   var REVIEW_CATS = [['life', '생활'], ['class', '수업'], ['proj', '프로젝트'], ['job', '취업 성공'], ['path', '진로 고민']];
   var REVIEW_TAGS = ['#비전공자', '#타지출신', '#직장인출신', '#졸업생', '#적응', '#팀활동', '#취업연계'];
-  var COHORT_TAGS = ['입교식', 'OT', '특강', '기업탐방', '중간발표회', '해커톤', '프로젝트', '취업박람회', '수료식', '동문회'];
   var SECTIONS = ['문제 정의', '주요 기능', '기술 설명'];
   // 칸마다 쓰는 법(글 안의 • 마다 사이트에서 목록 한 줄로 보여요)
   var SECTION_HINTS = ['어떤 문제를, 누구를 위해 풀었는지', '기능마다 앞에 • 를 붙여요(사이트에서 목록으로 보여요)', '어떤 데이터 · 모델 · 기술로 만들었는지'];
   // 대표 사진이 썸네일로 보이는 자리와 그 틀 비율(사이트 CSS와 같게). 후기는 카드에 사진이 없어 글 창에서만 보여요(null)
   var CARD = {
     review: null, interview: [16 / 10, '인터뷰 카드 · 한눈에 보기'],
-    project: [16 / 10, '프로젝트 카드 · 한눈에 보기'], cohort: [1, '기수별 이모저모 격자(정사각형) · 한눈에 보기']
+    project: [16 / 10, '프로젝트 카드 · 한눈에 보기']
   };
   var MAX_PHOTOS = 12;
   var TITLE_HINT = {
     review: '후기 제목 (예: 생활지원금으로 한 달을 꾸려본 기록)', interview: '인터뷰 제목 (예: 비전공자에서 AI 모델러가 되기까지)',
-    project: '프로젝트 이름 (예: 손끝 — 시각장애인 보행 보조 앱)', cohort: '기록 제목 (예: 7기 입교식 하이라이트)'
+    project: '서비스 이름 (예: MAKERY) — 카드 위 작은 파란 글씨 · 상세 화면 제목'
   };
   var INTRO = {
     review: '사이트의 후기 창과 같은 순서예요. 분야 · 기수 · 이름 → 굵은 첫 문단 → 본문 → 사진 → 태그.',
     interview: '인터뷰 카드와 상세 화면에 들어갈 내용이에요. 질문과 답을 넣거나 유튜브 영상 주소를 넣어 주세요.',
-    project: '프로젝트 카드 격자와 상세 화면에 들어갈 내용이에요.',
-    cohort: '기수별 이모저모(인스타형 격자)와 눌렀을 때 열리는 창에 들어갈 내용이에요.'
+    project: '프로젝트 카드 격자와 상세 화면에 들어갈 내용이에요. 기수 · 반 · 전공 · 팀은 칸마다 따로 저장돼요.'
   };
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -76,7 +75,8 @@
       return '<div class="sf-row">'
         + field('기수', input('cohort', data.cohort || '', ' type="number" min="1" max="99" placeholder="7"'), '', 'sf-narrow')
         + field('이름', input('author', data.author || '', ' maxlength="30" placeholder="김민서"'))
-        + field(kind === 'review' ? '직군(트랙) · 선택' : '직군(트랙)', input('track', data.track || '', ' maxlength="40" placeholder="데이터 분석"')) + '</div>';
+        // 반 · 직군은 인터뷰만(후기 표에는 2026-10-20부터 칸 없음)
+        + (kind === 'review' ? '' : field('직군(트랙)', input('track', data.track || '', ' maxlength="40" placeholder="데이터 분석"'))) + '</div>';
     }
     // ── 사진 여러 장 ──
     function initPhotos(d) {
@@ -188,14 +188,11 @@
         h += field('본문', area('body', (data.body || []).join('\n\n'), 10, ' placeholder="문단은 빈 줄(엔터 두 번)로 나눠요."'), '문단은 빈 줄로 나눠요');
         h += gallery();
         h += field('태그', chips('tags', REVIEW_TAGS, data.tags || []), '카드와 리스트에는 첫 태그가 보여요');
-        h += field('흐르는 한마디', input('ticker', data.ticker || '', ' maxlength="80" placeholder="비우면 첫 문단의 첫 문장"'), '(선택) 사이트 첫 화면 아래 검은 띠와 한눈에 보기에서 흐르는 한 줄(최근 후기 12개)');
         h += field('한눈에 보기', '<div class="ed-check-row"><label><input type="checkbox" data-b="hub"' + (data.hub ? ' checked' : '') + '> 포스트잇으로 보이기</label></div>',
           '선배들의 이야기 첫 화면에 포스트잇 4장으로 보여요. 고른 글이 4개보다 많으면 후기 목록에서 앞에 있는 4개만, 적으면 나머지는 자동으로 채워요');
       } else if (k === 'interview') {
         h += who();
         h += field('요약', area('summary', data.summary || '', 3, ' maxlength="1000" placeholder="카드와 상세 화면 첫 문단"'));
-        h += field('한 줄 인용', input('quote', data.quote || '', ' maxlength="300" placeholder="카드에 크게 들어가는 인용 문장"'), '(선택)');
-        h += field('한눈에 보기 꼬리표', input('kicker', data.kicker || '', ' maxlength="30" placeholder="비전공자라면"'), '(선택) 첫 화면 맨 위 큰 인터뷰에 작게 붙는 말');
         h += gallery();
         h += video('video', 'yt');
         h += '<div class="sf-field"><label class="sf-label">질문과 답 <span class="ed-help">질문 번호와 오른쪽 목차는 자동으로 붙어요</span></label><div class="sf-list" data-list="qa">'
@@ -207,15 +204,17 @@
               + input('qa.' + i + '.toc', q.toc || '', ' maxlength="80" placeholder="오른쪽 목차에 보일 짧은 문구(선택, 비우면 질문 그대로)"') + '</div>';
           }).join('') + '</div><button type="button" class="ed-btn sm" data-add="qa">+ 질문 추가</button></div>';
       } else if (k === 'project') {
-        h += field('요약', area('summary', data.summary || '', 3, ' maxlength="1000" placeholder="상세 화면 첫 문단"'));
-        h += field('카드 한 줄 제목', input('headline', data.headline || '', ' maxlength="120" placeholder="휴대폰 카메라가 신호등과 점자블록을 읽고, 소리로 길을 알려줘요"'),
-          '(선택) 프로젝트 카드 · 한눈에 보기에 크게 보이는 한 줄. 비우면 프로젝트 이름');
-        h += field('카드 짧은 요약', input('cardSummary', data.cardSummary || '', ' maxlength="200" placeholder="광주 동구 일대에서 2주 동안 실제로 써 봤어요."'),
-          '(선택) 카드 아래 한 줄. 비우면 요약의 첫 문장');
+        // 서비스 이름(위 제목 칸) → 프로젝트 주제(카드 큰 제목) → 한 줄 요약(카드 제목 아래 · 상세 첫 문단) 순서로 카드에 보여요
+        h += field('프로젝트 주제', input('headline', data.headline || '', ' maxlength="200" placeholder="대화형 에이전트를 활용한 소상공인 브랜딩·콘텐츠 생성 및 운영 서비스"'),
+          '(선택) 프로젝트 카드 · 한눈에 보기에 크게 보이는 제목. 비우면 서비스 이름');
+        h += field('한 줄 요약', area('summary', data.summary || '', 2, ' maxlength="1000" placeholder="대화만으로 브랜드 로고와 숏폼을 만들고 SNS 운영까지 돕는 소상공인 서비스"'),
+          '카드 제목 아래 회색 줄(첫 문장) · 상세 화면 첫 문단');
         h += field('태그', input('tags', (data.tags || []).join(' '), ' placeholder="#컴퓨터비전 #접근성 #온디바이스"'), '빈칸으로 나눠요(최대 8개)');
-        h += '<div class="sf-row">' + field('팀', input('team', data.team || '', ' maxlength="60" placeholder="AI 모델링 2반 · 5명"'))
-          + field('전공', input('type', data.type || '', ' maxlength="30" placeholder="자연어처리A"'), '', 'sf-narrow')
-          + field('기수 · 반', input('term', data.term || '', ' maxlength="40" placeholder="6기 · 01반"')) + '</div>';
+        h += '<div class="sf-row">' + field('기수', input('cohort', data.cohort || '', ' type="number" min="1" max="99" placeholder="6"'), '', 'sf-narrow')
+          + field('반', input('className', data.className || '', ' maxlength="20" placeholder="01반"'), '', 'sf-narrow')
+          + field('전공', input('major', data.major || '', ' maxlength="30" placeholder="자연어처리A"')) + '</div>';
+        h += '<div class="sf-row">' + field('팀 이름', input('teamName', data.teamName || '', ' maxlength="60" placeholder="AI셈블"'))
+          + field('팀 인원', input('teamSize', data.teamSize || '', ' type="number" min="1" max="99" placeholder="5"'), '명', 'sf-narrow') + '</div>';
         h += gallery();
         var secs = data.sections || [];
         h += SECTIONS.map(function (name, i) {
@@ -227,14 +226,6 @@
             return '<div class="sf-item sf-link" data-i="' + i + '">' + input('links.' + i + '.label', l.label || '', ' maxlength="40" placeholder="이름 (예: 발표 자료)"')
               + input('links.' + i + '.url', l.url || '', ' placeholder="https://…"') + '<button type="button" class="ed-btn sm" data-remove>삭제</button></div>';
           }).join('') + '</div><button type="button" class="ed-btn sm" data-add="links">+ 링크 추가</button></div>';
-      } else if (k === 'cohort') {
-        h += '<div class="sf-row">' + field('기수', input('cohort', data.cohort || '', ' type="number" min="1" max="99" placeholder="7"'), '', 'sf-narrow')
-          + field('날짜', input('date', data.date || '', ' maxlength="20" placeholder="2026. 08. 20"'), '최근 날짜가 앞에 와요') + '</div>';
-        h += field('요약', area('summary', data.summary || '', 3, ' maxlength="1000" placeholder="카드와 창 첫 문단"'));
-        h += field('태그', chips('tags', COHORT_TAGS, data.tags || []));
-        h += gallery();
-        h += video('video', 'url');
-        h += field('본문', area('body', (data.body || []).join('\n\n'), 6, ' placeholder="창에서 요약 아래에 보일 글(선택). 문단은 빈 줄로 나눠요."'), '(선택)');
       }
       box.innerHTML = h;
     }
@@ -246,7 +237,7 @@
         var k = el.getAttribute('data-k'), v = el.value;
         if (el.type === 'radio') { if (el.checked) d[k] = v; return; }
         if (el.type === 'checkbox') return;
-        if (k === 'cohort') { d.cohort = v ? Number(v) : undefined; return; }
+        if (k === 'cohort' || k === 'teamSize') { d[k] = v ? Number(v) : undefined; return; }
         if (k === 'body') { d.body = paras(v); return; }
         if (k === 'tags') { d.tags = v.split(/[\s,]+/).filter(Boolean).map(function (t) { return t.charAt(0) === '#' ? t : '#' + t; }); return; }
         var m;
@@ -374,19 +365,21 @@
       setMode();
     });
 
-    // 발행 전 확인(서버도 같은 칸을 다시 확인)
+    // 저장 전 확인(서버도 같은 칸을 다시 확인). 분류 칸(후기 분야 · 인터뷰 기수)은 임시저장도, 나머지는 발행할 때만
     P.validateStory = function (status) {
-      if (!kind || status !== 'PUBLISHED') return '';
+      if (!kind) return '';
       read();
       var d = clean(data), need = [];
+      if (kind === 'review' && !d.cat) return '후기 분야(생활 · 수업 · 프로젝트 · 취업 성공 · 진로 고민)를 골라 주세요. 임시저장할 때도 필요해요.';
+      if (kind === 'interview' && !d.cohort) return '기수를 입력해 주세요. 인터뷰는 기수로 나눠 두어서 임시저장할 때도 필요해요.';
+      if (status !== 'PUBLISHED') return '';
       function req(ok, msg) { if (!ok) need.push(msg); }
-      if (kind === 'review') { req(d.cat, '분야'); req(d.cohort, '기수'); req(d.author, '이름'); req(d.summary, '굵은 첫 문단'); req(d.body && d.body.length, '본문'); }   // 후기 직군(반)은 선택
+      if (kind === 'review') { req(d.cat, '분야'); req(d.cohort, '기수'); req(d.author, '이름'); req(d.summary, '굵은 첫 문단'); req(d.body && d.body.length, '본문'); }
       if (kind === 'interview') {
         req(d.cohort, '기수'); req(d.author, '이름'); req(d.track, '직군'); req(d.summary, '요약');
         req((d.qa || []).some(function (q) { return q.q || q.a; }) || (d.video && d.video.yt), '질문과 답 또는 유튜브 영상');
       }
-      if (kind === 'project') { req(d.summary, '요약'); req(d.team, '팀'); req(d.type, '전공'); req(d.term, '기수 · 반'); }
-      if (kind === 'cohort') { req(d.cohort, '기수'); req(d.date, '날짜'); req(d.summary, '요약'); }
+      if (kind === 'project') { req(d.summary, '한 줄 요약'); req(d.cohort, '기수'); req(d.className, '반'); req(d.major, '전공'); req(d.teamName, '팀 이름'); }
       var raw = data.video && data.video._raw;
       if (raw && !ytId(raw)) return '유튜브 주소를 알아보지 못했어요. 영상 페이지 주소(https://www.youtube.com/watch?v=…)를 넣어 주세요.';
       return need.length ? '발행하려면 ' + need.join(' · ') + ' 칸을 채워 주세요.' : '';

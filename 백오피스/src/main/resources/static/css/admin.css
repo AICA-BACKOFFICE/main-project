@@ -128,6 +128,7 @@ table.list td.nowrap, table.list th.nowrap { white-space: nowrap; }
 .badge.published { background: #e6f6ee; color: #1a7f56; }
 .badge.draft { background: #f2f2f2; color: #666; }
 .badge.hidden { background: #fdecea; color: #c0392b; }
+.badge.deleted { background: #3a3a3a; color: #fff; }
 .badge.pending { background: #fff4d6; color: #9a6b00; }
 .badge.role-super { background: #ede9fe; color: #6d28d9; }
 .badge.role-admin { background: #e7efff; color: #2456c9; }
@@ -214,11 +215,6 @@ table.list td.nowrap, table.list th.nowrap { white-space: nowrap; }
 
 /* ---------- 휴지통 ---------- */
 /* 휴지통 탭: 선배들의 이야기 게시물 · 인사교 라이프 카드 (post/trash.html) */
-.trash-tabs { display: flex; gap: 6px; margin: 0 0 12px; }
-.trash-tabs a { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border: 1px solid #d5d5d5; border-radius: 999px; background: #fff; color: #333; font-size: 13px; font-weight: 600; }
-.trash-tabs a em { font-style: normal; font-weight: 500; color: var(--muted); }
-.trash-tabs a.on { background: #111; border-color: #111; color: #fff; }
-.trash-tabs a.on em { color: #ddd; }
 .trash-note { padding: 10px 20px; font-size: 13px; color: #666; background: #fafafa; border-bottom: 1px solid var(--line-soft); }
 .trash-bulk { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); }
 .trash-bulk form { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; }

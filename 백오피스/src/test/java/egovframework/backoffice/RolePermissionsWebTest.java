@@ -63,52 +63,59 @@ class RolePermissionsWebTest {
         supportId = jdbc.queryForObject("SELECT id FROM admin_users WHERE login_id='support@roles.example.test'", Long.class);
     }
 
+    /** 후기 표에 글 한 줄(분야 생활) */
     private void postRow(long id, long author, boolean deleted) {
-        jdbc.update("INSERT INTO posts(id,title,author_id,status,blocks_json,deleted_at,status_before_trash) VALUES(?,?,?,'DRAFT','[]'," + (deleted ? "CURRENT_TIMESTAMP" : "NULL") + ",'DRAFT')", id, "권한 검증 글 " + id, author);
+        jdbc.update("INSERT INTO reviews(id,category,title,author_id,status,deleted_at,status_before_trash) VALUES(?,'생활',?,?," + (deleted ? "'DELETED',CURRENT_TIMESTAMP,'DRAFT'" : "'DRAFT',NULL,NULL") + ")", id, "권한 검증 글 " + id, author);
     }
+
+    private static final String DRAFT_STORY = "{\"cat\":\"life\",\"author\":\"권한\"}";
+    private static final String FULL_STORY = "{\"cat\":\"life\",\"cohort\":6,\"author\":\"권한\",\"summary\":\"요약\",\"body\":[\"본문\"]}";
 
     @Test void supporterCanOnlyEditOwnPostsIncludingAlreadyPublishedContent() throws Exception {
         postRow(91001, supportId, false); postRow(91002, adminId, false);
-        mvc.perform(get("/admin/posts/91001/edit").session(support)).andExpect(status().isOk());
-        mvc.perform(get("/admin/posts/91002/edit").session(support)).andExpect(status().isForbidden());
-        mvc.perform(post("/admin/posts/91002").session(support).with(csrf()).param("title", "forbidden").param("status", "DRAFT").param("blocksJson", "[]"))
+        mvc.perform(get("/admin/posts/review/91001/edit").session(support)).andExpect(status().isOk());
+        mvc.perform(get("/admin/posts/review/91002/edit").session(support)).andExpect(status().isForbidden());
+        mvc.perform(post("/admin/posts/review/91002").session(support).with(csrf()).param("title", "forbidden").param("categoryId", "1").param("status", "DRAFT")
+                        .param("blocksJson", "[]").param("storyJson", DRAFT_STORY))
                 .andExpect(status().isForbidden());
-        mvc.perform(post("/admin/posts/91002").session(support).with(csrf()).param("title", ""))
+        mvc.perform(post("/admin/posts/review/91002").session(support).with(csrf()).param("title", ""))
                 .andExpect(status().isForbidden());
-        mvc.perform(get("/admin/posts/91002/versions").session(support)).andExpect(status().isForbidden());
-        jdbc.update("UPDATE posts SET status='PUBLISHED' WHERE id=91001");
+        jdbc.update("UPDATE reviews SET status='PUBLISHED' WHERE id=91001");
         clearMapperCache();
-        mvc.perform(post("/admin/posts/91001").session(support).with(csrf()).param("title", "본인 게시글 수정").param("status", "PUBLISHED").param("blocksJson", "[]"))
+        mvc.perform(post("/admin/posts/review/91001").session(support).with(csrf()).param("title", "본인 게시글 수정").param("categoryId", "1").param("status", "PUBLISHED")
+                        .param("blocksJson", "[]").param("storyJson", FULL_STORY))
                 .andExpect(status().is3xxRedirection());
-        assertThat(jdbc.queryForObject("SELECT title FROM posts WHERE id=91001", String.class)).isEqualTo("본인 게시글 수정");
-        mvc.perform(post("/admin/posts/91001").session(support).with(csrf()).param("title", "state change").param("status", "HIDDEN").param("blocksJson", "[]"))
+        assertThat(jdbc.queryForObject("SELECT title FROM reviews WHERE id=91001", String.class)).isEqualTo("본인 게시글 수정");
+        mvc.perform(post("/admin/posts/review/91001").session(support).with(csrf()).param("title", "state change").param("categoryId", "1").param("status", "HIDDEN")
+                        .param("blocksJson", "[]").param("storyJson", FULL_STORY))
                 .andExpect(status().isForbidden());
-        mvc.perform(post("/admin/posts").session(support).with(csrf()).param("title", "신규 초안").param("status", "DRAFT").param("blocksJson", "[]"))
+        mvc.perform(post("/admin/posts").session(support).with(csrf()).param("title", "신규 초안").param("categoryId", "1").param("status", "DRAFT")
+                        .param("blocksJson", "[]").param("storyJson", DRAFT_STORY))
                 .andExpect(status().is3xxRedirection());
-        mvc.perform(post("/admin/posts/91002").session(admin).with(csrf()).param("title", "관리자 수정").param("status", "DRAFT").param("blocksJson", "[]"))
+        mvc.perform(post("/admin/posts/review/91002").session(admin).with(csrf()).param("title", "관리자 수정").param("categoryId", "1").param("status", "DRAFT")
+                        .param("blocksJson", "[]").param("storyJson", DRAFT_STORY))
                 .andExpect(status().is3xxRedirection());
     }
 
     @Test void purgeIsHighestAdminOnlyWhileAdminCanTrashAndRestore() throws Exception {
         postRow(91011, supportId, false); postRow(91012, supportId, true);
-        mvc.perform(post("/admin/posts/91011/delete").session(support).with(csrf())).andExpect(status().isForbidden());
-        mvc.perform(post("/admin/posts/91011/delete").session(admin).with(csrf())).andExpect(status().is3xxRedirection());
-        mvc.perform(post("/admin/posts/91011/restore").session(admin).with(csrf())).andExpect(status().is3xxRedirection());
-        mvc.perform(post("/admin/posts/91012/purge").session(admin).with(csrf())).andExpect(status().isForbidden());
-        mvc.perform(post("/admin/posts/trash/bulk").session(admin).with(csrf()).param("action", "purge").param("ids", "91012"))
+        mvc.perform(post("/admin/posts/review/91011/delete").session(support).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(post("/admin/posts/review/91011/delete").session(admin).with(csrf())).andExpect(status().is3xxRedirection());
+        mvc.perform(post("/admin/posts/review/91011/restore").session(admin).with(csrf())).andExpect(status().is3xxRedirection());
+        mvc.perform(post("/admin/posts/review/91012/purge").session(admin).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(post("/admin/posts/trash/bulk").session(admin).with(csrf()).param("action", "purge").param("ids", "review-91012"))
                 .andExpect(status().isForbidden());
         mvc.perform(post("/admin/posts/trash/empty").session(admin).with(csrf()).param("snapshot", trash.overview().token()))
                 .andExpect(status().isForbidden());
         String page = mvc.perform(get("/admin/posts/trash").session(admin)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         assertThat(page).contains("선택 복원").doesNotContain("id=\"trash-empty-form\"", "data-trash-action=\"purge\"", "/91012/purge");
-        mvc.perform(post("/admin/posts/91012/purge").session(owner).with(csrf())).andExpect(status().is3xxRedirection());
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM posts WHERE id=91012", Long.class)).isZero();
+        mvc.perform(post("/admin/posts/review/91012/purge").session(owner).with(csrf())).andExpect(status().is3xxRedirection());
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM reviews WHERE id=91012", Long.class)).isZero();
     }
 
-    @Test void statisticsAreSharedAndSiteAndAccountAdministrationRemainRestricted() throws Exception {
+    @Test void dashboardIsSharedAndSiteAndAccountAdministrationRemainRestricted() throws Exception {
         for (MockHttpSession session : new MockHttpSession[]{owner, admin, support}) {
             mvc.perform(get("/admin").session(session)).andExpect(status().isOk());
-            mvc.perform(get("/admin/stats").session(session)).andExpect(status().isOk());
         }
         for (MockHttpSession session : new MockHttpSession[]{owner, admin}) {
             mvc.perform(get("/admin/pages/about/edit").session(session)).andExpect(status().isOk());
@@ -123,32 +130,23 @@ class RolePermissionsWebTest {
         }
     }
 
-    @Test void allRolesCanUploadButOnlyManagersCanOrganizeAndDeleteMedia() throws Exception {
+    @Test void allRolesCanUploadPhotosForTheirPosts() throws Exception {
         byte[] png = {(byte)137,80,78,71,13,10,26,10,0,0,0,13};
-        byte[] mp4 = {0,0,0,12,'f','t','y','p','i','s','o','m'};
         for (MockHttpSession session : new MockHttpSession[]{owner, admin, support}) {
             mvc.perform(multipart("/admin/images").file(new MockMultipartFile("file", "role-test.png", "image/png", png)).session(session).with(csrf()))
                     .andExpect(status().isOk());
-            mvc.perform(multipart("/admin/media/upload").file(new MockMultipartFile("files", "role-test.mp4", "video/mp4", mp4)).session(session).with(csrf()))
-                    .andExpect(status().is3xxRedirection());
+            // 미디어 관리 화면은 없어졌다(사진은 글에 올린 파일로만)
+            mvc.perform(get("/admin/media").session(session)).andExpect(status().isNotFound());
         }
-        Long id = jdbc.queryForObject("SELECT MAX(id) FROM images", Long.class);
-        for (String action : new String[]{"rename", "move", "delete"}) {
-            mvc.perform(post("/admin/media/" + id + "/" + action).session(support).with(csrf()).param("displayName", "denied"))
-                    .andExpect(status().isForbidden());
-        }
-        mvc.perform(post("/admin/media/" + id + "/rename").session(admin).with(csrf()).param("displayName", "관리자 정리"))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(post("/admin/media/" + id + "/delete").session(admin).with(csrf())).andExpect(status().is3xxRedirection());
     }
 
     @Test void roleChangesAndDeactivationTakeEffectForExistingSessions() throws Exception {
         jdbc.update("UPDATE admin_users SET role='SUPPORT' WHERE id=?", adminId);
         clearMapperCache();
         mvc.perform(get("/admin/posts/trash").session(admin)).andExpect(status().isForbidden());
-        mvc.perform(get("/admin/stats").session(admin)).andExpect(status().isOk());
+        mvc.perform(get("/admin").session(admin)).andExpect(status().isOk());
         jdbc.update("UPDATE admin_users SET active=false WHERE id=?", supportId);
         clearMapperCache();
-        mvc.perform(get("/admin/stats").session(support)).andExpect(status().is3xxRedirection());
+        mvc.perform(get("/admin").session(support)).andExpect(status().is3xxRedirection());
     }
 }

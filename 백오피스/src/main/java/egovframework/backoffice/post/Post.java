@@ -9,7 +9,7 @@ import lombok.Setter;
 public class Post {
     private Long id;
     private Long categoryId;
-    /** 세부 카테고리(후기 → 생활·수업… / 기수별 → 3~5기·6기·7기). 없으면 NULL */
+    /** 세부 카테고리(후기 분야: 생활 · 수업 · 프로젝트 · 취업 성공 · 진로 고민). 없으면 NULL */
     private Long subCategoryId;
     private String title;
     private String summary;
@@ -23,7 +23,6 @@ public class Post {
     /** 선배들의 이야기 고정 양식 값(JSON, {@link egovframework.backoffice.post.story.StoryContent}). 있으면 게시할 때 사이트에 반영된다 */
     private String storyJson;
     private Long authorId;
-    private long viewCount;
     private LocalDateTime publishedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -36,6 +35,11 @@ public class Post {
     private String categorySlug;
     private String subCategoryName;
     private String subCategorySlug;
+
+    /** 글 종류(review · interview · project). 글 번호는 표마다 1번부터라 관리 화면 주소에 같이 들어간다(/admin/posts/{종류}/{번호}) */
+    public String getKind() {
+        return categorySlug;
+    }
 
     /** 목록 표시용: "후기 › 생활" */
     public String getCategoryPath() {

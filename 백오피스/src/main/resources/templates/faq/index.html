@@ -4,7 +4,7 @@
 <body>
 <main>
   <h2 class="page-title">지원 전 Check FAQ 관리</h2>
-  <!--/* 화면은 static/js/page/faq.js 가 그림. 저장하면 DB에 들어가고 사이트가 공개 API로 받아 그림(CheckFaqService) */-->
+  <!--/* 화면은 static/js/page/faq.js 가 그림. 저장하면 사이트의 지원 전 체크(check/index.html) 질문 목록만 고쳐 반영(CheckFaqService) */-->
   <div id="faqAdmin" class="fq"
        th:data-api="@{/admin/pages/faq/api}"
        th:data-front="${frontLink}"
@@ -14,7 +14,7 @@
   </div>
 </main>
 <th:block th:fragment="scripts">
-  <script th:src="@{/js/page/faq.js(v='20261019')}"></script>
+  <script th:src="@{/js/page/faq.js(v='20261014c')}"></script>
 </th:block>
 </body>
 </html>

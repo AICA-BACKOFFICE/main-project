@@ -1,13 +1,7 @@
 package egovframework.backoffice.media;
 
-import egovframework.backoffice.category.Category;
-import egovframework.backoffice.category.CategoryService;
 import egovframework.backoffice.common.BusinessException;
-import egovframework.backoffice.common.NotFoundException;
-import egovframework.backoffice.common.PageResult;
 import egovframework.backoffice.config.BackofficeProperties;
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -16,17 +10,14 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 미디어(이미지·동영상·문서) 파일 저장과 분류. 분류는 게시물과 같은 카테고리 2단(categories)을 쓴다.
- * 1차 초안은 로컬 디스크(backoffice.upload-dir)에 yyyy/MM 폴더로 저장하고 /uploads/** 로 서비스한다.
+ * 글에 넣는 사진 · 파일 저장. 2026-10-20부터 DB 표 없이 파일로만 둔다(미디어 관리 메뉴 없음):
+ * 업로드 폴더(backoffice.upload-dir)에 yyyy/MM 폴더로 저장하고 /uploads/** 로 보여 준다. 글은 그 주소를 사진 칸(photos)에 적는다.
  * 운영에서 오브젝트 스토리지(S3 등)로 바꿀 때 이 클래스만 교체한다.
  */
 @Service
@@ -46,28 +37,16 @@ public class ImageStorageService {
     public static final long MAX_VIDEO = 200L * 1024 * 1024;
     public static final long MAX_DOC = 20L * 1024 * 1024;
 
-    private final ImageMapper mapper;
-    private final CategoryService categories;
+    /** 저장한 파일: 주소(/uploads/…) · 원래 이름 · 종류(IMAGE · VIDEO · DOC) · 크기 */
+    public record Stored(String url, String name, String kind, long size) { }
+
     private final Path root;
 
-    public ImageStorageService(ImageMapper mapper, CategoryService categories, BackofficeProperties properties) {
-        this.mapper = mapper;
-        this.categories = categories;
+    public ImageStorageService(BackofficeProperties properties) {
         this.root = Paths.get(properties.getUploadDir()).toAbsolutePath().normalize();
     }
 
-    @Transactional
-    public ImageFile store(MultipartFile file, Long uploaderId) {
-        return store(file, uploaderId, null, null);
-    }
-
-    /** 카테고리·세부 카테고리를 지정해 저장한다. 세부가 카테고리의 하위가 아니면 세부는 버린다. */
-    @Transactional
-    public ImageFile store(MultipartFile file, Long uploaderId, Long categoryId, Long subCategoryId) {
-        if (categoryId != null) {
-            categories.get(categoryId);   // 없는 카테고리면 404
-        }
-        Long sub = categories.validSubCategory(categoryId, subCategoryId);
+    public Stored store(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException("업로드할 파일을 선택하세요.");
         }
@@ -92,128 +71,7 @@ public class ImageStorageService {
         } catch (IOException e) {
             throw new IllegalStateException("파일 저장에 실패했습니다.", e);
         }
-        ImageFile image = new ImageFile();
-        image.setKind(kind);
-        image.setStoredName(folder + "/" + storedName);
-        image.setOriginalName(safeName(file.getOriginalFilename()));
-        image.setDisplayName(image.getOriginalName());
-        image.setContentType(contentType);
-        image.setSizeBytes(file.getSize());
-        image.setUrl("/uploads/" + folder + "/" + storedName);
-        image.setUploadedBy(uploaderId);
-        image.setCategoryId(categoryId);
-        image.setSubCategoryId(sub);
-        mapper.insert(image);
-        return mapper.findById(image.getId());
-    }
-
-    /**
-     * 파일 내용으로 저장한다(카테고리 페이지 관리의 그림 올리기처럼 이미 받은 그림을 미디어 관리에도 함께 남길 때).
-     * 미디어 관리가 받지 않는 형식(SVG · AVIF 등)이면 BusinessException.
-     */
-    @Transactional
-    public ImageFile storeBytes(byte[] data, String originalName, Long uploaderId) {
-        return store(new BytesFile(data, originalName), uploaderId, null, null);
-    }
-
-    /** 저장된 파일 위치(업로드 폴더 밖이면 NotFoundException) */
-    public Path fileOf(ImageFile image) {
-        Path file = root.resolve(image.getStoredName()).normalize();
-        if (!file.startsWith(root) || !Files.isRegularFile(file)) {
-            throw new NotFoundException("파일을 찾을 수 없습니다.");
-        }
-        return file;
-    }
-
-    public List<ImageFile> recent(int limit) {
-        return mapper.findRecent(limit);
-    }
-
-    /** 관리 화면·보관함 선택창 목록 */
-    public PageResult<ImageFile> search(MediaQuery q, int page, int size) {
-        List<ImageFile> items = mapper.search(q, size, PageResult.offset(page, size));
-        long total = mapper.count(q);
-        return new PageResult<>(items, page, size, total);
-    }
-
-    public long countUnfiled() {
-        return mapper.countUnfiled();
-    }
-
-    public long countAll() {
-        return mapper.count(MediaQuery.of(null, null, false, null, null));
-    }
-
-    public long countByKind(String kind) {
-        return mapper.countByKind(kind);
-    }
-
-    public long totalBytes() {
-        return mapper.sumSizeBytes();
-    }
-
-    /** 카테고리 트리(활성) + 각 노드의 미디어 건수 — 탭 표시용. 1단 건수는 세부 포함 전체 */
-    public List<Category> categoryTreeWithCounts() {
-        Map<Long, Long> byCat = new HashMap<>();
-        mapper.countByCategory().forEach(r -> byCat.put(r.getId(), r.getCnt()));
-        Map<Long, Long> bySub = new HashMap<>();
-        mapper.countBySubCategory().forEach(r -> bySub.put(r.getId(), r.getCnt()));
-        List<Category> tree = categories.tree();
-        for (Category c : tree) {
-            c.setPostCount(byCat.getOrDefault(c.getId(), 0L));
-            for (Category s : c.getChildren()) {
-                s.setPostCount(bySub.getOrDefault(s.getId(), 0L));
-            }
-        }
-        return tree;
-    }
-
-    public ImageFile get(Long id) {
-        ImageFile image = mapper.findById(id);
-        if (image == null) {
-            throw new NotFoundException("파일을 찾을 수 없습니다.");
-        }
-        return image;
-    }
-
-    /** 분류 이동. categoryId 가 null 이면 미분류로 */
-    @Transactional
-    public void move(Long id, Long categoryId, Long subCategoryId) {
-        get(id);
-        if (categoryId != null) {
-            categories.get(categoryId);
-        }
-        mapper.updateCategory(id, categoryId, categories.validSubCategory(categoryId, subCategoryId));
-    }
-
-    /** 표시 이름 변경. 저장 파일명과 URL 은 그대로라 글 본문의 참조가 깨지지 않는다. */
-    @Transactional
-    public void rename(Long id, String displayName) {
-        get(id);
-        String n = displayName == null ? "" : displayName.trim();
-        if (n.isEmpty()) {
-            throw new BusinessException("표시 이름을 입력하세요.");
-        }
-        if (n.length() > 255) {
-            n = n.substring(0, 255);
-        }
-        mapper.updateDisplayName(id, n);
-    }
-
-    /** 완전 삭제: DB 행과 디스크 파일을 함께 지운다. 글 본문에서 참조 중이면 그 글에서 깨진다. */
-    @Transactional
-    public void delete(Long id) {
-        ImageFile image = get(id);
-        mapper.delete(id);
-        Path file = root.resolve(image.getStoredName()).normalize();
-        if (!file.startsWith(root)) {
-            return;
-        }
-        try {
-            Files.deleteIfExists(file);
-        } catch (IOException e) {
-            throw new IllegalStateException("파일을 삭제하지 못했습니다.", e);
-        }
+        return new Stored("/uploads/" + folder + "/" + storedName, safeName(file.getOriginalFilename()), kind, file.getSize());
     }
 
     public static String kindOf(String contentType) {
@@ -260,18 +118,6 @@ public class ImageStorageService {
             throw new IllegalStateException("파일을 읽을 수 없습니다.", e);
         }
         return "unknown";
-    }
-
-    /** 이미 받은 파일 내용을 저장 흐름(store)에 그대로 넘기기 위한 껍데기 */
-    private record BytesFile(byte[] data, String originalName) implements MultipartFile {
-        @Override public String getName() { return "file"; }
-        @Override public String getOriginalFilename() { return originalName; }
-        @Override public String getContentType() { return null; }
-        @Override public boolean isEmpty() { return data == null || data.length == 0; }
-        @Override public long getSize() { return data == null ? 0 : data.length; }
-        @Override public byte[] getBytes() { return data; }
-        @Override public InputStream getInputStream() { return new ByteArrayInputStream(data == null ? new byte[0] : data); }
-        @Override public void transferTo(File dest) throws IOException { Files.write(dest.toPath(), data); }
     }
 
     private static String safeName(String name) {

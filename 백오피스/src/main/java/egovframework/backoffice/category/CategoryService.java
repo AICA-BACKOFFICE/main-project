@@ -3,60 +3,91 @@ package egovframework.backoffice.category;
 import egovframework.backoffice.common.NotFoundException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 카테고리 조회 전용(2단 구조). 관리 화면은 없고 값은 Flyway(V7)로 심는다 — 바꿀 일이 있으면 DB categories 테이블에서 직접.
- *   1단: 후기 · 인터뷰 · 프로젝트 · 기수별 모아보기
- *   2단: 후기 → 생활·수업·프로젝트·취업·진로 / 기수별 모아보기 → 3~5기·6기·7기
+ * 카테고리(2단 구조). 2026-10-20부터 DB 표 없이 여기 정해 둔 값을 쓴다(글은 종류별 표 reviews · interviews · projects 에 들어가고,
+ * 후기 분야는 reviews.category 칸). 번호 · 이름 · 주소 이름(slug)은 예전 categories 표와 같아서 화면 · 주소가 그대로다.
+ *   1단: 후기 · 인터뷰 · 프로젝트
+ *   2단: 후기 → 생활 · 수업 · 프로젝트 · 취업 성공 · 진로 고민
  */
 @Service
-@Transactional(readOnly = true)
 public class CategoryService {
 
-    private final CategoryMapper mapper;
+    public static final Long REVIEW_ID = 1L;
+    public static final Long INTERVIEW_ID = 2L;
+    public static final Long PROJECT_ID = 3L;
 
-    public CategoryService(CategoryMapper mapper) {
-        this.mapper = mapper;
-    }
+    /** [번호, 이름, slug, 설명, 위 카테고리 번호(1단은 null)] — 순서가 화면 순서 */
+    private static final Object[][] ALL = {
+            {REVIEW_ID, "후기", "review", "겪어 본 사람이 직접 써요", null},
+            {5L, "생활", "review-life", null, REVIEW_ID},
+            {6L, "수업", "review-class", null, REVIEW_ID},
+            {7L, "프로젝트", "review-project", null, REVIEW_ID},
+            {33L, "취업 성공", "review-job", null, REVIEW_ID},
+            {34L, "진로 고민", "review-path", null, REVIEW_ID},
+            {INTERVIEW_ID, "인터뷰", "interview", "선배·교수진 인터뷰", null},
+            {PROJECT_ID, "프로젝트", "project", "교육 과정에서 진행한 프로젝트", null},
+    };
 
-    /** 전체(비활성 포함) 평면 목록 */
-    public List<Category> findAll() {
-        return mapper.findAll();
-    }
-
-    /** 활성 평면 목록 */
-    public List<Category> findActive() {
-        return mapper.findActive();
-    }
-
-    /** 활성 트리: 1단 카테고리 목록, 각 항목의 children 에 세부 카테고리 */
-    public List<Category> tree() {
-        return toTree(mapper.findActive());
-    }
-
-    /** 전체(비활성 포함) 트리 — 관리 화면 필터용 */
-    public List<Category> treeAll() {
-        return toTree(mapper.findAll());
-    }
-
-    public List<Category> childrenOf(Long parentId) {
-        return mapper.findActiveChildren(parentId);
-    }
-
-    public Category get(Long id) {
-        Category c = mapper.findById(id);
-        if (c == null) {
-            throw new NotFoundException("카테고리를 찾을 수 없습니다.");
-        }
+    private static Category make(Object[] row, int order) {
+        Category c = new Category();
+        c.setId((Long) row[0]);
+        c.setName((String) row[1]);
+        c.setSlug((String) row[2]);
+        c.setDescription((String) row[3]);
+        c.setParentId((Long) row[4]);
+        c.setSortOrder(order);
+        c.setActive(true);
         return c;
     }
 
+    /** 평면 목록(매번 새 객체 — 화면이 children 을 채워도 서로 섞이지 않게) */
+    public List<Category> findAll() {
+        List<Category> out = new ArrayList<>();
+        for (int i = 0; i < ALL.length; i++) {
+            out.add(make(ALL[i], i + 1));
+        }
+        return out;
+    }
+
+    public List<Category> findActive() {
+        return findAll();
+    }
+
+    /** 트리: 1단 카테고리 목록, 각 항목의 children 에 세부 카테고리 */
+    public List<Category> tree() {
+        List<Category> flat = findAll();
+        List<Category> tops = new ArrayList<>();
+        for (Category c : flat) {
+            if (c.isTop()) {
+                tops.add(c);
+            }
+        }
+        for (Category c : flat) {
+            if (!c.isTop()) {
+                tops.stream().filter(t -> t.getId().equals(c.getParentId())).findFirst().ifPresent(t -> t.getChildren().add(c));
+            }
+        }
+        return tops;
+    }
+
+    /** 관리 화면 필터용 트리(지금은 tree 와 같음) */
+    public List<Category> treeAll() {
+        return tree();
+    }
+
+    public List<Category> childrenOf(Long parentId) {
+        return findAll().stream().filter(c -> parentId != null && parentId.equals(c.getParentId())).toList();
+    }
+
+    public Category get(Long id) {
+        return findAll().stream().filter(c -> c.getId().equals(id)).findFirst()
+                .orElseThrow(() -> new NotFoundException("카테고리를 찾을 수 없습니다."));
+    }
+
     public Category findBySlug(String slug) {
-        return slug == null || slug.isBlank() ? null : mapper.findBySlug(slug);
+        return slug == null || slug.isBlank() ? null : findAll().stream().filter(c -> c.getSlug().equals(slug)).findFirst().orElse(null);
     }
 
     /** 세부 카테고리가 지정한 카테고리의 하위가 맞는지 — 아니면 null 로 정리 */
@@ -64,26 +95,6 @@ public class CategoryService {
         if (categoryId == null || subCategoryId == null) {
             return null;
         }
-        Category sub = mapper.findById(subCategoryId);
-        return sub != null && categoryId.equals(sub.getParentId()) ? subCategoryId : null;
-    }
-
-    private static List<Category> toTree(List<Category> flat) {
-        Map<Long, Category> tops = flat.stream().filter(Category::isTop)
-                .collect(Collectors.toMap(Category::getId, c -> c, (a, b) -> a, java.util.LinkedHashMap::new));
-        List<Category> orphans = new ArrayList<>();
-        for (Category c : flat) {
-            if (!c.isTop()) {
-                Category parent = tops.get(c.getParentId());
-                if (parent != null) {
-                    parent.getChildren().add(c);
-                } else {
-                    orphans.add(c);
-                }
-            }
-        }
-        List<Category> out = new ArrayList<>(tops.values());
-        out.addAll(orphans);
-        return out;
+        return findAll().stream().anyMatch(c -> c.getId().equals(subCategoryId) && categoryId.equals(c.getParentId())) ? subCategoryId : null;
     }
 }

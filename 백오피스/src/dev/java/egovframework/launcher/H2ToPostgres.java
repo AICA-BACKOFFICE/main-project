@@ -82,11 +82,19 @@ public final class H2ToPostgres {
         try (Connection src = DriverManager.getConnection(h2Url, "sa", ""); Connection dst = DriverManager.getConnection(url, user, password)) {
             dst.setAutoCommit(false);
             List<String> tables = order(dst, common(src, dst));
-            long existing = count(dst, "posts");
+            // 게시물은 2026-10-20부터 종류별 표(후기 · 인터뷰 · 프로젝트). 예전 H2의 posts 는 PostgreSQL에 같은 표가 없어 옮기지 않고,
+            // 백오피스가 켤 때 사이트의 글 사본(stories-data.js)에서 다시 가져와요
+            Set<String> present = tables(dst);
+            long existing = 0;
+            for (String t : List.of("reviews", "interviews", "projects")) {
+                if (present.contains(t)) {
+                    existing += count(dst, t);
+                }
+            }
             if (existing > 0 && !replace) {
                 throw new IllegalStateException("PostgreSQL에 이미 게시물이 " + existing + "개 있어요. 지우고 다시 옮기려면 --replace 를 붙여 주세요.");
             }
-            // PostgreSQL 쪽 표는 모두 비우고(예전 H2에 없던 표 — 생활 꿀팁 · FAQ — 는 백오피스가 켤 때 사이트 페이지에서 다시 옮김) 옮겨요
+            // PostgreSQL 쪽 표는 모두 비우고 두 DB에 다 있는 표(지금은 관리자 계정)만 옮겨요
             Set<String> all = tables(dst);
             all.removeAll(SKIP);
             try (Statement st = dst.createStatement()) {

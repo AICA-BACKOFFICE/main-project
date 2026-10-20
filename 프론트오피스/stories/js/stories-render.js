@@ -9,7 +9,7 @@
    - reviews.html: 카드 · 리스트 · 쪽 번호 · 글 창(.ov), 새 기수 거르기 단추
    - interviews.html: 카드 · 넘김 점 · 상세(.ivd)
    - projects.html: 카드 격자(.pjgrid) · 상세(.pjd)
-   - cohorts.html: 기수 기록 카드를 <template id="cv3-data">에(인스타형 화면은 cohort-v3.js가 이 카드로 그림)
+   - cohorts.html: 기수 기록 카드는 페이지 HTML의 <template id="cv3-data">에 적혀 있어요(데이터에 기수 기록이 있을 때만 다시 그림)
    - index.html(한눈에 보기): 대표 인터뷰 + 3개 · 흐르는 한마디 12개 + 포스트잇 4장 · 유형별 프로젝트 3개 · 행사 단계별 기수 사진 5장
    - 사진: 카드에는 대표 사진(img, 관리자가 맞춘 보일 위치 · 확대 fit), 글을 열면 사진 여러 장(photos)을 넘겨 봐요(.phs)
    목록은 최신 글이 먼저예요.
@@ -181,7 +181,6 @@
       return '<a class="iv" href="#' + esc(v.anchor) + '"' + (vid ? ' data-yt="' + esc(v.video.yt) + '"' : '') + '>'
         + '<div class="ph">' + visual(v, { alt: false, fit: true, field: 'thumbnail' }) + (vid ? '<span class="play"><i></i></span><span class="dur" data-field="duration">' + esc(v.video.dur || '') + '</span>' : '') + '</div>'
         + '<div class="tb"><h3 data-field="title">' + esc(v.title) + '</h3>'
-        + (v.quote ? '<blockquote class="ivq">' + esc(v.quote) + '</blockquote>' : '')
         + '<p data-field="summary">' + esc(v.summary) + '</p>'
         + '<div class="by"><span class="av" data-field="cohort">' + coh(v.cohort) + '</span><b data-field="author">' + esc(v.author) + '</b><em data-field="track">' + esc(v.track) + '</em></div></div></a>';
     }).join('');
@@ -263,9 +262,10 @@
     insertAfter($('.pjlist', prPane), pjd);
   }
 
-  /* ── 기수 기록(cohorts.html): 인스타형 화면(cohort-v3.js)이 읽는 카드 ── */
+  /* ── 기수 기록(cohorts.html): 인스타형 화면(cohort-v3.js)이 읽는 카드 ──
+     2026-10-20부터 기수 기록은 DB가 아니라 페이지 HTML에 적혀 있어요(카테고리 페이지 관리에서 고침). 데이터에 기수 기록이 있을 때만 다시 그려요 */
   var cvData = document.getElementById('cv3-data');
-  if (cvData) {
+  if (cvData && CO.length) {
     cvData.innerHTML = CO.map(function (c) {
       var vid = c.video && c.video.url;
       return '<a class="st c' + esc(c.cohort) + tagClasses(c.tags, 'g') + '" href="#"' + (vid ? ' data-yt="' + esc(c.video.url) + '"' : '') + (c.id != null ? ' data-st="' + esc(c.id) + '"' : '')
@@ -287,13 +287,29 @@
     var ivBox = $('.hb-ivg');
     if (ivBox) {
       var f = ivs[0];
-      ivBox.innerHTML = f ? '<a class="hb-ivf" href="interviews.html#' + esc(f.anchor) + '">' + hubVisual(f, { large: true })
-        + '<div class="hb-ivf-tx">' + (f.kicker ? '<em>' + esc(f.kicker) + '</em>' : '') + '<h3>' + esc(f.title) + '</h3>'
-        + (f.quote ? '<p class="hb-ivf-q">' + esc(f.quote) + '</p>' : '') + '<span class="hb-by">' + esc(who(f)) + '</span></div></a>'
-        + '<ul class="hb-ivl" role="list">' + ivs.slice(1, 4).map(function (v) {
-          return '<li><a href="interviews.html#' + esc(v.anchor) + '"><span class="hb-ivl-ph">' + hubVisual(v) + '</span>'
-            + '<div><h3>' + esc(v.title) + '</h3><span class="hb-by">' + esc(who(v)) + '</span></div></a></li>';
-        }).join('') + '</ul>' : '';
+      var list = '<ul class="hb-ivl" role="list">' + ivs.slice(1, 4).map(function (v) {
+        return '<li><a href="interviews.html#' + esc(v.anchor) + '"><span class="hb-ivl-ph">' + hubVisual(v) + '</span>'
+          + '<div><h3>' + esc(v.title) + '</h3><span class="hb-by">' + esc(who(v)) + '</span></div></a></li>';
+      }).join('') + '</ul>';
+      // 큰 카드는 페이지 HTML에 있어요(2026-10-20): 꼬리표(em) · 인용(.hb-ivf-q)은 페이지 글 그대로 두고(카테고리 페이지 관리에서 고침),
+      // 사진 · 제목 · 이름 · 주소만 가장 최근 인터뷰로 채워요
+      var card = $('.hb-ivf', ivBox);
+      if (card && f) {
+        card.setAttribute('href', 'interviews.html#' + f.anchor);
+        card.insertAdjacentHTML('afterbegin', hubVisual(f, { large: true }));
+        var h = $('h3', card), by = $('.hb-by', card), em = $('em', card), q = $('.hb-ivf-q', card);
+        if (h) h.textContent = f.title || '';
+        if (by) by.textContent = who(f);
+        if (em) em.hidden = !em.textContent.trim();
+        if (q) q.hidden = !q.textContent.trim();
+        ivBox.insertAdjacentHTML('beforeend', list);
+      } else if (card) {
+        card.hidden = true;   // 보여 줄 인터뷰가 없으면 빈 카드 대신 숨김
+      } else {
+        // 예전 페이지(큰 카드가 HTML에 없음): 꼬리표 · 인용 없이 통째로
+        ivBox.innerHTML = f ? '<a class="hb-ivf" href="interviews.html#' + esc(f.anchor) + '">' + hubVisual(f, { large: true })
+          + '<div class="hb-ivf-tx"><h3>' + esc(f.title) + '</h3><span class="hb-by">' + esc(who(f)) + '</span></div></a>' + list : '';
+      }
     }
     // 후기: 흐르는 한마디(최근 12개, 끊김 없이 두 번) + 포스트잇 4장(관리자가 '한눈에 보기에 보이기'로 고른 글, 모자라면 분류 · 기수가 겹치지 않게 채움)
     var tick = REV.slice(0, 12), lq = $('.hb-lq-t');
@@ -335,7 +351,7 @@
     }
     // 기수별 이모저모: 행사 단계마다 사진 있는 기록 하나(영상 먼저, 그다음 최근), 기수가 겹치지 않게. 영상은 유튜브로, 기록은 그 글 창으로
     var mos = $('.hb-mos');
-    if (mos) {
+    if (mos && CO.length) {   // 기수 기록이 HTML에 적혀 있으면(2026-10-20부터) 그대로
       var usedC = {}, five = [];
       STAGES.forEach(function (g) {
         var cand = CO.filter(function (c) { return hasPhoto(c) && (c.tags || []).indexOf(g) >= 0 && !usedC[c.cohort] && five.indexOf(c) < 0; });

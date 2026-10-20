@@ -35,9 +35,9 @@ public class PostPreviewController {
     }
 
     /** 저장된 게시물 미리보기. 선배들의 이야기 글은 사이트 화면 그대로 */
-    @GetMapping("/{id}/preview")
-    public String preview(@PathVariable Long id, Model model) {
-        Post post = postService.get(id);
+    @GetMapping("/{kind:review|interview|project}/{id:[0-9]+}/preview")
+    public String preview(@PathVariable String kind, @PathVariable Long id, Model model) {
+        Post post = postService.get(PostKey.kind(kind), id);
         String story = storySite.previewPath(post, true);
         if (story != null) {
             return "redirect:" + story;

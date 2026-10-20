@@ -20,8 +20,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * 게시물 목록·등록·수정·상태 변경.
- * 휴지통은 {@link PostTrashController}, 미리보기는 {@link PostPreviewController},
- * 버전 이력은 {@link egovframework.backoffice.post.version.PostVersionController}.
+ * 휴지통은 {@link PostTrashController}, 미리보기는 {@link PostPreviewController}. 글은 종류별 표에 있다({@link PostStore}).
  */
 @Controller
 @RequestMapping("/admin/posts")
@@ -42,7 +41,7 @@ public class PostController {
 
     @GetMapping
     public String list(@ModelAttribute("search") PostSearch search, @RequestParam(required = false) String kind, Model model) {
-        // 왼쪽 메뉴의 세부 카테고리(선배 후기 · 선배 인터뷰 · 프로젝트 · 기수별 모아보기)는 카테고리 slug(kind)로 연다
+        // 왼쪽 메뉴의 세부 카테고리(선배 후기 · 선배 인터뷰 · 프로젝트)는 카테고리 slug(kind)로 연다
         Category kindCategory = categoryService.findBySlug(kind);
         if (kindCategory != null && kindCategory.isTop()) {
             search.setCategoryId(kindCategory.getId());
@@ -54,7 +53,7 @@ public class PostController {
         List<Category> tree = categoryService.treeAll();
         model.addAttribute("result", postService.search(search));
         model.addAttribute("categoryTree", tree);
-        model.addAttribute("statuses", PostStatus.values());
+        model.addAttribute("statuses", PostStatus.CHOOSABLE);
         model.addAttribute("storyKind", storyKind(tree.stream().filter(c -> c.getId().equals(search.getCategoryId()))
                 .map(Category::getSlug).findFirst().orElse(null)));
         return "post/list";
@@ -83,7 +82,7 @@ public class PostController {
         try {
             Post saved = postService.create(form, me.getId());
             redirect.addFlashAttribute("toast", "등록이 완료되었습니다.");
-            return "redirect:/admin/posts/" + saved.getId() + "/edit";
+            return "redirect:/admin/posts/" + saved.getKind() + "/" + saved.getId() + "/edit";
         } catch (IllegalArgumentException e) {
             binding.reject("blocks", e.getMessage());
             addFormOptions(model);
@@ -91,54 +90,57 @@ public class PostController {
         }
     }
 
-    @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, @AuthenticationPrincipal CurrentAdmin me, Model model) {
-        Post post = postService.getForEditing(id, me.getId());
+    /** 글 번호는 표마다 1번부터라 주소에 글 종류가 같이 들어간다: /admin/posts/project/1/edit */
+    @GetMapping("/{kind:review|interview|project}/{id:[0-9]+}/edit")
+    public String editForm(@PathVariable String kind, @PathVariable Long id, @AuthenticationPrincipal CurrentAdmin me, Model model) {
+        Post post = postService.getForEditing(PostKey.kind(kind), id, me.getId());
         model.addAttribute("post", post);
         model.addAttribute("form", PostForm.from(post));
         addFormOptions(model);
         return "post/editor";
     }
 
-    /** 왼쪽 메뉴에서 표시할 선배들의 이야기 세부 카테고리(review · interview · project · cohort). 그 밖의 카테고리는 null */
+    /** 왼쪽 메뉴에서 표시할 선배들의 이야기 세부 카테고리(review · interview · project). 그 밖의 카테고리는 null */
     private static String storyKind(String categorySlug) {
         StoryKind kind = StoryKind.ofSlug(categorySlug);
         return kind == null ? null : kind.slug();
     }
 
-    @PostMapping("/{id}")
-    public String update(@PathVariable Long id, @Valid @ModelAttribute("form") PostForm form,
+    @PostMapping("/{kind:review|interview|project}/{id:[0-9]+}")
+    public String update(@PathVariable String kind, @PathVariable Long id, @Valid @ModelAttribute("form") PostForm form,
                          BindingResult binding, @AuthenticationPrincipal CurrentAdmin me,
                          Model model, RedirectAttributes redirect) {
-        postService.getForEditing(id, me.getId());
+        StoryKind from = PostKey.kind(kind);
+        postService.getForEditing(from, id, me.getId());
         form.setId(id);
         if (binding.hasErrors()) {
-            model.addAttribute("post", postService.get(id));
+            model.addAttribute("post", postService.get(from, id));
             addFormOptions(model);
             return "post/editor";
         }
         try {
-            postService.update(id, form, me.getId());
+            // 글 종류를 바꾸면 새 종류의 표로 옮겨 번호도 바뀌므로 저장된 글의 주소로 연다
+            Post saved = postService.update(from, id, form, me.getId());
             redirect.addFlashAttribute("toast", "수정이 완료되었습니다.");
-            return "redirect:/admin/posts/" + id + "/edit";
+            return "redirect:/admin/posts/" + saved.getKind() + "/" + saved.getId() + "/edit";
         } catch (IllegalArgumentException e) {
             binding.reject("blocks", e.getMessage());
-            model.addAttribute("post", postService.get(id));
+            model.addAttribute("post", postService.get(from, id));
             addFormOptions(model);
             return "post/editor";
         }
     }
 
-    @PostMapping("/{id}/status")
-    public String changeStatus(@PathVariable Long id, @RequestParam PostStatus status,
+    @PostMapping("/{kind:review|interview|project}/{id:[0-9]+}/status")
+    public String changeStatus(@PathVariable String kind, @PathVariable Long id, @RequestParam PostStatus status,
                                @RequestParam(required = false) String back, RedirectAttributes redirect) {
-        postService.changeStatus(id, status);
+        postService.changeStatus(PostKey.kind(kind), id, status);
         redirect.addFlashAttribute("toast", "게시물 상태를 '" + status.getLabel() + "'(으)로 변경했습니다.");
         return "redirect:" + (back != null && back.startsWith("/admin/") ? back : "/admin/posts");
     }
 
     private void addFormOptions(Model model) {
         model.addAttribute("categoryTree", categoryService.tree());
-        model.addAttribute("statuses", PostStatus.values());
+        model.addAttribute("statuses", PostStatus.CHOOSABLE);
     }
 }

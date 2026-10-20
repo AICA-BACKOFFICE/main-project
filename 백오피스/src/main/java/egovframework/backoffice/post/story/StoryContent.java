@@ -16,11 +16,13 @@ import org.springframework.web.util.HtmlUtils;
 /**
  * 선배들의 이야기 고정 양식 값(story_json) — 정리 · 확인 · 본문 블록 만들기.
  * <pre>
- * 후기     { cat, cohort, author, track, summary, body[], tags[], ticker, hub, photos[], cover, img }   cat: life · class · proj · job · path (예전 career), tags: 0~6
- * 인터뷰   { cohort, author, track, summary, quote, kicker, photos[], cover, img, video{yt,dur}, qa[{q,a,toc}] }
- * 프로젝트 { summary, headline, cardSummary, tags[], team, type, term, photos[], cover, img, sections[{h,p}], links[{label,url}] }
- *          hub: 한눈에 보기 포스트잇에 보이기 · kicker: 한눈에 보기 큰 인터뷰의 작은 꼬리표 · headline/cardSummary: 프로젝트 카드의 한 줄 제목과 짧은 요약
- * 기수 기록 { cohort, date, summary, tags[], photos[], cover, img, video{url,dur}, body[] }            tags: 0~9
+ * 후기     { cat, cohort, author, summary, body[], tags[], hub, photos[], cover, img }   cat: life · class · proj · job · path (예전 career), tags: 0~6
+ *          (반 · 직군 track · 흐르는 한마디 ticker 는 2026-10-20부터 후기에 없음. 사이트 흐르는 띠는 요약의 첫 문장)
+ * 인터뷰   { cohort, author, track, summary, photos[], cover, img, video{yt,dur}, qa[{q,a,toc}] }
+ * 프로젝트 { summary, headline, tags[], cohort, className, major, teamName, teamSize, photos[], cover, img, sections[{h,p}], links[{label,url}] }
+ *          hub: 한눈에 보기 포스트잇에 보이기 (한눈에 보기 큰 인터뷰의 꼬리표 · 인용은 2026-10-20부터 사이트 페이지 글)
+ *          프로젝트: 글 제목 = 서비스 이름(service_name) · headline = 프로젝트 주제(project_subject, 카드 큰 제목) · summary = 한 줄 요약(카드 제목 아래 · 상세 첫 문단)
+ *          프로젝트의 예전 모양(team "AI셈블 · 5명" · type 전공 · term "6기 · 01반")은 읽을 때 새 칸으로 나눈다. 사이트에는 {@link #projectMeta} 로 다시 합쳐 보낸다
  * 공통     img { src, alt, w, h, fit{x,y,z} } — src 는 /uploads/… (관리자 업로드) 또는 assets/… (사이트에 원래 있던 그림)
  *          photos 는 사진 여러 장(최대 12장, 글을 열면 넘겨 봄), cover 는 그중 대표(카드 썸네일) 번호. img 는 늘 대표 사진과 같다
  *          fit 은 썸네일 맞추기: 카드 틀 안에서 보일 위치(x · y, 0~100%)와 확대(z, 1~3배). 사진 파일은 그대로
@@ -32,11 +34,11 @@ import org.springframework.web.util.HtmlUtils;
 public class StoryContent {
 
     public static final List<String> REVIEW_TAGS = List.of("#비전공자", "#타지출신", "#직장인출신", "#졸업생", "#적응", "#팀활동", "#취업연계");
-    public static final List<String> COHORT_TAGS = List.of("입교식", "OT", "특강", "기업탐방", "중간발표회", "해커톤", "프로젝트", "취업박람회", "수료식", "동문회");
-    /** 후기 분야(2026-10-14 시안: 취업·진로 → 취업 성공 · 진로 고민). career 는 예전 글을 위해 남겨 둠(사이트에서는 취업 성공으로 보임) */
-    public static final Map<String, String> REVIEW_CATS = linked("life", "생활", "class", "수업", "proj", "프로젝트", "job", "취업 성공", "path", "진로 고민", "career", "취업·진로");
+    /** 후기 분야(2026-10-14 시안: 취업·진로 → 취업 성공 · 진로 고민). 예전 글의 career 는 취업 성공(job)으로 읽는다 */
+    public static final Map<String, String> REVIEW_CATS = linked("life", "생활", "class", "수업", "proj", "프로젝트", "job", "취업 성공", "path", "진로 고민");
 
-    private static final Pattern ANCHOR = Pattern.compile("[a-z][a-z0-9-]{0,40}");
+    private static final Pattern TEAM = Pattern.compile("^(.*?)\\s*·\\s*(\\d{1,3})\\s*명$");
+    private static final Pattern TERM_COHORT = Pattern.compile("(\\d{1,2})\\s*기");
     private static final Pattern UPLOAD = Pattern.compile("/uploads/[\\w\\-./]+");
     private static final Pattern SITE_ASSET = Pattern.compile("assets/[\\w\\-./]+");
     private static final int MAX_PHOTOS = 12;
@@ -68,11 +70,21 @@ public class StoryContent {
         }
     }
 
-    public String serialize(Map<String, Object> story) {
+    public String serialize(Object story) {
         try {
             return json.writeValueAsString(story);
         } catch (Exception e) {
             throw new IllegalStateException(e);
+        }
+    }
+
+    /** JSON 목록(인터뷰 질문과 답 · 프로젝트 링크 칸). 못 읽으면 빈 목록 */
+    public List<?> parseList(String raw) {
+        try {
+            Object v = raw == null || raw.isBlank() ? null : json.readValue(raw, Object.class);
+            return v instanceof List<?> l ? l : List.of();
+        } catch (Exception e) {
+            return List.of();
         }
     }
 
@@ -82,21 +94,16 @@ public class StoryContent {
     public Map<String, Object> normalize(StoryKind kind, String raw, boolean publishing) {
         Map<String, Object> in = parse(raw);
         Map<String, Object> out = new LinkedHashMap<>();
-        String anchor = text(in.get("anchor"), 40);
-        if (kind != StoryKind.COHORT && ANCHOR.matcher(anchor).matches()) {
-            out.put("anchor", anchor);
-        }
         switch (kind) {
             case REVIEW -> {
                 String cat = text(in.get("cat"), 10);
+                cat = "career".equals(cat) ? "job" : cat;
                 put(out, "cat", REVIEW_CATS.containsKey(cat) ? cat : null);
                 put(out, "summary", text(in.get("summary"), 1000));
                 put(out, "body", paragraphs(in.get("body"), 40, 4000));
                 put(out, "cohort", cohort(in.get("cohort")));
                 put(out, "author", text(in.get("author"), 30));
-                put(out, "track", text(in.get("track"), 40));
                 put(out, "tags", indexes(in.get("tags"), REVIEW_TAGS.size()));
-                put(out, "ticker", text(in.get("ticker"), 80));
                 if (Boolean.TRUE.equals(in.get("hub"))) {
                     out.put("hub", true);
                 }
@@ -106,14 +113,11 @@ public class StoryContent {
                     require(out, "cat", "후기 분야(생활·수업·프로젝트·취업 성공·진로 고민)를 골라 주세요.");
                     require(out, "cohort", "기수를 입력해 주세요.");
                     require(out, "author", "이름을 입력해 주세요.");
-                    // 직군(트랙 · 반)은 후기에서는 비워도 돼요(2026-10-19 사용자 결정: 엑셀 후기에 반 정보 없음)
                     require(out, "summary", "굵은 첫 문단(요약)을 입력해 주세요.");
                     require(out, "body", "본문 문단을 하나 이상 입력해 주세요.");
                 }
             }
             case INTERVIEW -> {
-                put(out, "quote", text(in.get("quote"), 300));
-                put(out, "kicker", text(in.get("kicker"), 30));
                 put(out, "summary", text(in.get("summary"), 1000));
                 put(out, "cohort", cohort(in.get("cohort")));
                 put(out, "author", text(in.get("author"), 30));
@@ -134,43 +138,68 @@ public class StoryContent {
                 }
             }
             case PROJECT -> {
+                upgradeProject(in);
                 put(out, "tags", hashtags(in.get("tags")));
                 put(out, "summary", text(in.get("summary"), 1000));
-                put(out, "headline", text(in.get("headline"), 120));
-                put(out, "cardSummary", text(in.get("cardSummary"), 200));
-                put(out, "team", text(in.get("team"), 60));
-                put(out, "type", text(in.get("type"), 30));
-                put(out, "term", text(in.get("term"), 40));
+                put(out, "headline", text(in.get("headline"), 200));
+                put(out, "cohort", cohort(in.get("cohort")));
+                put(out, "className", text(in.get("className"), 20));
+                put(out, "major", text(in.get("major"), 30));
+                put(out, "teamName", text(in.get("teamName"), 60));
+                Integer size = cohort(in.get("teamSize"));   // 1~99 숫자
+                put(out, "teamSize", size);
                 photos(out, in);
                 put(out, "art", art(in.get("art")));
                 put(out, "heroArt", art(in.get("heroArt")));
                 put(out, "sections", sections(in.get("sections")));
                 put(out, "links", links(in.get("links")));
                 if (publishing) {
-                    require(out, "summary", "요약을 입력해 주세요.");
-                    require(out, "team", "팀을 입력해 주세요.");
-                    require(out, "type", "전공을 입력해 주세요.");
-                    require(out, "term", "기수 · 반을 입력해 주세요.");
-                }
-            }
-            case COHORT -> {
-                put(out, "cohort", cohort(in.get("cohort")));
-                put(out, "tags", indexes(in.get("tags"), COHORT_TAGS.size()));
-                put(out, "summary", text(in.get("summary"), 1000));
-                put(out, "date", text(in.get("date"), 20));
-                photos(out, in);
-                put(out, "art", art(in.get("art")));
-                put(out, "video", video(in.get("video"), true));
-                put(out, "body", paragraphs(in.get("body"), 40, 4000));
-                if (publishing) {
+                    require(out, "summary", "한 줄 요약을 입력해 주세요.");
                     require(out, "cohort", "기수를 입력해 주세요.");
-                    require(out, "date", "날짜를 입력해 주세요.");
-                    require(out, "summary", "요약을 입력해 주세요.");
+                    require(out, "className", "반을 입력해 주세요.");
+                    require(out, "major", "전공을 입력해 주세요.");
+                    require(out, "teamName", "팀 이름을 입력해 주세요.");
                 }
             }
             default -> { }
         }
         return out;
+    }
+
+    /** 프로젝트의 예전 모양(team · type · term 한 칸씩)을 새 칸(팀 이름 · 인원 · 전공 · 기수 · 반)으로 나눈다. 새 칸이 있으면 그대로 */
+    private static void upgradeProject(Map<String, Object> in) {
+        String team = text(in.get("team"), 80), term = text(in.get("term"), 40), type = text(in.get("type"), 30);
+        if (!team.isEmpty() && !in.containsKey("teamName")) {
+            Matcher m = TEAM.matcher(team);
+            in.put("teamName", m.matches() ? m.group(1).trim() : team);
+            if (m.matches()) {
+                in.put("teamSize", Integer.valueOf(m.group(2)));
+            }
+        }
+        if (!type.isEmpty() && !in.containsKey("major")) {
+            in.put("major", type);
+        }
+        if (!term.isEmpty() && !in.containsKey("cohort") && !in.containsKey("className")) {
+            Matcher m = TERM_COHORT.matcher(term);
+            boolean found = m.find();
+            if (found) {
+                in.put("cohort", Integer.valueOf(m.group(1)));
+            }
+            String className = term.contains("·") ? term.substring(term.indexOf('·') + 1).trim() : found ? "" : term;
+            if (!className.isEmpty()) {
+                in.put("className", className);
+            }
+        }
+    }
+
+    /** 사이트가 보여 주는 프로젝트 정보 세 줄: 팀("AI셈블 · 5명") · 전공 · 기수 · 반("6기 · 01반") */
+    public static Map<String, String> projectMeta(Map<String, Object> s) {
+        Map<String, String> m = new LinkedHashMap<>();
+        String size = s.get("teamSize") instanceof Number n ? n + "명" : "";
+        m.put("team", join(" · ", text(s.get("teamName"), 60), size));
+        m.put("type", text(s.get("major"), 30));
+        m.put("term", join(" · ", s.get("cohort") instanceof Number n ? n + "기" : "", text(s.get("className"), 20)));
+        return m;
     }
 
     // ── 게시물 칸에 넣을 값 ──
@@ -179,15 +208,11 @@ public class StoryContent {
         return text(story.get("summary"), 1000);
     }
 
-    /** 세부 카테고리: 후기는 분야(review-life…), 기수 기록은 기수(cohort-7 · cohort-6 · cohort-3-5) */
+    /** 세부 카테고리: 후기 분야(review-life · class · project · job · path). 다른 종류는 없음 */
     public String subCategorySlug(StoryKind kind, Map<String, Object> story) {
         if (kind == StoryKind.REVIEW) {
             String cat = text(story.get("cat"), 10);
-            return cat.isEmpty() ? null : "review-" + ("proj".equals(cat) ? "project" : cat);   // review-life · class · project · job · path (예전 career)
-        }
-        if (kind == StoryKind.COHORT && story.get("cohort") instanceof Number n) {
-            int c = n.intValue();
-            return c >= 3 && c <= 5 ? "cohort-3-5" : c == 6 || c == 7 ? "cohort-" + c : null;
+            return cat.isEmpty() ? null : "review-" + ("proj".equals(cat) ? "project" : cat);
         }
         return null;
     }
@@ -219,9 +244,6 @@ public class StoryContent {
             case INTERVIEW -> {
                 images(b, s);
                 paragraph(b, who, true);
-                if (!text(s.get("quote"), 300).isEmpty()) {
-                    b.add(block("quote", "html", esc(text(s.get("quote"), 300))));
-                }
                 paragraph(b, text(s.get("summary"), 1000), true);
                 if (s.get("video") instanceof Map<?, ?> v && v.get("yt") != null) {
                     paragraph(b, "영상: https://www.youtube.com/watch?v=" + v.get("yt"), false);
@@ -239,7 +261,8 @@ public class StoryContent {
             case PROJECT -> {
                 images(b, s);
                 paragraph(b, text(s.get("headline"), 120), true);
-                paragraph(b, join(" · ", text(s.get("team"), 60), text(s.get("type"), 30), text(s.get("term"), 40)), true);
+                Map<String, String> meta = projectMeta(s);
+                paragraph(b, join(" · ", meta.get("team"), meta.get("type"), meta.get("term")), true);
                 paragraph(b, text(s.get("summary"), 1000), true);
                 paragraph(b, String.join(" ", strings(s.get("tags"))), false);
                 for (Object o : list(s.get("sections"))) {
@@ -254,18 +277,6 @@ public class StoryContent {
                     if (o instanceof Map<?, ?> l) {
                         paragraph(b, str(l.get("label")) + ": " + str(l.get("url")), false);
                     }
-                }
-            }
-            case COHORT -> {
-                images(b, s);
-                paragraph(b, join(" · ", s.get("cohort") instanceof Number n ? n + "기" : "", text(s.get("date"), 20),
-                        String.join(" ", names(s.get("tags"), COHORT_TAGS))), true);
-                paragraph(b, text(s.get("summary"), 1000), true);
-                for (Object p : list(s.get("body"))) {
-                    paragraph(b, String.valueOf(p), false);
-                }
-                if (s.get("video") instanceof Map<?, ?> v && v.get("url") != null) {
-                    paragraph(b, "영상: " + v.get("url"), false);
                 }
             }
             default -> { }
@@ -493,7 +504,7 @@ public class StoryContent {
         return out;
     }
 
-    static String youtubeId(String raw) {
+    public static String youtubeId(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;
         }

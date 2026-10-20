@@ -23,7 +23,7 @@
     var count = selected().length;
     var action = event.submitter && event.submitter.dataset.trashAction || 'purge';
     if (!count || form.dataset.submitting === 'true') { event.preventDefault(); return; }
-    if (action === 'purge' && !window.confirm('선택한 ' + count + '개 게시물을 완전히 삭제할까요?\n버전 이력과 조회 기록도 함께 삭제되며 복구할 수 없습니다.')) {
+    if (action === 'purge' && !window.confirm('선택한 ' + count + '개 게시물을 완전히 삭제할까요?\n복구할 수 없습니다.')) {
       event.preventDefault(); return;
     }
     document.getElementById('trash-bulk-action').value = action;

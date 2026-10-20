@@ -5,73 +5,8 @@
 <main>
   <h2 class="page-title">휴지통</h2>
 
-  <!--/* 탭: 선배들의 이야기 게시물(기본) · 인사교 라이프 카드(LifeTrashController 로 꺼내기 · 완전 삭제) */-->
-  <nav class="trash-tabs" aria-label="휴지통 종류">
-    <a th:href="@{/admin/posts/trash}" th:classappend="${tab != 'life'} ? 'on'" th:attr="aria-current=${tab != 'life'} ? 'page'">
-      선배들의 이야기 게시물 <em th:text="${trashTotal}">0</em></a>
-    <a th:href="@{/admin/posts/trash(tab='life')}" th:classappend="${tab == 'life'} ? 'on'" th:attr="aria-current=${tab == 'life'} ? 'page'">
-      인사교 라이프 카드 <em th:text="${#lists.size(lifeTrash)}">0</em></a>
-  </nav>
-
-  <div class="card" th:if="${tab == 'life'}">
-    <div class="card-head">
-      <div class="left"><span class="count">(총 <span th:text="${#lists.size(lifeTrash)}">0</span> 건)</span></div>
-      <a class="btn ghost sm" th:href="@{/admin/pages/life-photos(section='food')}">← 인사교 라이프 게시물 관리</a>
-    </div>
-    <div class="trash-note">
-      인사교 라이프 게시물 관리에서 지운 <b>오늘 점심</b> · <b>바람 쐬러 가요</b> 카드예요. 사이트에서는 빠져 있어요.
-      <b>꺼내기</b>를 누르면 원래 묶음의 맨 뒤로 돌아가 사이트에도 다시 보여요. <b>완전 삭제</b>는 되돌릴 수 없어요.
-    </div>
-    <table class="list">
-      <thead>
-      <tr>
-        <th>카드</th>
-        <th style="width:200px">있던 곳</th>
-        <th style="width:110px">지운 사람</th>
-        <th style="width:140px">삭제일</th>
-        <th style="width:200px" class="right">액션</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr th:if="${#lists.isEmpty(lifeTrash)}">
-        <td colspan="5">
-          <div class="empty-state">
-            <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg>
-            <div>휴지통이 비어 있습니다.</div>
-          </div>
-        </td>
-      </tr>
-      <tr th:each="c : ${lifeTrash}">
-        <td>
-          <div class="title-cell">
-            <img class="thumb" th:if="${c.url != ''}" th:src="${c.url}" alt="">
-            <span class="thumb empty" th:if="${c.url == ''}">no img</span>
-            <div>
-              <span class="t muted-t" th:text="${c.name}">카드 이름</span>
-              <div class="s" th:text="${c.detail}"></div>
-            </div>
-          </div>
-        </td>
-        <td th:text="${c.where}">오늘 점심 › 식당</td>
-        <td class="nowrap" th:text="${c.deletedBy ?: '-'}">관리자</td>
-        <td class="muted nowrap" th:text="${#temporals.format(c.deletedAt, 'yyyy-MM-dd HH:mm')}">-</td>
-        <td class="right">
-          <div class="actions">
-            <form th:action="@{/admin/posts/trash/life/{type}/{id}/restore(type=${c.type}, id=${c.id})}" method="post">
-              <button class="btn ghost xs accent" type="submit" title="인사교 라이프 목록으로 꺼내기">꺼내기</button>
-            </form>
-            <form th:if="${me.superAdmin}" th:action="@{/admin/posts/trash/life/{type}/{id}/purge(type=${c.type}, id=${c.id})}" method="post"
-                  data-confirm="이 카드를 완전히 삭제할까요? 되돌릴 수 없습니다.">
-              <button class="btn danger xs" type="submit">삭제</button>
-            </form>
-          </div>
-        </td>
-      </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="card" th:if="${tab != 'life'}">
+  <!--/* 후기 · 인터뷰 · 프로젝트 세 표에서 휴지통으로 옮긴 글(deleted_at 이 있는 글)을 모아 지운 순서로 보여 줘요 */-->
+  <div class="card">
     <form class="card-head" th:action="@{/admin/posts/trash}" method="get">
       <div class="left">
         <input class="input" type="search" name="keyword" th:value="${search.keyword}" placeholder="제목·요약 검색" style="width:200px">
@@ -83,7 +18,7 @@
     </form>
 
     <div class="trash-note">
-      휴지통으로 옮긴 글은 <b>미게시</b>로 바뀌어 프론트(사이트)에서 내려갑니다. <b>복원</b>하면 옮기기 전 상태로 선배들의 이야기 게시물 관리에 돌아오고, 게시중이던 글은 사이트에도 다시 올라갑니다. <b>완전 삭제</b>는 되돌릴 수 없습니다.
+      휴지통으로 옮긴 글은 <b>삭제됨</b>으로 바뀌어 프론트(사이트)에서 내려갑니다. <b>복원</b>하면 옮기기 전 상태로 선배들의 이야기 게시물 관리에 돌아오고, 게시중이던 글은 사이트에도 다시 올라갑니다. <b>완전 삭제</b>는 되돌릴 수 없습니다.
     </div>
 
     <div class="trash-bulk" id="trash-bulk">
@@ -97,7 +32,7 @@
         <span class="muted trash-selection-hint">전체 선택은 현재 페이지에 적용됩니다.</span>
       </form>
       <form id="trash-empty-form" th:if="${me.superAdmin}" th:action="@{/admin/posts/trash/empty}" method="post"
-            th:data-confirm="'검색 조건과 관계없이 휴지통 전체 ' + ${trashTotal} + '개 게시물을 완전히 삭제할까요? 버전 이력과 조회 기록도 함께 삭제되며 복구할 수 없습니다.'">
+            th:data-confirm="'검색 조건과 관계없이 휴지통 전체 ' + ${trashTotal} + '개 게시물을 완전히 삭제할까요? 복구할 수 없습니다.'">
         <input type="hidden" name="snapshot" th:value="${trashSnapshot}">
         <button class="btn danger sm" type="submit" th:disabled="${trashTotal == 0}">
           휴지통 전체 비우기 <span th:text="'(' + ${trashTotal} + '개)'">(0개)</span>
@@ -128,7 +63,7 @@
         </td>
       </tr>
       <tr th:each="p : ${result.items}">
-        <td class="center trash-check-cell"><input type="checkbox" class="trash-select" name="ids" th:value="${p.id}" form="trash-bulk-form" th:aria-label="'게시물 선택: ' + ${p.title}"></td>
+        <td class="center trash-check-cell"><input type="checkbox" class="trash-select" name="ids" th:value="${p.kind} + '-' + ${p.id}" form="trash-bulk-form" th:aria-label="'게시물 선택: ' + ${p.title}"></td>
         <td class="num" th:text="${p.id}">1</td>
         <td>
           <div class="title-cell">
@@ -142,7 +77,7 @@
         </td>
         <td th:text="${p.categoryPath ?: '-'}">카테고리</td>
         <td>
-          <span class="badge" th:classappend="${p.status.css}" th:text="${p.status.label}">미게시</span>
+          <span class="badge" th:classappend="${p.status.css}" th:text="${p.status.label}">삭제됨</span>
           <div class="muted" style="font-size:11px;margin-top:3px" th:if="${p.statusBeforeTrash != null and p.statusBeforeTrash != p.status}"
                th:text="'삭제 전 ' + ${p.statusBeforeTrash.label}">삭제 전 게시중</div>
         </td>
@@ -150,10 +85,10 @@
         <td class="muted nowrap" th:text="${#temporals.format(p.deletedAt, 'yyyy-MM-dd HH:mm')}">-</td>
         <td class="right">
           <div class="actions">
-            <form th:action="@{/admin/posts/{id}/restore(id=${p.id})}" method="post">
+            <form th:action="@{/admin/posts/{kind}/{id}/restore(kind=${p.kind}, id=${p.id})}" method="post">
               <button class="btn ghost xs accent" type="submit" title="게시물 관리로 복원">복원</button>
             </form>
-            <form th:if="${me.superAdmin}" th:action="@{/admin/posts/{id}/purge(id=${p.id})}" method="post" data-confirm="이 게시물을 완전히 삭제할까요? 조회 기록까지 함께 지워지며 되돌릴 수 없습니다.">
+            <form th:if="${me.superAdmin}" th:action="@{/admin/posts/{kind}/{id}/purge(kind=${p.kind}, id=${p.id})}" method="post" data-confirm="이 게시물을 완전히 삭제할까요? 되돌릴 수 없습니다.">
               <button class="btn danger xs" type="submit">삭제</button>
             </form>
           </div>

@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -15,16 +14,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
-import egovframework.backoffice.BackofficeApplication;
 import egovframework.testsupport.CmsMockMvcConfig;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,7 +30,8 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 /**
- * 로그인 → 카테고리 등록 → 게시물 등록·미리보기·게시 → 공개 API 조회·조회수 집계 흐름을 실제 컨텍스트로 검증한다.
+ * 로그인 → 관리자 홈 → 후기 · 인터뷰 · 프로젝트 글 쓰기 · 게시 · 휴지통 흐름을 실제 컨텍스트로 검증한다.
+ * 2026-10-20부터 DB 표는 admin_users · reviews · interviews · projects 넷(그리고 Flyway 기록표)뿐이다.
  */
 @TestPropertySource(properties = {
         "datasource.url=jdbc:h2:mem:backoffice-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
@@ -45,9 +44,10 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BackofficeWebTest {
 
+    private static final String REVIEW = "1", INTERVIEW = "2", PROJECT = "3";
+
     @Autowired MockMvc mvc;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
-    @Autowired com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     private MockHttpSession login() throws Exception {
         MvcResult result = mvc.perform(formLogin("/login").user("loginId", "admin").password("password", "test-pass-1234"))
@@ -57,13 +57,36 @@ class BackofficeWebTest {
         return (MockHttpSession) result.getRequest().getSession(false);
     }
 
+    /** 글 쓰기(등록) → 새 글 번호 */
+    private String create(MockHttpSession session, String categoryId, String title, String status, String story) throws Exception {
+        MvcResult created = mvc.perform(post("/admin/posts").session(session).with(csrf())
+                        .param("title", title).param("categoryId", categoryId).param("status", status)
+                        .param("thumbnailMode", "AUTO").param("blocksJson", "[]").param("storyJson", story))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("/admin/posts/*/*/edit"))
+                .andReturn();
+        return created.getResponse().getRedirectedUrl().replaceAll("\\D", "");
+    }
+
+    private String body(MockHttpSession session, String url, String... params) throws Exception {
+        var req = get(url).session(session);
+        for (int i = 0; i + 1 < params.length; i += 2) {
+            req = req.param(params[i], params[i + 1]);
+        }
+        return mvc.perform(req).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+    }
+
+    private String one(String sql, Object... args) {
+        return jdbc.queryForObject(sql, String.class, args);
+    }
+
     @Test
     @Order(1)
     void loginPageIsPublicAndAdminPagesRequireLogin() throws Exception {
         mvc.perform(get("/login")).andExpect(status().isOk());
         mvc.perform(get("/admin/posts")).andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrlPattern("**/login"));
-        mvc.perform(get("/api/public/categories")).andExpect(status().isOk());
+        mvc.perform(get("/api/public/stories")).andExpect(status().isOk());
         // 열어 둔 화면의 로그인 확인: 풀렸으면 로그인 화면 대신 401, 살아 있으면 새 보안 토큰
         mvc.perform(get("/admin/session")).andExpect(status().isUnauthorized());
     }
@@ -73,8 +96,8 @@ class BackofficeWebTest {
     void initialSuperAdminCanLoginAndSeeDashboard() throws Exception {
         MockHttpSession session = login();
         assertThat(jdbc.queryForObject("SELECT last_login_at FROM admin_users WHERE login_id='admin'", java.sql.Timestamp.class)).isNotNull();
-        mvc.perform(get("/admin").session(session)).andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("누적 방문수")));
+        assertThat(body(session, "/admin")).contains("선배 후기").contains("선배 인터뷰").contains("선배 프로젝트").contains("DB 표")
+                .doesNotContain("방문수");
         mvc.perform(get("/admin/users").session(session)).andExpect(status().isOk());
         mvc.perform(get("/admin/session").session(session)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.ok").value(true))
@@ -85,221 +108,211 @@ class BackofficeWebTest {
 
     @Test
     @Order(3)
-    void categoryPostPreviewPublishAndPublicApiFlow() throws Exception {
+    void onlyFourTablesRemainAndRemovedScreensAreGone() throws Exception {
+        List<String> tables = jdbc.queryForList(
+                "SELECT LOWER(table_name) FROM information_schema.tables WHERE LOWER(table_schema) = 'public' ORDER BY 1", String.class);
+        assertThat(tables).containsExactly("admin_users", "flyway_schema_history", "interviews", "projects", "reviews");
+        // 후기 표에는 반 · 직군(track) · 흐르는 한마디(ticker) 칸이 없다(V17)
+        assertThat(jdbc.queryForList("SELECT LOWER(column_name) FROM information_schema.columns WHERE LOWER(table_name) = 'reviews'", String.class))
+                .contains("category", "cohort", "show_on_hub", "status_before_trash").doesNotContain("track", "ticker");
         MockHttpSession session = login();
-
-        // 카테고리는 Flyway(V7)로 심은 2단 구조만 쓴다(조회 전용) — 관리 URL 은 없다
-        mvc.perform(get("/admin/categories").session(session)).andExpect(status().isNotFound());
-        mvc.perform(get("/api/public/categories")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(4))
-                .andExpect(jsonPath("$[0].slug").value("review"))
-                .andExpect(jsonPath("$[0].children.length()").value(5))   // 2026-10-14: 취업·진로 → 취업 성공 · 진로 고민
-                .andExpect(jsonPath("$[0].children[3].slug").value("review-job")).andExpect(jsonPath("$[0].children[4].slug").value("review-path"))
-                .andExpect(jsonPath("$[0].children[0].slug").value("review-life"))
-                .andExpect(jsonPath("$[3].slug").value("cohort"))
-                .andExpect(jsonPath("$[3].children[2].name").value("7기"))
-                .andExpect(jsonPath("$[1].children.length()").value(0));
-        String categoryId = String.valueOf(jdbc.queryForObject("SELECT id FROM categories WHERE slug = 'review'", Long.class));
-        String subId = String.valueOf(jdbc.queryForObject("SELECT id FROM categories WHERE slug = 'review-life'", Long.class));
-        String wrongSubId = String.valueOf(jdbc.queryForObject("SELECT id FROM categories WHERE slug = 'cohort-7'", Long.class));
-
-        // 게시물 등록 (임시저장) — 스크립트가 포함된 인라인 HTML 은 정화되어야 한다
-        String blocks = """
-            [{"type":"heading","level":2,"html":"첫 <b>글</b><script>alert(1)</script>"},
-             {"type":"paragraph","align":"center","html":"<span style=\\"color: #dc2626; position: absolute;\\">빨간</span> 글자"},
-             {"type":"list","style":"number","items":["하나","<i>둘</i>"]},
-             {"type":"image","url":"javascript:alert(1)","alt":"x","caption":"","width":"full"},
-             {"type":"divider"}]
-            """;
-        MvcResult created = mvc.perform(post("/admin/posts").session(session).with(csrf())
-                        .param("title", "테스트 게시물").param("categoryId", categoryId).param("subCategoryId", subId).param("status", "DRAFT")
-                        .param("thumbnailMode", "AUTO").param("blocksJson", blocks))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrlPattern("/admin/posts/*/edit"))
-                .andReturn();
-        String postId = created.getResponse().getRedirectedUrl().replaceAll("\\D", "");
-
-        // 글 관리 목록: 카테고리 › 세부 표시, 카테고리/세부 필터
-        String list0 = mvc.perform(get("/admin/posts").session(session).param("categoryId", categoryId).param("subCategoryId", subId))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(list0).contains("후기 › 생활").contains("id=\"filterSubCategory\"");
-        assertThat(mvc.perform(get("/admin/posts").session(session).param("subCategoryId", wrongSubId))
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).doesNotContain("테스트 게시물");
-        // 검색어로 작성자(이름·이메일)도 찾는다 · 작성자 링크(authorId)로 좁히기
-        String adminName = jdbc.queryForObject("SELECT name FROM admin_users WHERE login_id = 'admin'", String.class);
-        assertThat(mvc.perform(get("/admin/posts").session(session).param("keyword", adminName))
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).contains("테스트 게시물");
-        assertThat(mvc.perform(get("/admin/posts").session(session).param("keyword", "없는작성자"))
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).doesNotContain("테스트 게시물");
-        assertThat(mvc.perform(get("/admin/posts").session(session).param("authorId", "1"))
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).contains("테스트 게시물");
-        assertThat(mvc.perform(get("/admin/posts").session(session).param("authorId", "999"))
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).doesNotContain("테스트 게시물");
-
-        // 미리보기: 허용 서식 유지, script·위험 스타일·javascript: 이미지 제거
-        String preview = mvc.perform(get("/admin/posts/" + postId + "/preview").session(session))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(preview).contains("첫 <b>글</b>")
-                .contains("color: #dc2626")
-                .doesNotContain("<script>")
-                .doesNotContain("position: absolute")
-                .doesNotContain("javascript:alert")
-                .contains("<ol>").contains("<i>둘</i>")
-                .contains("저장된 내용 미리보기");
-
-        // 임시저장 상태는 공개 API 에 노출되지 않음
-        mvc.perform(get("/api/public/posts")).andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0));
-        mvc.perform(get("/api/public/posts/" + postId)).andExpect(status().isNotFound());
-
-        // 게시 → 공개 API 노출, 조회수 집계
-        mvc.perform(post("/admin/posts/" + postId + "/status").session(session).with(csrf()).param("status", "PUBLISHED"))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(get("/api/public/posts")).andExpect(jsonPath("$.total").value(1))
-                .andExpect(jsonPath("$.items[0].title").value("테스트 게시물"))
-                .andExpect(jsonPath("$.items[0].categorySlug").value("review"))
-                .andExpect(jsonPath("$.items[0].subCategorySlug").value("review-life"));
-        mvc.perform(get("/api/public/posts").param("category", "review").param("sub", "review-life")).andExpect(jsonPath("$.total").value(1));
-        mvc.perform(get("/api/public/posts").param("category", "review").param("sub", "review-class")).andExpect(jsonPath("$.total").value(0));
-        mvc.perform(get("/api/public/posts").param("category", "cohort")).andExpect(jsonPath("$.total").value(0));
-        mvc.perform(post("/api/public/track/posts/" + postId + "/view").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"visitorKey\":\"v1\"}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.ok").value(true));
-        mvc.perform(post("/api/public/track/visit").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"visitorKey\":\"v1\",\"path\":\"/\"}"))
-                .andExpect(status().isOk());
-        mvc.perform(get("/api/public/posts/" + postId)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.viewCount").value(1))
-                .andExpect(jsonPath("$.blocks[0].type").value("heading"));
-
-        // 통계 화면
-        String stats = mvc.perform(get("/admin/stats").session(session)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(stats).contains("테스트 게시물");
-
-        // 버전 이력: 등록(저장) 1건 → 수정 후 2건, 첫 버전으로 복원하면 백업+복원 이력이 추가되고 제목이 되돌아간다
-        String v1 = mvc.perform(get("/admin/posts/" + postId + "/versions").session(session))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].reason").value("MANUAL_DRAFT"))
-                .andExpect(jsonPath("$[0].title").value("테스트 게시물"))
-                .andReturn().getResponse().getContentAsString().replaceAll(".*?\"id\":(\\d+).*", "$1");
-        mvc.perform(post("/admin/posts/" + postId).session(session).with(csrf())
-                        .param("title", "수정된 제목").param("categoryId", categoryId).param("subCategoryId", wrongSubId).param("status", "PUBLISHED")
-                        .param("thumbnailMode", "AUTO").param("blocksJson", blocks))
-                .andExpect(status().is3xxRedirection());
-        // 다른 카테고리의 세부(7기)를 후기에 붙이면 저장 시 비워진다
-        mvc.perform(get("/api/public/posts/" + postId)).andExpect(jsonPath("$.subCategory").value(org.hamcrest.Matchers.nullValue()));
-        mvc.perform(get("/admin/posts/" + postId + "/versions").session(session))
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].reason").value("PUBLISH"));
-        mvc.perform(get("/admin/posts/" + postId + "/versions/" + v1).session(session))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("테스트 게시물"))
-                .andExpect(jsonPath("$.blocks[0].type").value("heading"));
-        mvc.perform(post("/admin/posts/" + postId + "/versions/" + v1 + "/restore").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(header().string("Location", "/admin/posts/" + postId + "/edit"));
-        mvc.perform(get("/admin/posts/" + postId + "/versions").session(session))
-                .andExpect(jsonPath("$.length()").value(4))
-                .andExpect(jsonPath("$[0].reason").value("RESTORE"))
-                .andExpect(jsonPath("$[1].reason").value("RESTORE_BACKUP"));
-        assertThat(mvc.perform(get("/admin/posts/" + postId + "/edit").session(session)).andReturn().getResponse().getContentAsString())
-                .contains("테스트 게시물");
-
-        // 휴지통으로 이동(soft) → 상태는 미게시(HIDDEN)로 바뀌고 이전 상태(게시중)가 기록된다. 목록·공개 API 에서 제외
-        mvc.perform(post("/admin/posts/" + postId + "/delete").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(get("/api/public/posts")).andExpect(jsonPath("$.total").value(0));
-        String trashPage = mvc.perform(get("/admin/posts/trash").session(session)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(trashPage).contains("복원").contains("미게시").contains("삭제 전 게시중");
-        assertThat(jdbc.queryForObject("SELECT status FROM posts WHERE id = " + postId, String.class)).isEqualTo("HIDDEN");
-        assertThat(jdbc.queryForObject("SELECT status_before_trash FROM posts WHERE id = " + postId, String.class)).isEqualTo("PUBLISHED");
-
-        // 복원 → 휴지통으로 옮기기 전 상태(게시중)로 돌아와 다시 공개 API 에 노출
-        mvc.perform(post("/admin/posts/" + postId + "/restore").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(header().string("Location", "/admin/posts"));
-        mvc.perform(get("/api/public/posts")).andExpect(jsonPath("$.total").value(1));
-        assertThat(jdbc.queryForObject("SELECT status FROM posts WHERE id = " + postId, String.class)).isEqualTo("PUBLISHED");
-        // 미게시 → 휴지통 → 복원하면 미게시 그대로
-        mvc.perform(post("/admin/posts/" + postId + "/status").session(session).with(csrf()).param("status", "HIDDEN"))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(post("/admin/posts/" + postId + "/delete").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(post("/admin/posts/" + postId + "/restore").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection());
-        assertThat(jdbc.queryForObject("SELECT status FROM posts WHERE id = " + postId, String.class)).isEqualTo("HIDDEN");
-        mvc.perform(post("/admin/posts/" + postId + "/status").session(session).with(csrf()).param("status", "PUBLISHED"))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(get("/api/public/posts")).andExpect(jsonPath("$.total").value(1));
-
-        // 다시 휴지통 → 완전 삭제 → 어디에서도 조회 불가
-        mvc.perform(post("/admin/posts/" + postId + "/delete").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(post("/admin/posts/" + postId + "/purge").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(header().string("Location", "/admin/posts/trash"));
-        mvc.perform(get("/admin/posts/" + postId + "/edit").session(session)).andExpect(status().isNotFound());
-        mvc.perform(get("/api/public/posts")).andExpect(jsonPath("$.total").value(0));
+        for (String url : List.of("/admin/media", "/admin/stats", "/admin/templates", "/admin/notices", "/admin/categories",
+                "/admin/images/recent")) {
+            mvc.perform(get(url).session(session)).andExpect(status().isNotFound());
+        }
+        for (String url : List.of("/api/public/posts", "/api/public/categories", "/api/public/life.js", "/api/public/faq.js")) {
+            mvc.perform(get(url)).andExpect(status().isNotFound());
+        }
+        assertThat(body(session, "/admin/posts")).doesNotContain("미디어 관리").doesNotContain("방문 통계").doesNotContain("기수별 모아보기");
     }
 
     @Test
     @Order(4)
-    void templatesAreManagedInAdminPageAndLoadedViaApiWithLayout() throws Exception {
+    void reviewIsSavedInReviewsTableByCategoryAndGoesThroughTrash() throws Exception {
         MockHttpSession session = login();
-        String blocksJson = "[{\"type\":\"heading\",\"level\":2,\"html\":\"<span style=\\\"font-family: 'Nanum Myeongjo'; position: absolute\\\">제목</span>\"},{\"type\":\"image\",\"url\":\"\",\"alt\":\"\",\"caption\":\"\",\"width\":\"full\"},{\"type\":\"divider\"}]";
-        String layout = "{\"preset\":\"side-right\",\"sidebar\":[\"toc\",\"author\"],\"footer\":[\"share\"]}";
+        String story = "{\"cat\":\"life\",\"cohort\":6,\"author\":\"김민서\",\"summary\":\"생활비를 아끼며 버틴 이야기.\","
+                + "\"body\":[\"첫 문단\",\"둘째 문단\"],\"tags\":[0,4],\"hub\":true,\"track\":\"버리는 반\",\"ticker\":\"버리는 한마디\"}";
+        String id = create(session, REVIEW, "테스트 후기", "DRAFT", story);
 
-        // 템플릿 관리 화면: 목록 · 새 템플릿 폼 · 저장(form POST)
-        mvc.perform(get("/admin/templates").session(session)).andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("새 템플릿")));
-        mvc.perform(get("/admin/templates/new").session(session)).andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"layoutPanel\"")));
-        mvc.perform(post("/admin/templates").session(session).with(csrf())
-                        .param("name", "공지 기본형").param("titleHint", "[공지] ").param("blocksJson", blocksJson).param("layoutJson", layout))
-                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/admin/templates"));
-        String list = mvc.perform(get("/admin/templates").session(session)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(list).contains("공지 기본형").contains("우 사이드바");
-        // 이름 없는 저장은 폼으로 되돌아오며 오류 표시
-        mvc.perform(post("/admin/templates").session(session).with(csrf()).param("name", " ").param("blocksJson", blocksJson))
-                .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString("템플릿 이름을 입력하세요")));
+        // 표 칸에 나눠 담김: 분야는 한글, 본문은 빈 줄로 나눈 글, 태그는 #글자
+        assertThat(one("SELECT category FROM reviews WHERE id = ?", Long.valueOf(id))).isEqualTo("생활");
+        assertThat(one("SELECT senior_name FROM reviews WHERE id = ?", Long.valueOf(id))).isEqualTo("김민서");
+        assertThat(one("SELECT body FROM reviews WHERE id = ?", Long.valueOf(id))).isEqualTo("첫 문단\n\n둘째 문단");
+        assertThat(one("SELECT tags FROM reviews WHERE id = ?", Long.valueOf(id))).isEqualTo("#비전공자 #적응");
+        assertThat(jdbc.queryForObject("SELECT show_on_hub FROM reviews WHERE id = ?", Boolean.class, Long.valueOf(id))).isTrue();
+        assertThat(one("SELECT status FROM reviews WHERE id = ?", Long.valueOf(id))).isEqualTo("DRAFT");
 
-        // 글쓰기 패널이 쓰는 JSON API: 목록 · 상세(레이아웃 포함) — 빈 주소의 '사진 자리' 블록은 유지, 위험한 style 은 제거
-        String api = mvc.perform(get("/admin/templates/api").session(session)).andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].blockCount").value(3))
-                .andExpect(jsonPath("$[0].layoutPreset").value("side-right"))
-                .andReturn().getResponse().getContentAsString();
-        String id = api.replaceAll(".*?\"id\":(\\d+).*", "$1");
-        String loaded = mvc.perform(get("/admin/templates/api/" + id).session(session)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.layout.preset").value("side-right"))
-                .andExpect(jsonPath("$.blocks[1].type").value("image"))
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(loaded).contains("Nanum Myeongjo").doesNotContain("position").contains("\"layoutJson\"");
+        // 글 관리 목록: 후기 › 분야 표시 · 분야로 거르기 · 작성자로 찾기
+        assertThat(body(session, "/admin/posts", "categoryId", REVIEW, "subCategoryId", "5")).contains("후기 › 생활").contains("테스트 후기");
+        assertThat(body(session, "/admin/posts", "categoryId", REVIEW, "subCategoryId", "6")).doesNotContain("테스트 후기");
+        assertThat(body(session, "/admin/posts", "kind", "interview")).doesNotContain("테스트 후기");
+        String adminName = one("SELECT name FROM admin_users WHERE login_id = 'admin'");
+        assertThat(body(session, "/admin/posts", "keyword", adminName)).contains("테스트 후기");
+        assertThat(body(session, "/admin/posts", "keyword", "없는작성자")).doesNotContain("테스트 후기");
+        assertThat(body(session, "/admin/posts", "authorId", "999")).doesNotContain("테스트 후기");
 
-        // 템플릿 미리보기는 레이아웃대로(2단) 그려지고, 빈 사진 자리는 그리지 않는다
-        String preview = mvc.perform(get("/admin/templates/" + id + "/preview").session(session)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(preview).contains("lo-side-right").contains("템플릿 미리보기").doesNotContain("blk-image");
+        // 고치는 화면: 표 칸에서 다시 만든 양식 값
+        assertThat(body(session, "/admin/posts/review/" + id + "/edit")).contains("테스트 후기").contains("&quot;cat&quot;:&quot;life&quot;")
+                .contains("둘째 문단");
+        // 미리보기(사이트 폴더가 없을 때는 기본 화면)
+        assertThat(body(session, "/admin/posts/review/" + id + "/preview")).contains("생활비를 아끼며 버틴 이야기.").contains("첫 문단");
 
-        // 수정 화면 · 수정 저장 · 삭제
-        mvc.perform(get("/admin/templates/" + id + "/edit").session(session)).andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("공지 기본형")));
-        mvc.perform(post("/admin/templates/" + id).session(session).with(csrf())
-                        .param("name", "공지 기본형 v2").param("blocksJson", blocksJson).param("layoutJson", ""))
+        // 임시저장은 사이트에 안 보임 → 게시하면 보임(주소 #r-p번호)
+        mvc.perform(get("/api/public/stories")).andExpect(jsonPath("$.reviews.length()").value(0));
+        mvc.perform(post("/admin/posts/review/" + id + "/status").session(session).with(csrf()).param("status", "PUBLISHED"))
                 .andExpect(status().is3xxRedirection());
-        mvc.perform(get("/admin/templates/api/" + id).session(session))
-                .andExpect(jsonPath("$.name").value("공지 기본형 v2"))
-                .andExpect(jsonPath("$.layout.preset").value("basic"));
-        mvc.perform(post("/admin/templates/" + id + "/delete").session(session).with(csrf())).andExpect(status().is3xxRedirection());
-        mvc.perform(get("/admin/templates/api/" + id).session(session)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/public/stories")).andExpect(jsonPath("$.reviews.length()").value(1))
+                .andExpect(jsonPath("$.reviews[0].title").value("테스트 후기"))
+                .andExpect(jsonPath("$.reviews[0].anchor").value("r-p" + id))
+                .andExpect(jsonPath("$.reviews[0].cat").value("life"))
+                .andExpect(jsonPath("$.reviews[0].body[1]").value("둘째 문단"))
+                .andExpect(jsonPath("$.reviews[0].hub").value(true))
+                .andExpect(jsonPath("$.reviews[0].track").doesNotExist())
+                .andExpect(jsonPath("$.reviews[0].ticker").doesNotExist())
+                .andExpect(jsonPath("$.cohorts").doesNotExist());
+        mvc.perform(get("/api/public/stories.js")).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("window.STORIES_DATA")));
+
+        // 분야를 바꿔 고치면 표의 분야 칸도 바뀐다
+        mvc.perform(post("/admin/posts/review/" + id).session(session).with(csrf())
+                        .param("title", "수정된 후기").param("categoryId", REVIEW).param("status", "PUBLISHED").param("thumbnailMode", "AUTO")
+                        .param("blocksJson", "[]").param("storyJson", story.replace("\"life\"", "\"class\"")))
+                .andExpect(status().is3xxRedirection());
+        assertThat(one("SELECT category FROM reviews WHERE id = ?", Long.valueOf(id))).isEqualTo("수업");
+        assertThat(one("SELECT title FROM reviews WHERE id = ?", Long.valueOf(id))).isEqualTo("수정된 후기");
+        assertThat(body(session, "/admin/posts", "categoryId", REVIEW, "subCategoryId", "6")).contains("수정된 후기");
+
+        // 삭제됨은 휴지통 버튼으로만(상태 바꾸기 · 저장으로는 안 됨), 고르는 목록에도 없음
+        mvc.perform(post("/admin/posts/review/" + id + "/status").session(session).with(csrf()).param("status", "DELETED"))
+                .andExpect(status().isBadRequest());
+        assertThat(one("SELECT status FROM reviews WHERE id = ?", Long.valueOf(id))).isEqualTo("PUBLISHED");
+        assertThat(body(session, "/admin/posts")).doesNotContain(">삭제됨<");
+        // 표의 상태 칸은 네 가지만 받는다
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbc.update("UPDATE reviews SET status = 'GONE' WHERE id = ?", Long.valueOf(id)))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+
+        // 휴지통: 삭제됨으로 바뀌고 이전 상태(게시중)를 기억, 사이트에서 내려감
+        mvc.perform(post("/admin/posts/review/" + id + "/delete").session(session).with(csrf())).andExpect(status().is3xxRedirection());
+        mvc.perform(get("/api/public/stories")).andExpect(jsonPath("$.reviews.length()").value(0));
+        assertThat(body(session, "/admin/posts/trash")).contains("복원").contains("삭제됨").contains("삭제 전 게시중").contains("수정된 후기");
+        assertThat(one("SELECT status FROM reviews WHERE id = ?", Long.valueOf(id))).isEqualTo("DELETED");
+        assertThat(one("SELECT status_before_trash FROM reviews WHERE id = ?", Long.valueOf(id))).isEqualTo("PUBLISHED");
+        assertThat(body(session, "/admin/posts")).doesNotContain("수정된 후기");
+
+        // 복원 → 게시중으로 돌아와 사이트에 다시
+        mvc.perform(post("/admin/posts/review/" + id + "/restore").session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection()).andExpect(header().string("Location", "/admin/posts"));
+        mvc.perform(get("/api/public/stories")).andExpect(jsonPath("$.reviews.length()").value(1));
+        // 미게시 → 휴지통 → 복원하면 미게시 그대로
+        mvc.perform(post("/admin/posts/review/" + id + "/status").session(session).with(csrf()).param("status", "HIDDEN"));
+        mvc.perform(post("/admin/posts/review/" + id + "/delete").session(session).with(csrf()));
+        mvc.perform(post("/admin/posts/review/" + id + "/restore").session(session).with(csrf()));
+        assertThat(one("SELECT status FROM reviews WHERE id = ?", Long.valueOf(id))).isEqualTo("HIDDEN");
+
+        // 다시 휴지통 → 완전 삭제 → 표에서 사라짐
+        mvc.perform(post("/admin/posts/review/" + id + "/delete").session(session).with(csrf())).andExpect(status().is3xxRedirection());
+        mvc.perform(post("/admin/posts/review/" + id + "/purge").session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection()).andExpect(header().string("Location", "/admin/posts/trash"));
+        mvc.perform(get("/admin/posts/review/" + id + "/edit").session(session)).andExpect(status().isNotFound());
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM reviews WHERE id = ?", Long.class, Long.valueOf(id))).isZero();
     }
 
     @Test
     @Order(5)
-    void imageUploadRejectsNonImagesAndAcceptsPng() throws Exception {
+    void classificationColumnsAreRequiredEvenForDrafts() throws Exception {
+        MockHttpSession session = login();
+        // 후기 분야 · 인터뷰 기수는 표가 꼭 받아야 하는 칸이라 임시저장도 거부(글쓰기 화면에 안내)
+        mvc.perform(post("/admin/posts").session(session).with(csrf())
+                        .param("title", "분야 없는 후기").param("categoryId", REVIEW).param("status", "DRAFT").param("thumbnailMode", "AUTO")
+                        .param("blocksJson", "[]").param("storyJson", "{\"author\":\"김\"}"))
+                .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString("후기 분야")));
+        mvc.perform(post("/admin/posts").session(session).with(csrf())
+                        .param("title", "기수 없는 인터뷰").param("categoryId", INTERVIEW).param("status", "DRAFT").param("thumbnailMode", "AUTO")
+                        .param("blocksJson", "[]").param("storyJson", "{\"author\":\"김\"}"))
+                .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString("기수를 입력해 주세요")));
+        // 글 종류 없이는 저장하지 않음
+        mvc.perform(post("/admin/posts").session(session).with(csrf())
+                        .param("title", "종류 없는 글").param("status", "DRAFT").param("thumbnailMode", "AUTO").param("blocksJson", "[]"))
+                .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString("글 종류")));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM reviews WHERE title = '분야 없는 후기'", Long.class)).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM interviews WHERE title = '기수 없는 인터뷰'", Long.class)).isZero();
+
+        // 기수가 있으면 인터뷰 표에 기수로 들어감
+        String iv = create(session, INTERVIEW, "기수 있는 인터뷰", "DRAFT",
+                "{\"cohort\":7,\"author\":\"박\",\"track\":\"데이터 분석반\",\"video\":{\"yt\":\"dQw4w9WgXcQ\",\"dur\":\"8:05\"},"
+                        + "\"qa\":[{\"q\":\"왜?\",\"a\":\"좋아서\"}]}");
+        assertThat(jdbc.queryForObject("SELECT cohort FROM interviews WHERE id = ?", Integer.class, Long.valueOf(iv))).isEqualTo(7);
+        assertThat(one("SELECT video_url FROM interviews WHERE id = ?", Long.valueOf(iv))).isEqualTo("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        assertThat(one("SELECT video_length FROM interviews WHERE id = ?", Long.valueOf(iv))).isEqualTo("8:05");
+        assertThat(one("SELECT qa FROM interviews WHERE id = ?", Long.valueOf(iv))).contains("\"q\":\"왜?\"");
+        assertThat(body(session, "/admin/posts/interview/" + iv + "/edit")).contains("dQw4w9WgXcQ").contains("좋아서");
+        assertThat(body(session, "/admin")).contains("7기");
+    }
+
+    @Test
+    @Order(6)
+    void projectColumnsAreSplitAndJoinedAgainForTheSite() throws Exception {
+        MockHttpSession session = login();
+        String story = "{\"summary\":\"요약 문장. 둘째 문장.\",\"cohort\":6,\"className\":\"01반\",\"major\":\"자연어처리A\",\"teamName\":\"AI셈블\","
+                + "\"teamSize\":5,\"tags\":[\"#Python\",\"React\"],\"sections\":[{\"h\":\"문제 정의\",\"p\":\"문제\"},{\"h\":\"주요 기능\",\"p\":\"• 하나 • 둘\"},"
+                + "{\"h\":\"기술 설명\",\"p\":\"기술\"}],\"links\":[{\"label\":\"발표 자료\",\"url\":\"https://example.com/deck\"}]}";
+        String id = create(session, PROJECT, "AI 프로젝트", "PUBLISHED", story);
+        var row = jdbc.queryForMap("SELECT cohort, class_name, major, team_name, team_size, problem, features, tech, tags, links FROM projects WHERE id = ?",
+                Long.valueOf(id));
+        assertThat(row.get("cohort")).isEqualTo(6);
+        assertThat(row.get("class_name")).isEqualTo("01반");
+        assertThat(row.get("major")).isEqualTo("자연어처리A");
+        assertThat(row.get("team_name")).isEqualTo("AI셈블");
+        assertThat(row.get("team_size")).isEqualTo(5);
+        assertThat(row.get("problem")).isEqualTo("문제");
+        assertThat(row.get("features")).isEqualTo("• 하나 • 둘");
+        assertThat(row.get("tech")).isEqualTo("기술");
+        assertThat(row.get("tags")).isEqualTo("#Python #React");
+        assertThat(String.valueOf(row.get("links"))).contains("https://example.com/deck");
+
+        // 사이트에는 예전 모양 그대로(팀 · 전공 · 기수 · 반 세 줄)
+        mvc.perform(get("/api/public/stories")).andExpect(jsonPath("$.projects[0].title").value("AI 프로젝트"))
+                .andExpect(jsonPath("$.projects[0].anchor").value("pj-p" + id))
+                .andExpect(jsonPath("$.projects[0].team").value("AI셈블 · 5명"))
+                .andExpect(jsonPath("$.projects[0].type").value("자연어처리A"))
+                .andExpect(jsonPath("$.projects[0].term").value("6기 · 01반"))
+                .andExpect(jsonPath("$.projects[0].sections[1].h").value("주요 기능"))
+                .andExpect(jsonPath("$.projects[0].teamName").doesNotExist());
+
+        // 예전 모양(team · type · term)으로 들어온 값은 칸으로 나눠 담는다
+        String old = create(session, PROJECT, "예전 모양 프로젝트", "DRAFT",
+                "{\"summary\":\"s\",\"team\":\"리뷰찌개 · 6명\",\"type\":\"데이터분석\",\"term\":\"6기 · 10반\"}");
+        var oldRow = jdbc.queryForMap("SELECT cohort, class_name, major, team_name, team_size FROM projects WHERE id = ?", Long.valueOf(old));
+        assertThat(oldRow.get("team_name")).isEqualTo("리뷰찌개");
+        assertThat(oldRow.get("team_size")).isEqualTo(6);
+        assertThat(oldRow.get("cohort")).isEqualTo(6);
+        assertThat(oldRow.get("class_name")).isEqualTo("10반");
+        assertThat(oldRow.get("major")).isEqualTo("데이터분석");
+
+        // 글 종류를 바꾸면 그 종류의 표로 옮겨 가고, 그 표의 새 번호를 받아 새 주소로 열린다
+        String moved = mvc.perform(post("/admin/posts/project/" + old).session(session).with(csrf())
+                        .param("title", "후기로 바꾼 글").param("categoryId", REVIEW).param("status", "DRAFT").param("thumbnailMode", "AUTO")
+                        .param("blocksJson", "[]").param("storyJson", "{\"cat\":\"proj\",\"author\":\"이\"}"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("/admin/posts/review/*/edit")).andReturn().getResponse().getRedirectedUrl().replaceAll("\\D", "");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM projects WHERE id = ?", Long.class, Long.valueOf(old))).isZero();
+        assertThat(one("SELECT category FROM reviews WHERE id = ?", Long.valueOf(moved))).isEqualTo("프로젝트");
+
+        // 글 번호는 표마다 1번부터: 인터뷰 1번과 프로젝트 1번이 따로 있고, 주소의 종류로 구분된다
+        assertThat(jdbc.queryForObject("SELECT MIN(id) FROM projects", Long.class)).isEqualTo(1L);
+        assertThat(jdbc.queryForObject("SELECT MIN(id) FROM interviews", Long.class)).isEqualTo(1L);
+        assertThat(body(session, "/admin/posts/project/1/edit")).contains("AI 프로젝트").doesNotContain("기수 있는 인터뷰");
+        assertThat(body(session, "/admin/posts/interview/1/edit")).contains("기수 있는 인터뷰").doesNotContain("AI 프로젝트");
+        mvc.perform(get("/admin/posts/1/edit").session(session)).andExpect(status().isNotFound());
+        mvc.perform(get("/admin/posts/cohort/1/edit").session(session)).andExpect(status().isNotFound());
+        long interviewsBefore = jdbc.queryForObject("SELECT COALESCE(MAX(id), 0) FROM interviews", Long.class);
+        String next = create(session, INTERVIEW, "번호 확인", "DRAFT", "{\"cohort\":6}");
+        assertThat(Long.parseLong(next)).isEqualTo(interviewsBefore + 1);
+    }
+
+    @Test
+    @Order(7)
+    void imageUploadKeepsOnlyTheFile() throws Exception {
         MockHttpSession session = login();
         var fake = new MockMultipartFile("file", "evil.png", "image/png", "not an image".getBytes());
         mvc.perform(MockMvcRequestBuilders.multipart("/admin/images").file(fake).session(session).with(csrf()))
@@ -308,171 +321,17 @@ class BackofficeWebTest {
         byte[] png = java.util.Base64.getDecoder().decode(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==");
         var real = new MockMultipartFile("file", "dot.png", "image/png", png);
-        mvc.perform(MockMvcRequestBuilders.multipart("/admin/images").file(real).session(session).with(csrf()))
+        String url = com.jayway.jsonpath.JsonPath.read(mvc.perform(MockMvcRequestBuilders.multipart("/admin/images").file(real).session(session).with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.startsWith("/uploads/")));
+                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.startsWith("/uploads/")))
+                .andExpect(jsonPath("$.name").value("dot.png"))
+                .andReturn().getResponse().getContentAsString(), "$.url");
+        assertThat(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(System.getProperty("java.io.tmpdir"), "aica-backofficewebtest/uploads",
+                url.substring("/uploads/".length())))).isEqualTo(png);
     }
 
     @Test
     @Order(8)
-    void postLayoutIsSavedRenderedInPreviewAndExposedByPublicApi() throws Exception {
-        MockHttpSession session = login();
-        String blocks = "[{\"type\":\"heading\",\"level\":2,\"html\":\"첫 소제목\"},{\"type\":\"paragraph\",\"align\":\"left\",\"html\":\"본문\"}]";
-        String layout = "{\"preset\":\"side-right\",\"align\":\"left\",\"width\":\"wide\",\"header\":[\"title\",\"meta\"],\"sidebar\":[\"toc\",\"author\"],\"footer\":[\"share\"],\"junk\":1}";
-        MvcResult created = mvc.perform(post("/admin/posts").session(session).with(csrf())
-                        .param("title", "레이아웃 글").param("status", "PUBLISHED").param("thumbnailMode", "AUTO")
-                        .param("blocksJson", blocks).param("layoutJson", layout))
-                .andExpect(status().is3xxRedirection()).andReturn();
-        String postId = created.getResponse().getRedirectedUrl().replaceAll("\\D", "");
-
-        // 편집 화면에 저장된 레이아웃이 hidden input 으로 다시 실린다
-        String edit = mvc.perform(get("/admin/posts/" + postId + "/edit").session(session)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(edit).contains("id=\"layoutJson\"").contains("side-right").doesNotContain("btnLayout");
-
-        // 미리보기: 2단 우측 사이드바 + 목차 위젯(제목 블록 앵커) + 하단 공유, 요약은 머리에서 제외
-        String preview = mvc.perform(get("/admin/posts/" + postId + "/preview").session(session)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(preview).contains("lo-side-right lo-align-left lo-width-wide")
-                .contains("class=\"f-side\"").contains("href=\"#h-0\"").contains("첫 소제목")
-                .contains("f-w-share").contains("f-foot-widgets")
-                .doesNotContain("class=\"summary\"");
-
-        // 공개 API 에 정리된 layout 과 toc 가 실린다 (모르는 키 junk 는 제거)
-        mvc.perform(get("/api/public/posts/" + postId)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.layout.preset").value("side-right"))
-                .andExpect(jsonPath("$.layout.sidebar[0]").value("toc"))
-                .andExpect(jsonPath("$.layout.junk").doesNotExist())
-                .andExpect(jsonPath("$.toc[0].text").value("첫 소제목"))
-                .andExpect(jsonPath("$.toc[0].index").value(0));
-
-        // 레이아웃을 비우면 기본값(1단)으로 돌아간다
-        mvc.perform(post("/admin/posts/" + postId).session(session).with(csrf())
-                        .param("title", "레이아웃 글").param("status", "PUBLISHED").param("thumbnailMode", "AUTO")
-                        .param("blocksJson", blocks).param("layoutJson", ""))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(get("/api/public/posts/" + postId)).andExpect(jsonPath("$.layout.preset").value("basic"));
-    }
-
-    @Test
-    @Order(9)
-    void adminNoticesAreRemoved() throws Exception {
-        // 운영진 공지 기능은 없앴다(2026-10-19): 화면 · 상단 띠 · 표 모두 없음
-        MockHttpSession session = login();
-        mvc.perform(get("/admin/notices").session(session)).andExpect(status().isNotFound());
-        assertThat(mvc.perform(get("/admin/posts").session(session)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8)).doesNotContain("notice-band");
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.tables WHERE LOWER(table_name) IN ('notices', 'notice_dismissals')",
-                Integer.class)).isZero();
-    }
-
-    @Test
-    @Order(10)
-    void assetsAcceptVideoAndPdfAndCanBeRenamed() throws Exception {
-        MockHttpSession session = login();
-        // 가짜 MP4(ftyp 시그니처) · PDF · 허용되지 않는 형식
-        byte[] mp4 = new byte[64];
-        mp4[4] = 'f'; mp4[5] = 't'; mp4[6] = 'y'; mp4[7] = 'p'; mp4[8] = 'i'; mp4[9] = 's'; mp4[10] = 'o'; mp4[11] = 'm';
-        String video = mvc.perform(MockMvcRequestBuilders.multipart("/admin/images")
-                        .file(new MockMultipartFile("file", "수료식.mp4", "video/mp4", mp4)).session(session).with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.kind").value("VIDEO"))
-                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.endsWith(".mp4")))
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        long videoId = objectMapper.readTree(video).get("id").asLong();
-        mvc.perform(MockMvcRequestBuilders.multipart("/admin/images")
-                        .file(new MockMultipartFile("file", "안내.pdf", "application/pdf", "%PDF-1.4 fake".getBytes())).session(session).with(csrf()))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.kind").value("DOC"));
-        mvc.perform(MockMvcRequestBuilders.multipart("/admin/images")
-                        .file(new MockMultipartFile("file", "x.exe", "application/octet-stream", "MZ...".getBytes())).session(session).with(csrf()))
-                .andExpect(status().isBadRequest());
-
-        // 에디터 보관함(recent)은 기본 이미지만 · kind=ALL 이면 동영상도
-        mvc.perform(get("/admin/images/recent").session(session))
-                .andExpect(jsonPath("$[?(@.kind == 'VIDEO')]").isEmpty());
-        mvc.perform(get("/admin/images/recent").param("kind", "ALL").session(session))
-                .andExpect(jsonPath("$[?(@.id == " + videoId + ")]").isNotEmpty());
-
-        // 자산 관리 화면: 종류 탭·등록자, 표시 이름 변경(URL 은 그대로)
-        String page = mvc.perform(get("/admin/media").param("kind", "VIDEO").session(session)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(page).contains("수료식.mp4").contains("media-kinds").contains("<video");
-        mvc.perform(post("/admin/media/" + videoId + "/rename").session(session).with(csrf()).param("displayName", "7기 수료식 영상"))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(get("/admin/images/recent").param("kind", "VIDEO").session(session))
-                .andExpect(jsonPath("$[0].name").value("7기 수료식 영상"))
-                .andExpect(jsonPath("$[0].originalName").value("수료식.mp4"))
-                .andExpect(jsonPath("$[0].url").value(org.hamcrest.Matchers.endsWith(".mp4")));
-        mvc.perform(post("/admin/media/" + videoId + "/rename").session(session).with(csrf()).param("displayName", " "))
-                .andExpect(status().is3xxRedirection());   // 빈 이름은 오류 토스트, 값 유지
-        mvc.perform(get("/admin/images/recent").param("kind", "VIDEO").session(session))
-                .andExpect(jsonPath("$[0].name").value("7기 수료식 영상"));
-    }
-
-    @Test
-    @Order(7)
-    void mediaLibraryUsesPostCategoriesForUploadMoveAndDelete() throws Exception {
-        MockHttpSession session = login();
-        byte[] png = java.util.Base64.getDecoder().decode(
-                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==");
-        long review = jdbc.queryForObject("SELECT id FROM categories WHERE slug = 'review'", Long.class);
-        long life = jdbc.queryForObject("SELECT id FROM categories WHERE slug = 'review-life'", Long.class);
-        long cohort = jdbc.queryForObject("SELECT id FROM categories WHERE slug = 'cohort'", Long.class);
-        long c7 = jdbc.queryForObject("SELECT id FROM categories WHERE slug = 'cohort-7'", Long.class);
-
-        // 분류 트리는 게시물 카테고리와 같다(후기 › 생활… / 기수별 › 3~5기…)
-        mvc.perform(get("/admin/images/categories").session(session)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.categories.length()").value(4))
-                .andExpect(jsonPath("$.categories[0].name").value("후기"))
-                .andExpect(jsonPath("$.categories[0].children[0].name").value("생활"))
-                .andExpect(jsonPath("$.categories[3].children[2].name").value("7기"));
-
-        // 후기 › 생활로 업로드 → 그 분류 목록에 나오고, 다른 분류·미분류에는 없다
-        var real = new MockMultipartFile("file", "생활_사진.png", "image/png", png);
-        String uploaded = mvc.perform(MockMvcRequestBuilders.multipart("/admin/images").file(real)
-                        .param("categoryId", String.valueOf(review)).param("subCategoryId", String.valueOf(life)).session(session).with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.categoryPath").value("후기 › 생활"))
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        long imageId = objectMapper.readTree(uploaded).get("id").asLong();
-        mvc.perform(get("/admin/images/recent").param("categoryId", String.valueOf(review)).session(session))
-                .andExpect(jsonPath("$[0].id").value(imageId));
-        mvc.perform(get("/admin/images/recent").param("categoryId", String.valueOf(review)).param("subCategoryId", String.valueOf(life)).session(session))
-                .andExpect(jsonPath("$[0].id").value(imageId));
-        mvc.perform(get("/admin/images/recent").param("categoryId", String.valueOf(cohort)).session(session))
-                .andExpect(jsonPath("$[?(@.id == " + imageId + ")]").isEmpty());
-        mvc.perform(get("/admin/images/recent").param("unfiled", "true").session(session))
-                .andExpect(jsonPath("$[?(@.id == " + imageId + ")]").isEmpty());
-        // 어긋난 조합(후기 + 7기)은 세부가 비워진다 · 없는 카테고리는 404
-        mvc.perform(MockMvcRequestBuilders.multipart("/admin/images").file(real)
-                        .param("categoryId", String.valueOf(review)).param("subCategoryId", String.valueOf(c7)).session(session).with(csrf()))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.subCategoryId").value(org.hamcrest.Matchers.nullValue()));
-        mvc.perform(MockMvcRequestBuilders.multipart("/admin/images").file(real).param("categoryId", "99999").session(session).with(csrf()))
-                .andExpect(status().isNotFound());
-
-        // 관리 화면: 카테고리 탭·세부 탭·파일명
-        String page = mvc.perform(get("/admin/media").param("cat", String.valueOf(review)).param("sub", String.valueOf(life)).session(session))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(page).contains("생활_사진.png").contains("media-subtabs").contains("기수별 모아보기").contains("취업 성공").contains("진로 고민");
-
-        // 분류 이동(기수별 › 7기) → 미분류로 → 완전 삭제
-        mvc.perform(post("/admin/media/" + imageId + "/move").session(session).with(csrf())
-                        .param("categoryId", String.valueOf(cohort)).param("subCategoryId", String.valueOf(c7)))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(get("/admin/images/recent").param("subCategoryId", String.valueOf(c7)).param("categoryId", String.valueOf(cohort)).session(session))
-                .andExpect(jsonPath("$[0].id").value(imageId)).andExpect(jsonPath("$[0].categoryPath").value("기수별 모아보기 › 7기"));
-        mvc.perform(post("/admin/media/" + imageId + "/move").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(get("/admin/images/recent").param("unfiled", "true").session(session))
-                .andExpect(jsonPath("$[0].id").value(imageId));
-        mvc.perform(post("/admin/media/" + imageId + "/delete").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection());
-        mvc.perform(get("/admin/images/recent").session(session))
-                .andExpect(jsonPath("$[?(@.id == " + imageId + ")]").isEmpty());
-    }
-
-    @Test
-    @Order(6)
     void superAdminManagesAccountsAndLastSuperAdminIsProtected() throws Exception {
         MockHttpSession session = login();
         mvc.perform(post("/admin/users").session(session).with(csrf())
@@ -485,7 +344,7 @@ class BackofficeWebTest {
                         .param("loginId", "editor2").param("name", "x").param("role", "ADMIN").param("active", "true").param("password", "editor-pass-1"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
                 .contains("이메일 주소 형식");
-        assertThat(jdbc.queryForObject("SELECT login_id FROM admin_users WHERE name = '편집자'", String.class)).isEqualTo("editor1@aica-gj.kr");
+        assertThat(one("SELECT login_id FROM admin_users WHERE name = '편집자'")).isEqualTo("editor1@aica-gj.kr");
 
         // 자기 자신(마지막 SUPER_ADMIN) 강등 시도 → 오류 메시지와 함께 폼 재표시
         String body = mvc.perform(post("/admin/users/1").session(session).with(csrf())
@@ -501,7 +360,7 @@ class BackofficeWebTest {
         mvc.perform(get("/admin/users").session(editor)).andExpect(status().isForbidden());
         mvc.perform(get("/admin/posts").session(editor)).andExpect(status().isOk());
 
-        // 서포터즈는 본인 글 작성·수정과 전체 통계 조회 가능. 상태 변경·사이트 편집·휴지통은 관리자 이상.
+        // 서포터즈는 본인 글 작성·수정. 상태 변경·휴지통은 관리자 이상.
         mvc.perform(post("/admin/users").session(session).with(csrf())
                         .param("loginId", "support1@aica-gj.kr").param("name", "서포터").param("role", "SUPPORT")
                         .param("active", "true").param("password", "support-pass-1"))
@@ -510,29 +369,15 @@ class BackofficeWebTest {
                         formLogin("/login").user("loginId", "support1@aica-gj.kr").password("password", "support-pass-1"))
                 .andExpect(authenticated()).andReturn().getRequest().getSession(false);
         mvc.perform(get("/admin").session(support)).andExpect(status().isOk());
-        MvcResult created = mvc.perform(post("/admin/posts").session(support).with(csrf())
-                        .param("title", "서포터 글").param("status", "DRAFT").param("thumbnailMode", "AUTO")
-                        .param("blocksJson", "[{\"type\":\"paragraph\",\"align\":\"left\",\"html\":\"질문\"}]"))
-                .andExpect(status().is3xxRedirection()).andReturn();
-        String supportPostId = created.getResponse().getRedirectedUrl().replaceAll("\\D", "");
-        mvc.perform(post("/admin/posts/" + supportPostId).session(support).with(csrf())
-                        .param("title", "서포터 글 수정").param("status", "DRAFT").param("thumbnailMode", "AUTO")
-                        .param("blocksJson", "[{\"type\":\"paragraph\",\"align\":\"left\",\"html\":\"수정\"}]"))
+        String supportPostId = create(support, REVIEW, "서포터 글", "DRAFT", "{\"cat\":\"class\",\"author\":\"서포터\"}");
+        mvc.perform(post("/admin/posts/review/" + supportPostId).session(support).with(csrf())
+                        .param("title", "서포터 글 수정").param("categoryId", REVIEW).param("status", "DRAFT").param("thumbnailMode", "AUTO")
+                        .param("blocksJson", "[]").param("storyJson", "{\"cat\":\"class\",\"author\":\"서포터\"}"))
                 .andExpect(status().is3xxRedirection());
-        mvc.perform(post("/admin/posts/" + supportPostId + "/delete").session(support).with(csrf()))
+        mvc.perform(post("/admin/posts/review/" + supportPostId + "/delete").session(support).with(csrf()))
                 .andExpect(status().isForbidden());
-        mvc.perform(post("/admin/posts/" + supportPostId + "/status").session(support).with(csrf()).param("status", "PUBLISHED"))
+        mvc.perform(post("/admin/posts/review/" + supportPostId + "/status").session(support).with(csrf()).param("status", "PUBLISHED"))
                 .andExpect(status().isForbidden());
-        mvc.perform(post("/admin/media/1/rename").session(support).with(csrf()).param("displayName", "x"))
-                .andExpect(status().isForbidden());
-        mvc.perform(post("/admin/templates").session(support).with(csrf()).param("name", "x").param("blocksJson", "[]"))
-                .andExpect(status().isForbidden());
-        mvc.perform(get("/admin/templates").session(support)).andExpect(status().isOk());
-        mvc.perform(get("/admin/templates/api").session(support)).andExpect(status().isOk());
-        mvc.perform(get("/admin/media").session(support)).andExpect(status().isOk());
-        mvc.perform(get("/admin/stats").session(support)).andExpect(status().isOk());
-        String list = mvc.perform(get("/admin/posts").session(support)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        assertThat(list).contains("서포터 글 수정").contains("임시저장");
+        assertThat(body(support, "/admin/posts")).contains("서포터 글 수정").contains("임시저장");
     }
 }

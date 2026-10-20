@@ -17,7 +17,7 @@
           th:text="${previewMode == 'saved'} ? '저장된 내용 미리보기' : (${previewMode == 'template'} ? '템플릿 미리보기 (예시 데이터)' : '저장 전 미리보기')">미리보기</span>
     프론트 게시물 화면과 같은 구성으로 표시합니다. 상태:
     <b th:text="${post.status != null} ? ${post.status.label} : '-'">임시저장</b>
-    <a th:if="${post.id != null}" th:href="@{/admin/posts/{id}/edit(id=${post.id})}">편집으로 돌아가기</a>
+    <a th:if="${post.id != null}" th:href="@{/admin/posts/{kind}/{id}/edit(kind=${post.kind}, id=${post.id})}">편집으로 돌아가기</a>
     <a th:href="${frontBaseUrl}" target="_blank" rel="noopener">AICA 홈페이지 열기</a>
   </div>
   <button type="button" onclick="window.close()">닫기</button>
@@ -51,8 +51,6 @@
             <span th:text="${post.authorName ?: '관리자'}">작성자</span>
             <span>·</span>
             <span th:text="${post.publishedAt != null} ? ${#temporals.format(post.publishedAt, 'yyyy.MM.dd')} : '(발행 전)'">2026.09.22</span>
-            <span>·</span>
-            <span>조회 <span th:text="${post.viewCount}">0</span></span>
           </div>
           <!-- 대표 이미지: 본문 첫 이미지를 자동으로 쓴 경우(AUTO)는 본문에 이미 있으므로 다시 보여주지 않는다 -->
           <div class="hero" th:if="${item == 'thumbnail' and post.thumbnailMode == 'MANUAL' and !#strings.isEmpty(post.thumbnailUrl)}">
