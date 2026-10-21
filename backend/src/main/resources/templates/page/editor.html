@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${page.title} + ' 편집 | ' + ${siteName}">페이지 편집</title>
+  <meta name="_csrf" th:content="${_csrf != null} ? ${_csrf.token} : ''">
+  <meta name="_csrf_header" th:content="${_csrf != null} ? ${_csrf.headerName} : 'X-CSRF-TOKEN'">
+  <!--/* 편집기 설정(페이지 목록·저장 주소·보안 토큰·글꼴·색). static/js/page/editor.js 가 읽는다 */-->
+  <script id="bo-config" type="application/json" th:utext="${configJson}">{}</script>
+  <link rel="stylesheet" th:href="@{/css/page/editor.css(v='20261020v')}">
+  <script th:if="${siteReady}" th:src="@{/js/page/icons.js}" defer></script>
+  <script th:if="${siteReady}" th:src="@{/js/page/photo-editor.js}" defer></script>
+  <script th:if="${siteReady}" th:src="@{/js/page/editor.js(v='20261020v')}" defer></script>
+</head>
+<body>
+  <!-- ===== 상단 바: 돌아가기 · 페이지 고르기 · 편집/미리보기 · 화면 크기 · 저장 상태 · 반영 ===== -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <a class="back-link" th:href="@{/admin}" title="관리자 홈으로">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span class="collapse">관리자 홈</span>
+      </a>
+      <div class="title">
+        <strong id="site-name">카테고리 페이지 관리</strong>
+        <span id="page-file" th:text="${page.file}">about/index.html</span>
+      </div>
+      <div class="page-picker" id="page-picker" hidden>
+        <button type="button" class="page-picker-button" id="page-button" aria-haspopup="listbox" aria-expanded="false" aria-controls="page-menu" title="편집할 페이지 바꾸기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
+          <span class="page-picker-label" id="page-label" th:text="${page.title}"></span>
+          <i class="page-picker-dot" id="page-dot" title="반영 전 편집이 있어요" hidden></i>
+          <svg class="page-picker-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="page-menu" id="page-menu" role="listbox" aria-label="편집할 페이지" hidden></div>
+      </div>
+    </div>
+    <div class="topbar-center" th:if="${siteReady}">
+      <div class="segmented" role="group" aria-label="화면 모드">
+        <button type="button" data-mode="edit" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>편집</button>
+        <button type="button" data-mode="preview" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"/><circle cx="12" cy="12" r="3"/></svg>미리보기</button>
+      </div>
+      <div class="segmented" role="group" aria-label="화면 크기">
+        <button type="button" data-device="pc" aria-pressed="true" title="PC"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><span>PC</span></button>
+        <button type="button" data-device="tablet" aria-pressed="false" title="태블릿 (834px)"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M11 18h2"/></svg><span>태블릿</span></button>
+        <button type="button" data-device="mobile" aria-pressed="false" title="모바일 (390px)"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg><span>모바일</span></button>
+      </div>
+    </div>
+    <div class="topbar-right" th:if="${siteReady}">
+      <div class="history-buttons">
+        <button type="button" class="icon-button" id="undo" title="실행 취소 (Ctrl+Z)" disabled><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+        <button type="button" class="icon-button" id="redo" title="다시 실행 (Ctrl+Shift+Z)" disabled><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+      </div>
+      <span class="status" id="status" data-state="clean"><i></i><span>불러오는 중…</span></span>
+      <button type="button" class="ghost-button" id="open-history" title="버전 기록"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg><span class="collapse">버전 기록</span></button>
+      <button type="button" class="ghost-button front-button" id="open-front" title="반영된 실제 페이지를 새 탭에서 엽니다"><i class="front-dot" id="front-dot" data-state="unknown" aria-hidden="true"></i><span class="collapse">반영된 페이지</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></button>
+      <button type="button" class="primary-button" id="publish"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>사이트에 반영</button>
+    </div>
+  </header>
+
+  <!-- 사이트 폴더를 찾지 못했을 때: 설정 안내 -->
+  <div class="setup-note" th:unless="${siteReady}">
+    <h2>사이트 파일을 찾지 못했어요</h2>
+    <p>카테고리 페이지 관리는 공유용 사이트 폴더(aica-site-preview)의 페이지를 실제 화면 그대로 고쳐요. 지금 설정된 곳에 <code th:text="${page.file}">about/index.html</code> 이 없어요.</p>
+    <p class="setup-path">사이트 폴더: <code th:text="${siteRoot}">./data/site</code></p>
+    <p><code>application.yml</code> 의 <code>backoffice.pages.site-root</code> 를 바꾸거나, 환경변수 <code>BACKOFFICE_SITE_ROOT</code> 에 사이트 폴더 위치를 넣고 서버를 다시 켜 주세요.</p>
+    <p><a class="primary-button" th:href="@{/admin}">관리자 홈으로</a></p>
+  </div>
+
+  <th:block th:if="${siteReady}">
+  <!-- ===== 편집 도구 막대: 고른 것에 맞는 도구(색 · 위치 · 설명 등은 눌러서 펼쳐요). static/js/page/editor.js 가 그린다 ===== -->
+  <div class="toolbar" id="panel" role="region" aria-label="편집 도구">
+    <div class="toolbar-inner" id="panel-body"></div>
+  </div>
+  <div class="workspace">
+    <main class="stage" id="stage">
+      <div class="frame-wrap" id="frame-wrap" data-device="pc">
+        <div class="frame-loading" id="frame-loading"><span></span>페이지를 불러오는 중…</div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <dialog class="dialog" id="publish-dialog">
+    <form method="dialog">
+      <h2>사이트에 반영할까요?</h2>
+      <p>지금 편집한 내용으로 사이트 폴더의 <code data-page-path>about/index.html</code> 파일을 덮어씁니다. 반영한 내용은 누가 · 언제 반영했는지와 함께 ‘버전 기록’(DB)에 남아 언제든 다시 불러올 수 있어요.</p>
+      <p>반영하면 <b>반영된 페이지(<span data-front-url></span>)</b>에 바로 적용되고, 열어 둔 반영된 페이지 탭은 자동으로 새로고침돼요.</p>
+      <p class="dialog-note" data-deploy-note>공개 사이트에 올리려면 반영 후 사이트 폴더의 바뀐 파일을 평소처럼 배포해 주세요.</p>
+      <div class="dialog-actions">
+        <button class="ghost-button" value="cancel">취소</button>
+        <button class="primary-button" value="confirm" id="publish-confirm">반영하기</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog dialog-wide" id="history-dialog">
+    <div class="dialog-head">
+      <h2>버전 기록</h2>
+      <button type="button" class="icon-button" data-close title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <p class="dialog-lead">‘불러오기’를 누르면 그 버전이 편집 화면에 열립니다. 확인 후 ‘사이트에 반영’을 눌러야 실제로 적용돼요. 불러온 뒤에도 실행 취소로 되돌릴 수 있어요.</p>
+    <div class="history-section">
+      <h3>이번 편집에서 한 일</h3>
+      <ol class="history-steps" id="history-steps"></ol>
+    </div>
+    <div class="history-section">
+      <h3>사이트 반영 기록 <small class="backup-hint">반영할 때마다 DB에 남아요(페이지마다 최근 100개)</small></h3>
+      <div class="backup-actions">
+        <button type="button" class="ghost-button" id="revert-published"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>현재 사이트 상태로 되돌리기</button>
+      </div>
+      <ul class="backup-list" id="backup-list"></ul>
+    </div>
+  </dialog>
+
+  <dialog class="dialog dialog-wide" id="library-dialog">
+    <div class="dialog-head">
+      <h2 id="library-title">이미지 바꾸기</h2>
+      <button type="button" class="icon-button" data-close title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="library-tabs segmented" role="tablist">
+      <button type="button" data-lib-tab="icons" aria-pressed="false">아이콘</button>
+      <button type="button" data-lib-tab="images" aria-pressed="true">사진 · 이미지</button>
+    </div>
+    <div class="library-pane" data-lib-pane="icons" hidden>
+      <div class="library-toolbar">
+        <input type="search" id="icon-search" placeholder="아이콘 찾기 (예: 사람, 책, 차트, 보안)" aria-label="아이콘 찾기">
+        <div class="icon-color">
+          <span>색</span>
+          <div class="icon-color-swatches" id="icon-color-swatches"></div>
+          <label class="icon-color-custom" title="직접 고르기"><input type="color" id="icon-color" value="#244cd2"></label>
+        </div>
+      </div>
+      <div class="icon-grid" id="icon-grid"></div>
+      <p class="hint small">선으로 그린 아이콘이에요. 고른 색으로 바뀌고, 다른 아이콘과 같은 크기 자리에 들어가요.</p>
+    </div>
+    <div class="library-pane" data-lib-pane="images">
+      <label class="dropzone" id="dropzone">
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif,image/svg+xml" id="file-input" hidden>
+        <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        <strong>내 컴퓨터에서 이미지 올리기</strong>
+        <span>클릭하거나 파일을 여기로 끌어다 놓으세요 · PNG, JPG, WEBP, GIF, SVG</span>
+      </label>
+      <div class="library-toolbar">
+        <h3 id="library-source-title">사이트에 있는 이미지</h3>
+        <div class="segmented library-sources" id="library-sources" role="group" aria-label="이미지를 가져올 곳" hidden>
+          <button type="button" data-lib-source="site" aria-pressed="true">사이트에 있는 이미지</button>
+          <button type="button" data-lib-source="media" aria-pressed="false">미디어 관리</button>
+        </div>
+        <input type="search" id="library-search" placeholder="이름으로 찾기" aria-label="이름으로 찾기">
+      </div>
+      <div class="library-grid" id="library-grid"></div>
+    </div>
+  </dialog>
+
+  <dialog class="dialog" id="restore-dialog">
+    <form method="dialog">
+      <h2>저장되지 않은 편집 내용이 있어요</h2>
+      <p>서버와 연결이 끊기거나 로그인이 끝난 동안 편집한 내용이 이 브라우저에 남아 있어요. 복구하면 편집 화면에 다시 열리고, 실행 취소로 되돌릴 수도 있어요.</p>
+      <p class="dialog-note" id="restore-meta"></p>
+      <div class="dialog-actions">
+        <button class="ghost-button" value="discard">버리기</button>
+        <button class="primary-button" value="restore">편집 내용 복구</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="conflict-dialog">
+    <form method="dialog">
+      <h2>사이트 파일이 바뀌었어요</h2>
+      <p>임시저장된 편집 내용이 있지만, 그 뒤에 <code data-page-path>about/index.html</code> 파일이 다른 곳에서 수정되었어요. 어떤 내용으로 편집할까요?</p>
+      <div class="dialog-actions dialog-actions-stack">
+        <button class="ghost-button" value="draft">임시저장본 계속 편집 (반영하면 바뀐 사이트 파일을 덮어써요)</button>
+        <button class="primary-button" value="published">최신 사이트 파일로 새로 시작</button>
+      </div>
+    </form>
+  </dialog>
+  </th:block>
+</body>
+</html>

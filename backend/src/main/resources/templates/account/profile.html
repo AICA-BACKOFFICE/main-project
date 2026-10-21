@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout('내 정보 수정', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <h2 class="page-title">내 정보 수정</h2>
+  <!--/* 로그인한 사람이 자기 이름 · 아이디 · 비밀번호를 바꾸는 화면(ProfileController). 권한은 계정 관리에서 최상위 관리자가 정해요.
+         배치: 위 줄 내 정보 | 아이디 변경, 아래 줄 비밀번호 변경(admin.css .profile-grid, 좁은 화면은 한 줄씩) */-->
+
+  <div class="alert info" th:if="${account.mustChangePw}">임시 비밀번호를 사용 중입니다. 아래에서 새 비밀번호로 변경해 주세요.</div>
+
+  <div class="profile-grid">
+    <div class="card">
+      <div class="card-head"><div class="left"><b>내 정보</b></div></div>
+      <div class="card-body">
+        <div class="alert error" th:if="${nameError}" th:text="${nameError}"></div>
+        <form th:action="@{/account/profile/name}" method="post" autocomplete="off">
+          <div class="form-grid">
+            <span class="lbl">아이디(이메일)</span>
+            <span th:text="${account.loginId}">admin</span>
+            <span class="lbl">권한</span>
+            <span th:text="${account.role.label}">최상위 관리자</span>
+            <label class="lbl req" for="name">이름</label>
+            <div>
+              <input class="input wide" name="name" id="name" th:value="${account.name}" required maxlength="50">
+              <div class="help">오른쪽 위 프로필과 글 작성자에 보이는 이름이에요.</div>
+            </div>
+          </div>
+          <div class="actions" style="justify-content:flex-end;display:flex">
+            <button class="btn primary" type="submit">이름 저장</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!--/* 아이디(로그인 이메일) 바꾸기: 현재 비밀번호 확인 → 바꾸면 새 아이디로 다시 로그인. admin_users 같은 줄의 login_id 값만 바뀜 */-->
+    <div class="card" id="login-id">
+      <div class="card-head"><div class="left"><b>아이디 변경</b></div></div>
+      <div class="card-body">
+        <div class="alert error" th:if="${loginIdError}" th:text="${loginIdError}"></div>
+        <form th:action="@{/account/profile/login-id}" method="post" autocomplete="off">
+          <div class="form-grid">
+            <span class="lbl">지금 아이디</span>
+            <span th:text="${account.loginId}">admin</span>
+            <label class="lbl req" for="loginId">새 아이디(이메일)</label>
+            <div>
+              <input class="input wide" type="email" name="loginId" id="loginId" required maxlength="120" th:value="${loginIdValue}" placeholder="예: hong@aica-gj.kr" autocomplete="username">
+              <div class="help">로그인할 때 쓰는 이메일 주소예요. 다른 계정이 쓰는 이메일은 쓸 수 없어요.</div>
+            </div>
+            <label class="lbl req" for="loginIdPassword">현재 비밀번호</label>
+            <input class="input wide" type="password" name="currentPassword" id="loginIdPassword" required autocomplete="current-password">
+          </div>
+          <div class="actions" style="justify-content:flex-end;display:flex">
+            <button class="btn primary" type="submit">변경 후 다시 로그인</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card wide-card" id="password">
+      <div class="card-head"><div class="left"><b>비밀번호 변경</b></div></div>
+      <div class="card-body">
+        <div class="alert error" th:if="${passwordError}" th:text="${passwordError}"></div>
+        <form th:action="@{/account/password}" method="post" autocomplete="off">
+          <div class="pw-fields">
+            <div>
+              <label class="lbl req" for="currentPassword">현재 비밀번호</label>
+              <input class="input wide" type="password" name="currentPassword" id="currentPassword" required autocomplete="current-password">
+            </div>
+            <div>
+              <label class="lbl req" for="newPassword">새 비밀번호</label>
+              <input class="input wide" type="password" name="newPassword" id="newPassword" required minlength="8" autocomplete="new-password">
+              <div class="help">8자 이상. 현재 비밀번호와 달라야 합니다.</div>
+            </div>
+            <div>
+              <label class="lbl req" for="newPasswordConfirm">새 비밀번호 확인</label>
+              <input class="input wide" type="password" name="newPasswordConfirm" id="newPasswordConfirm" required minlength="8" autocomplete="new-password">
+            </div>
+          </div>
+          <div class="actions" style="justify-content:flex-end;display:flex">
+            <button class="btn primary" type="submit">변경 후 다시 로그인</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+<th:block th:fragment="scripts"></th:block>
+</body>
+</html>

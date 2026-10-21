@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout('지원 전 Check FAQ 관리', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <h2 class="page-title">지원 전 Check FAQ 관리</h2>
+  <!--/* 화면은 static/js/page/faq.js 가 그림. '완료' · '삭제' · 순서 바꾸기를 하면 바로 DB(표 faqs)에 저장되고 사이트가 공개 API로 받아 그림(CheckFaqService) */-->
+  <div id="faqAdmin" class="fq"
+       th:data-api="@{/admin/pages/faq/api}"
+       th:data-front="${frontLink}">
+    <div class="card fq-loading">질문을 불러오는 중이에요…</div>
+  </div>
+</main>
+<th:block th:fragment="scripts">
+  <script th:src="@{/js/page/faq.js(v='20261020d')}"></script>
+</th:block>
+</body>
+</html>

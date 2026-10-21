@@ -34,23 +34,9 @@ class Tree(HTMLParser):
     def handle_decl(self, s): self.handle_data('<!'+s+'>')
 
 templates = {}
-for p in (WORKSPACE/'백오피스/src/main/resources/templates').rglob('*.html'):
+for p in (WORKSPACE/'backend/src/main/resources/templates').rglob('*.html'):
     parser=Tree(); parser.feed(p.read_text(encoding='utf-8'))
-    name=p.relative_to(WORKSPACE/'백오피스/src/main/resources/templates').as_posix()[:-5]
-    if name=='account/user-form':
-        def adapt(n):
-            if not isinstance(n,dict): return
-            for index,child in enumerate(n['children']):
-                if isinstance(child,dict) and child['attrs'].get('for')=='password':
-                    child['children']=['로그인 방식']
-                    child['attrs'].pop('th:text',None)
-                    child['attrs'].pop('th:classappend',None)
-                    for sibling in n['children'][index+1:]:
-                        if isinstance(sibling,dict):
-                            sibling['children']=['등록된 이메일의 ChatGPT 계정으로 로그인합니다. 비밀번호는 ChatGPT 계정에서 관리합니다.']
-                            break
-                adapt(child)
-        adapt(parser.root)
+    name=p.relative_to(WORKSPACE/'backend/src/main/resources/templates').as_posix()[:-5]
     templates[name]=parser.root
 # Hosted account security and large-file upload support.
 def hosted_template(n):
@@ -59,15 +45,46 @@ def hosted_template(n):
     if n.get('tag')=='head':n['children'].append({'tag':'script','attrs':{'src':'/js/cloud-upload.js','defer':None},'children':[]})
     for child in n['children']:hosted_template(child)
 for tree in templates.values():hosted_template(tree)
+def password_templates(templates):
+    def visit(n,fn):
+        if not isinstance(n,dict):return
+        fn(n)
+        for child in n['children']:visit(child,fn)
+    def account_form(n):
+        a=n['attrs']
+        if a.get('id')=='password':
+            a['minlength']='10';a['maxlength']='128';a['th:required']='${form.id == null}'
+            a['th:placeholder']="${form.id == null} ? '10자 이상' : '변경할 때만 입력 (10자 이상)'"
+    visit(templates['account/user-form'],account_form)
+    def help_text(n):
+        if n['attrs'].get('class')=='help' and any(isinstance(c,str) and '발급한 비밀번호' in c for c in n['children']):n['children']=['10자 이상 128자 이하로 입력하세요. 발급한 비밀번호는 담당자에게 직접 전달하고 첫 로그인 후 변경하도록 안내해 주세요.']
+    visit(templates['account/user-form'],help_text)
+    def account_list(n):
+        if n['attrs'].get('th:if')=='${u.mustChangePw}':
+            n['attrs']['th:if']='${u.hasPassword and u.mustChangePw}'
+        if n['tag']=='td' and any(isinstance(c,dict) and c['attrs'].get('th:text')=='${u.name}' for c in n['children']):
+            n['children'].append({'tag':'span','attrs':{'class':'badge draft','th:if':'${not u.hasPassword}'},'children':['비밀번호 미설정']})
+    visit(templates['account/user-list'],account_list)
+    def password_page(n):
+        a=n['attrs']
+        if n['tag']=='h2':n['children']=['계정 보안 · 비밀번호 설정']
+        if a.get('for')=='currentPassword' or a.get('id')=='currentPassword':a['th:if']='${hasPassword}'
+        if n['tag']=='input' and a.get('type')=='password':a['maxlength']='128'
+        if a.get('id') in ('newPassword','newPasswordConfirm'):a['minlength']='10'
+        if a.get('class')=='help':n['children']=['10자 이상 128자 이하. 이 CMS에서 사용할 비밀번호를 설정합니다.']
+        if n['tag']=='button' and a.get('type')=='submit':n['children']=['비밀번호 저장']
+        if a.get('class')=='card-body':n['children'].insert(0,{'tag':'div','attrs':{'class':'alert info','th:if':'${not hasPassword}'},'children':['팀 계정 로그인에 사용할 비밀번호를 설정해 주세요. 아이디는 현재 계정의 이메일 주소입니다.']})
+    visit(templates['account/password'],password_page)
+password_templates(templates)
 (LIB/'templates.json').write_text(json.dumps(templates,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
-shutil.copytree(WORKSPACE/'백오피스/src/main/resources/static',PUBLIC,dirs_exist_ok=True)
+shutil.copytree(WORKSPACE/'backend/src/main/resources/static',PUBLIC,dirs_exist_ok=True)
 core=PUBLIC/'js/editor/core.js'
 core.write_text(core.read_text(encoding='utf-8').replace('var fd = new FormData();','if (!isImg && f.size > 16 * 1024 * 1024 && window.AicaCloudUpload) return window.AicaCloudUpload(f, url, csrf());\n      var fd = new FormData();'),encoding='utf-8')
 
 pages={}
 texts={}
 assets=[]
-source=WORKSPACE/'프론트오피스'
+source=WORKSPACE/'frontend'
 for p in source.rglob('*'):
     if not p.is_file(): continue
     rel=p.relative_to(source).as_posix()
@@ -80,7 +97,7 @@ for p in source.rglob('*'):
 (LIB/'site-pages.json').write_text(json.dumps(pages,ensure_ascii=False),encoding='utf-8')
 (LIB/'site-texts.json').write_text(json.dumps(texts,ensure_ascii=False),encoding='utf-8')
 (LIB/'site-assets.json').write_text(json.dumps(assets,ensure_ascii=False),encoding='utf-8')
-archive=WORKSPACE/'예전 파일/전체페이지-초기화전-2026-10-15_09-11-44/프론트오피스/stories'
+archive=WORKSPACE/'docs/archive/전체페이지-초기화전-2026-10-15_09-11-44/프론트오피스/stories'
 story_pages={}
 if archive.exists():
     for p in archive.glob('*.html'):
@@ -100,6 +117,6 @@ if archive.exists():
             out=PUBLIC/'site/stories/assets'/p.relative_to(archive/'assets')
             if not out.exists():out.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,out)
 (LIB/'story-pages.json').write_text(json.dumps(story_pages,ensure_ascii=False),encoding='utf-8')
-config=json.loads((WORKSPACE/'실행 도구/클로드 배포/site.config.json').read_text(encoding='utf-8'))
+config=json.loads((WORKSPACE/'scripts/claude-deploy/site.config.json').read_text(encoding='utf-8'))
 (LIB/'page-config.json').write_text(json.dumps(config,ensure_ascii=False),encoding='utf-8')
 print(json.dumps({'templates':len(templates),'pages':len(pages),'imageAssets':len(assets)}))

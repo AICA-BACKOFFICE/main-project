@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 인사교 라이프 표(V29): 시설 공간 · 시설 사진 · 오늘 점심 · 바람 쐬러 가요. 게시중인 것만 사이트 페이지에(LifeBoardService) -->
+<mapper namespace="egovframework.backoffice.page.LifeMapper">
+
+  <select id="countAll" resultType="long">
+    SELECT (SELECT COUNT(*) FROM life_facility_spaces) + (SELECT COUNT(*) FROM life_foods) + (SELECT COUNT(*) FROM life_spots)
+  </select>
+
+  <!-- ── 공간 ── -->
+
+  <select id="findSpaces" resultType="LifeSpace">
+    SELECT space_id, floor_key, name, badge, sort_order FROM life_facility_spaces ORDER BY sort_order, space_id
+  </select>
+
+  <insert id="insertSpace">
+    INSERT INTO life_facility_spaces (space_id, floor_key, name, badge, sort_order)
+    VALUES (#{spaceId}, #{floorKey}, #{name}, COALESCE(#{badge}, ''), #{sortOrder})
+  </insert>
+
+  <update id="updateSpace">
+    UPDATE life_facility_spaces SET floor_key = #{floorKey}, name = #{name}, sort_order = #{sortOrder}, updated_at = CURRENT_TIMESTAMP
+     WHERE space_id = #{spaceId}
+  </update>
+
+  <!-- ── 카드 ── -->
+
+  <sql id="common">status, status_before_trash, author_id, created_at, updated_at, deleted_at, sort_order</sql>
+  <sql id="photoColumns">id, space_id, photo_class, photo, zoom, pos, caption, <include refid="common"/></sql>
+  <sql id="foodColumns">id, kind, party, walk_min, category, name, menu, review, is_example AS example, photo, <include refid="common"/></sql>
+  <sql id="spotColumns">id, group_key, name, distance, fee, summary, photo_class, photo, <include refid="common"/></sql>
+
+  <select id="findPhotos" resultType="LifeItem">
+    SELECT <include refid="photoColumns"/> FROM life_facility_photos WHERE deleted_at IS NULL ORDER BY space_id, sort_order, id
+  </select>
+  <select id="findFoods" resultType="LifeItem">
+    SELECT <include refid="foodColumns"/> FROM life_foods WHERE deleted_at IS NULL ORDER BY kind DESC, sort_order, id
+  </select>
+  <select id="findSpots" resultType="LifeItem">
+    SELECT <include refid="spotColumns"/> FROM life_spots WHERE deleted_at IS NULL ORDER BY group_key, sort_order, id
+  </select>
+
+  <select id="findPhoto" resultType="LifeItem">SELECT <include refid="photoColumns"/> FROM life_facility_photos WHERE id = #{id}</select>
+  <select id="findFood" resultType="LifeItem">SELECT <include refid="foodColumns"/> FROM life_foods WHERE id = #{id}</select>
+  <select id="findSpot" resultType="LifeItem">SELECT <include refid="spotColumns"/> FROM life_spots WHERE id = #{id}</select>
+
+  <insert id="insertPhoto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO life_facility_photos (space_id, photo_class, photo, zoom, pos, caption, sort_order, status, author_id)
+    VALUES (#{spaceId}, #{photoClass}, #{photo}, #{zoom}, #{pos}, #{caption}, #{sortOrder}, #{status}, #{authorId})
+  </insert>
+  <insert id="insertFood" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO life_foods (kind, party, walk_min, category, name, menu, review, is_example, photo, sort_order, status, author_id)
+    VALUES (#{kind}, #{party}, #{walkMin}, #{category}, #{name}, #{menu}, #{review}, COALESCE(#{example}, FALSE), #{photo}, #{sortOrder}, #{status}, #{authorId})
+  </insert>
+  <insert id="insertSpot" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO life_spots (group_key, name, distance, fee, summary, photo_class, photo, sort_order, status, author_id)
+    VALUES (#{groupKey}, #{name}, #{distance}, #{fee}, #{summary}, #{photoClass}, #{photo}, #{sortOrder}, #{status}, #{authorId})
+  </insert>
+
+  <!-- 고친 내용 저장(휴지통 아닌 것만). 쓴 사람(author_id)은 처음 쓴 사람 그대로 -->
+  <update id="updatePhoto">
+    UPDATE life_facility_photos SET photo_class = #{photoClass}, photo = #{photo}, zoom = #{zoom}, pos = #{pos}, caption = #{caption},
+           status = #{status}, updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+  <update id="updateFood">
+    UPDATE life_foods SET party = #{party}, walk_min = #{walkMin}, category = #{category}, name = #{name}, menu = #{menu}, review = #{review},
+           is_example = COALESCE(#{example}, FALSE), photo = #{photo}, status = #{status}, updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+  <update id="updateSpot">
+    UPDATE life_spots SET name = #{name}, distance = #{distance}, fee = #{fee}, summary = #{summary}, photo_class = #{photoClass}, photo = #{photo},
+           status = #{status}, updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <select id="nextPhotoOrder" resultType="int">
+    SELECT COALESCE(MAX(sort_order), 0) + 1 FROM life_facility_photos WHERE space_id = #{spaceId} AND deleted_at IS NULL
+  </select>
+  <select id="nextFoodOrder" resultType="int">
+    SELECT COALESCE(MAX(sort_order), 0) + 1 FROM life_foods WHERE kind = #{kind} AND deleted_at IS NULL
+  </select>
+  <select id="nextSpotOrder" resultType="int">
+    SELECT COALESCE(MAX(sort_order), 0) + 1 FROM life_spots WHERE group_key = #{groupKey} AND deleted_at IS NULL
+  </select>
+
+  <!-- ── 표마다 같은 일(table 은 코드에 정해 둔 세 표 이름만) ── -->
+
+  <update id="updateOrder">
+    UPDATE ${table} SET sort_order = #{sortOrder} WHERE id = #{id}
+  </update>
+
+  <update id="softDelete">
+    UPDATE ${table} SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, status_before_trash = status, status = 'DELETED'
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="restore">
+    UPDATE ${table} SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP, status = COALESCE(status_before_trash, 'DRAFT'), status_before_trash = NULL
+     WHERE id = #{id} AND deleted_at IS NOT NULL
+  </update>
+
+  <delete id="hardDelete">
+    DELETE FROM ${table} WHERE id = #{id} AND deleted_at IS NOT NULL
+  </delete>
+
+  <select id="lockDeleted" resultType="LifeItem" useCache="false" flushCache="true">
+    SELECT id, deleted_at FROM ${table} WHERE deleted_at IS NOT NULL AND id IN
+    <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    ORDER BY id FOR UPDATE
+  </select>
+
+  <select id="lockAllDeleted" resultType="LifeItem" useCache="false" flushCache="true">
+    SELECT id, deleted_at FROM ${table} WHERE deleted_at IS NOT NULL ORDER BY id FOR UPDATE
+  </select>
+</mapper>

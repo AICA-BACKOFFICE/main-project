@@ -1,0 +1,3 @@
+/* Compatibility URL for older Spring templates.
+   New pages load common/css/masthead.css directly. */
+@import url("../../common/css/masthead.css?v=1016cleanup");

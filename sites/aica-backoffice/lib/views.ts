@@ -6,7 +6,7 @@ const views=templates as Record<string,Node>;
 const voids=new Set('area base br col embed hr img input link meta param source track wbr'.split(' '));
 export const escapeHtml=(x:any)=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export const safeJson=(x:any)=>JSON.stringify(x).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
-const codes:Record<string,[string,string,string?]>={DRAFT:['임시저장','draft'],PUBLISHED:['게시중','published'],HIDDEN:['미게시','hidden'],PENDING:['답변대기','pending'],SUPER_ADMIN:['최고관리자','super','모든 관리 기능을 사용할 수 있습니다.'],ADMIN:['관리자','admin','콘텐츠와 사이트를 관리합니다.'],SUPPORT:['운영지원','support','게시물을 작성하고 수정합니다.']};
+const codes:Record<string,[string,string,string?]>={DRAFT:['임시저장','draft'],PUBLISHED:['게시중','published'],HIDDEN:['미게시','hidden'],PENDING:['답변대기','pending'],SUPER_ADMIN:['최상위 관리자','super','모든 관리 기능을 사용할 수 있습니다.'],ADMIN:['관리자','admin','콘텐츠·사이트·미디어 관리 (계정 관리·영구 삭제 불가)'],SUPPORT:['서포터즈','support','게시물 작성·본인 글 수정·업로드·전체 통계 조회']};
 export class EnumValue {
   code:string;label:string;css:string;description:string;
   constructor(code:string){this.code=code;const item=codes[code]||[code,code.toLowerCase(),''];this.label=item[0];this.css=item[1];this.description=item[2]||'';}

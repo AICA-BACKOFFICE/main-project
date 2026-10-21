@@ -1,0 +1,367 @@
+/* About presentation rules.
+   Load after common/css/presentation.css and the page base stylesheet.
+   Existing rule order is preserved; mobile overrides stay in the page mobile CSS. */
+
+/* ---------- 인사교 알아보기 ---------- */
+.school-about{
+  --about-blue:var(--primary);
+  --about-ink:var(--ink);
+  --about-muted:var(--graphite);
+  --about-line:var(--line);
+  --about-paper:var(--paper);
+}
+
+:root.school-about{background:var(--paper);color:var(--ink)}
+
+.school-about body{font-family:var(--ff-text);letter-spacing:0}
+
+/* 작은 제목 · 카드 제목: 'Paperlogy' 900 → 본문 글꼴 굵게(체크 h2와 같은 결) */
+.school-about .about-paper :is(h2, h3, h4, h5, h6):not(#why-school *),
+.school-about .scene-copy h2,
+.school-about main#main .about-paper :is(.intro-platform-features article, .partner-node, .eligibility-condition, .why-school-card, .common-course-card, .education-phase-band, .daily-routine-agenda li, .activity-project-card, .career-stage-card) :is(h3, h4){
+  font-family:var(--ff-text);
+  font-weight:700;
+}
+
+/* 큰 제목은 Giants 그대로(체크의 큰 단어와 같은 글꼴) */
+.school-about .about-paper h2:not(#why-school *):not(.common-course-card *){
+  font-family:var(--ff-text);
+  font-size:clamp(28px,2.8vw,38px);
+  font-weight:700;
+  letter-spacing:-.035em;
+  line-height:1.25;
+}
+
+.school-about a:focus-visible,
+.school-about button:focus-visible,
+.school-about summary:focus-visible{outline-color:var(--primary)}
+
+/* 알아보기 */
+.school-about main :is(
+  .scene-copy p,
+  .intro-platform-features article p,
+  .why-school-heading p,
+  .why-school-card p,
+  .education-phase-body p,
+  .daily-routine-morning p, .daily-routine-lunch p, .daily-routine-afternoon p,
+  .career-stage-copy p
+),
+:where(html:not([data-menu="stories"])) .ov .mbody p{
+  font-family:var(--ff-sans);
+  letter-spacing:-.01em;
+}
+
+/* 알아보기: 섹션마다 위 여백이 달라 도착 자리를 섹션별로 보정(scroll-padding 기준 +8px에서 제목까지) */
+.school-about #intro{scroll-margin-top:-16px}
+
+.school-about #learning{scroll-margin-top:16px}
+
+.school-about #activities{scroll-margin-top:0px}
+
+.school-about #career{scroll-margin-top:-16px}
+
+/* =========================================================
+   인사교 알아보기 오른쪽 목차(10-13): 지원 전 체크의 플로팅 목차(.sec-float)와 같은 모양으로 교체
+   기존 레일(.section-navigation)은 숨김. 움직임은 about/js/about.js 맨 끝
+   ========================================================= */
+.school-about .section-navigation{display:none!important}
+
+.school-about .sec-float{position:fixed;right:clamp(14px,2.2vw,36px);top:50%;z-index:30;transform:translateY(-50%);opacity:0;transition:opacity .4s var(--ease,cubic-bezier(.22,.61,.36,1))}
+
+.school-about .sec-float.is-in{opacity:1}
+
+.school-about .sec-float ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:18px}
+
+.school-about .sf-btn{display:flex;flex-direction:column;align-items:center;gap:0;padding:6px 8px;background:none;border:0;cursor:pointer;font:inherit;color:var(--graphite)}
+
+.school-about .sf-slash{display:block;width:22px;height:14px;position:relative}
+
+.school-about .sf-slash::before{content:"";position:absolute;left:50%;top:50%;width:20px;height:1.5px;border-radius:1px;background:currentColor;opacity:.55;transform:translate(-50%,-50%) rotate(-28deg);transition:opacity .25s,background .25s,width .25s var(--ease,cubic-bezier(.22,.61,.36,1))}
+
+.school-about .sf-label{writing-mode:vertical-rl;font-size:13px;font-weight:600;letter-spacing:.08em;line-height:1;white-space:nowrap;color:var(--primary);max-height:0;opacity:0;overflow:hidden;margin-top:0;transition:max-height .45s var(--ease,cubic-bezier(.22,.61,.36,1)),opacity .3s,margin-top .3s var(--ease,cubic-bezier(.22,.61,.36,1))}
+
+.school-about .sf-btn::after{content:"";display:block;width:1px;height:0;margin-top:0;background:var(--primary);transition:height .45s var(--ease,cubic-bezier(.22,.61,.36,1)),margin-top .45s var(--ease,cubic-bezier(.22,.61,.36,1))}
+
+.school-about .sf-btn:hover .sf-label,
+:where(html:not([data-menu="stories"])) .sf-btn:focus-visible .sf-label{max-height:220px;opacity:1;margin-top:10px}
+
+.school-about .sf-btn:hover::after,
+:where(html:not([data-menu="stories"])) .sf-btn:focus-visible::after{height:64px;margin-top:12px}
+
+.school-about .sf-btn:hover .sf-slash::before,
+:where(html:not([data-menu="stories"])) .sf-btn:focus-visible .sf-slash::before{opacity:1;background:var(--primary);width:24px}
+
+.school-about .sf-btn.is-active .sf-slash::before{opacity:1;background:var(--primary);width:24px}
+
+.school-about .sf-btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:4px}
+
+@media (max-width:767px){.school-about .sec-float{display:none}
+}
+
+@media (prefers-reduced-motion:reduce){.school-about .sec-float,
+.school-about .sf-label,
+.school-about .sf-btn::after,
+.school-about .sf-slash::before{transition:none}
+}
+
+/* 알아보기 플로팅 목차: 어두운 히어로 위에서는 흰 막대 · 흰 글자 */
+.school-about .sec-float.on-dark .sf-btn{color:rgba(255,255,255,.85)}
+
+.school-about .sec-float.on-dark .sf-btn.is-active .sf-slash::before,
+.school-about .sec-float.on-dark .sf-btn:hover .sf-slash::before{background:#fff}
+
+.school-about .sec-float.on-dark .sf-label{color:#fff}
+
+.school-about .sec-float.on-dark .sf-btn::after{background:#fff}
+
+:where(html:not([data-menu="stories"])) .rentslide{margin:0 0 14px;padding:12px 14px;border-radius:14px;background:#fff;border:1px solid rgba(16,17,22,.1)}
+
+:where(html:not([data-menu="stories"])) .rentslide label{display:flex;justify-content:space-between;align-items:baseline;font:700 13.5px/1 var(--ff-text);color:var(--ink)}
+
+:where(html:not([data-menu="stories"])) .rentslide label output{font:400 20px/1 var(--ff-title);color:var(--primary)}
+
+:where(html:not([data-menu="stories"])) .rentslide input{width:100%;margin:10px 0 2px;accent-color:var(--primary)}
+
+:where(html:not([data-menu="stories"])) .rentslide small{font:500 12px/1.4 var(--ff-sans);color:var(--graphite)}
+
+:where(html:not([data-menu="stories"])) .lunch-go{display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 22px;border:0;border-radius:999px;background:var(--cat,#FFB685);color:#fff!important;font:700 16px/1 var(--ff-text);cursor:pointer;box-shadow:0 8px 18px -10px rgba(36,87,245,.7);transition:transform .2s}
+
+:where(html:not([data-menu="stories"])) .lunch-go:hover{transform:translateY(-2px) rotate(-1deg)}
+
+:where(html:not([data-menu="stories"])) .lunch-go svg{width:20px;height:20px}
+
+:where(html:not([data-menu="stories"])) .fdg.rolling .fdc{opacity:.45}
+
+:where(html:not([data-menu="stories"])) .fdg .fdc.lit{opacity:1!important;transform:translateY(-4px);box-shadow:0 0 0 3px var(--cat),var(--st-card-sh)!important}
+
+:where(html:not([data-menu="stories"])) .fdg .fdc.pick{opacity:1!important;transform:translateY(-6px) rotate(-1deg);box-shadow:0 0 0 3px var(--cat-d),0 24px 40px -18px rgba(20,35,63,.45)!important;z-index:2}
+
+:where(html:not([data-menu="stories"])) .fdg .fdc.pick .fdc-ph::after{content:"오늘은 여기!";position:absolute;background:var(--cat-d);color:#fff;font:400 26px/1 "Nanum Pen Script",cursive;border-radius:4px;box-shadow:0 8px 16px -6px rgba(0,0,0,.45)}
+
+:where(html:not([data-menu="stories"])) .fdg .fdc .fdc-ph{position:relative}
+
+:where(html:not([data-menu="stories"])) .fdg.picked .fdc:not(.pick){opacity:.55}
+
+/* 선배 손글씨 포스트잇 */
+:where(html:not([data-menu="stories"])) .snote-a{position:relative;height:0;z-index:6}
+
+:where(html:not([data-menu="stories"])) .snote{position:absolute;width:max-content;max-width:260px;padding:12px 16px 14px;background:#FFF1A6;border-radius:2px;
+  box-shadow:0 1px 2px rgba(20,35,63,.12),0 12px 18px -10px rgba(20,35,63,.38);transform:rotate(var(--r,-3deg));pointer-events:none}
+
+:where(html:not([data-menu="stories"])) .snote small{display:block;margin-bottom:4px;font:700 11px/1 var(--ff-text);letter-spacing:.04em;color:#8A6A00}
+
+:where(html:not([data-menu="stories"])) .snote p{margin:0;font:400 23px/1.2 "Nanum Pen Script",cursive;color:#2A2E38;white-space:nowrap}
+
+:where(html:not([data-menu="stories"])) .snote::before{content:"";position:absolute;left:50%;top:-9px;width:54px;height:18px;margin-left:-27px;background:rgba(255,255,255,.6);border:1px solid rgba(0,0,0,.05);transform:rotate(-4deg)}
+
+@media (max-width:860px){:where(html:not([data-menu="stories"])) .snote{position:relative;margin:8px 0 14px;right:auto!important;left:auto!important;top:auto!important}
+:where(html:not([data-menu="stories"])) .snote-a{height:auto}
+}
+
+/* =========================================================
+   글꼴 위계(2026-10-13 결정, 선배들의 이야기 기준)
+   - 큰 제목(배너 · 히어로 · 큰 숫자): Giants
+   - 섹션 제목 · 카드 제목 · 라벨 · 버튼 같은 짧은 글: Paperlogy 600(SemiBold). 강조 큰 카드 제목만 800
+   - 두 줄 이상 본문: Pretendard
+   Paperlogy를 한 가족으로 합치면서 800 · 900으로 적혀 있던 짧은 글이 더 굵어지지 않게 600으로 맞춤(전에도 화면은 SemiBold였음)
+   ========================================================= */
+.school-about :is(.why-school-highlights strong,.common-courses-meta strong){font-weight:600!important}
+
+/* 알아보기 섹션 제목: Giants → Paperlogy(표지 큰 제목은 Giants 그대로) */
+.school-about #intro .intro-purpose #intro-heading,
+.school-about .about-paper :is(h2,h3):not(#why-school *):not(.common-course-card h3),
+.school-about #why-school-heading{font-family:var(--ff-text)!important;font-weight:600!important;letter-spacing:-.025em}
+
+/* 두 줄 이상 본문은 Pretendard */
+.school-about .intro-purpose p{font-family:var(--ff-sans)}
+
+:where(html:not([data-menu="stories"])) .fdg .fdc.pick .fdc-ph::after{left:12px;top:auto;bottom:10px;padding:7px 12px;font-size:21px;transform:rotate(-9deg);transform-origin:left bottom}
+
+/* =========================================================
+   인사교 알아보기 글자 위계(10-14, 전달본 교체 후): 디자인시스템(AI-Log) 글꼴 표에 맞춤
+   - 큰 장 제목(h2) = h2-section Paperlogy 38/46 600   - 묶음 제목(h3) = Paperlogy 30/40 600(모바일 24)
+   - 키커 = kicker Paperlogy 14.5 700 primary + 앞 24px 막대   - 카드 제목 = card-title-lg 20/30 600 · 큰 카드 card-title-xb 24/32 800 · 작은 카드 card-title 17/25 600
+   - 본문 = Pretendard(lead 17 · body 16 · body-sm 14 · caption 13)   - 표지(히어로) · 큰 숫자는 그대로
+   ========================================================= */
+html.school-about main :is(p, li, dd, dt, small, blockquote, figcaption, td, th){font-family:var(--ff-sans)}
+
+/* 큰 장 제목 */
+html.school-about main :is(#intro-heading, #learning-heading, #activities-heading, #career-heading, #why-school-heading){font-family:var(--ff-text)!important;font-size:clamp(28px,2.7vw,38px)!important;line-height:1.22!important;font-weight:600!important;letter-spacing:-.025em!important;color:var(--ink)}
+
+/* 장 제목 아래 한 줄 */
+html.school-about main :is(.why-school-heading, .common-courses-heading, .guest-lecture-heading, .career-guide-heading) > p{font-family:var(--ff-sans)!important;font-size:17px!important;line-height:1.75!important;font-weight:400!important;letter-spacing:-.01em;color:var(--graphite)}
+
+/* 묶음 제목 */
+html.school-about main :is(.partner-heading h3, .graduate-stats-heading h4, .education-hours-heading h3, .daily-routine-heading h3, .activity-projects-heading h3, .activity-other-heading h3, .career-programs-heading h3, #eligibility-heading){font-family:var(--ff-text)!important;font-size:clamp(24px,2.2vw,30px)!important;line-height:1.33!important;font-weight:600!important;letter-spacing:-.025em!important;color:var(--ink)}
+
+html.school-about main .partner-heading h3 + *,
+html.school-about main .daily-routine-heading > p{font-family:var(--ff-sans)!important}
+
+/* 키커(짧은 이름 + 앞 막대) */
+html.school-about main :is(.micro-label, .graduate-eyebrow, .activity-projects-heading > span, .activity-other-heading > span, .career-programs-heading > span){display:inline-flex!important;align-items:center;gap:10px;font-family:var(--ff-text)!important;font-size:14.5px!important;line-height:1.3!important;font-weight:700!important;letter-spacing:.02em!important;color:var(--primary)!important;text-transform:none}
+
+html.school-about main :is(.micro-label, .graduate-eyebrow, .activity-projects-heading > span, .activity-other-heading > span, .career-programs-heading > span)::before{content:""!important;display:block!important;position:static!important;flex:none;width:24px!important;height:3px!important;border-radius:2px;background:var(--primary-bright)!important;margin:0!important}
+
+/* 카드 제목 */
+html.school-about main :is(.intro-news-story-copy h4, .intro-news-body h4, .intro-platform-features article h4, .common-course-caption h3, .education-phase-band h4, .daily-routine-agenda h4, .activity-project-body h4, .career-stage-copy h3){font-family:var(--ff-text)!important;font-size:20px!important;line-height:1.5!important;font-weight:600!important;letter-spacing:-.02em!important}
+
+html.school-about main :is(.partner-node h4){font-family:var(--ff-text)!important;font-size:17px!important;line-height:1.47!important;font-weight:600!important;letter-spacing:-.01em!important}
+
+html.school-about main :is(.why-school-card h4, .eligibility-condition h4, .career-program-hero h4){font-family:var(--ff-text)!important;font-size:24px!important;line-height:1.34!important;font-weight:800!important;letter-spacing:-.035em!important}
+
+html.school-about main :is(.career-program-detail h5){font-family:var(--ff-text)!important;font-size:15px!important;font-weight:700!important}
+
+html.school-about main :is(.cohort-topic-label, .why-school-highlight-label){font-family:var(--ff-text)!important;font-weight:600!important}
+
+html.school-about main :is(.cohort-topic-label){font-size:13.5px!important}
+
+/* 카드 안 설명 · 메모 = 본문 글꼴 */
+html.school-about main :is(.career-program-summary, .career-program-meta, .graduate-stats-note, .cohort-card-header > span){font-family:var(--ff-sans)!important}
+
+html.school-about main .career-program-summary{font-size:15px!important;line-height:1.7!important}
+
+@media (max-width:760px){
+  html.school-about main :is(.why-school-card h4, .eligibility-condition h4, .career-program-hero h4){font-size:21px!important}
+
+  html.school-about main :is(.why-school-heading, .common-courses-heading, .guest-lecture-heading, .career-guide-heading) > p{font-size:16px!important}
+}
+
+/* 인사교 알아보기: 강조 칸 제목(맞춤형 교육 등)이 Pretendard였던 것 → Paperlogy */
+html.school-about .why-school-highlight-label+strong{font-family:'School Paperlogy','Paperlogy','Pretendard',sans-serif}
+
+html.school-about main#main :is(.hero-masthead>span,.cohort-card-header>span,.cohort-fact dt,.cohort-value small,div.partner-node>p,.graduate-count>span,.graduate-breakdown dt,.graduate-breakdown dd>small,.graduate-breakdown strong>span,.graduate-stats-note,.why-school-learning-step small,.education-hours-stat strong>small,.career-program-funding small,.graduate-total small,.daily-routine-period,.activity-project-description,.career-program-meta>span,.career-program-targets dt,.career-program-targets dd){font-family:'School Paperlogy','Paperlogy','Pretendard',sans-serif!important}
+
+/* 알아보기 큰 숫자 = Giants(10-14, 이야기 · 체크의 강조 숫자와 같게). 단위(만원 · 명 · 시간)는 Paperlogy */
+html.school-about main#main :is(.career-program-funding>strong,.graduate-total>strong,.education-hours-stat .education-hours-number,.education-hours-stat .education-hours-number-label,.graduate-count>strong,.cohort-value>strong,.graduate-breakdown dd>strong,.cohort-card-header>h4){font-family:'Giants','School Paperlogy',sans-serif!important;font-weight:700!important;letter-spacing:0!important}
+
+/* 알아보기 6기 · 7기 비교 카드(10-14): 7기 머리 글자 왼쪽 정렬(6기와 같게). 수치 줄은 왼쪽 정렬 그대로(10-14 되돌림) */
+html.school-about main#main .cohort-card--current .cohort-card-header{justify-content:flex-start!important;text-align:left!important}
+
+html.school-about main#main .cohort-card--current .cohort-card-header h4{margin-left:0!important;margin-right:auto!important;text-align:left!important}
+
+/* 알아보기 협력 기관: 이스트소프트 로고 = EST 영문만 primary 색 이미지(10-14). 예전 mask 방식은 파일로 열면 안 보여 이미지로 바꿈 */
+html.school-about main#main .partner-node-est .partner-est-wordmark{mask:none!important;-webkit-mask:none!important;background:none!important;aspect-ratio:auto!important;width:120px!important;overflow:visible}
+
+html.school-about main#main .partner-node-est .partner-est-wordmark img{opacity:1!important;width:100%!important;height:auto!important;max-height:none!important}
+
+/* 알아보기 6기 · 7기 비교: 7기 카드 오른쪽에 걸친 손글씨 낙서 — 브이 체크 + "Check!"(10-14, 이야기 'Real interview' · 라이프 '고민된다면?'과 같은 손글씨 말투) */
+html.school-about main#main .cohort-comparison{position:relative}
+
+html.school-about main#main .cohort-doodle{position:absolute;z-index:3;display:flex;pointer-events:none;transform:rotate(-8deg)}
+
+html.school-about main#main .cohort-doodle svg{overflow:visible}
+
+html.school-about main#main .cohort-doodle path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+html.school-about main#main .cohort-doodle .ck2{stroke-width:2.5;opacity:.55}
+
+html.school-about main#main .cohort-doodle b{font:400 40px/1 "Caveat",cursive;letter-spacing:.02em;}
+
+@media (max-width:640px){html.school-about main#main .cohort-doodle{display:none}
+}
+
+/* 알아보기 "왜 인사교를 선택해야 할까요?" 카드 3장: 분류 · 제목 · 설명 가운데 정렬(10-14) */
+html.school-about main#main .why-school-card :is(.why-school-card-category,h4),
+html.school-about main#main .why-school-card>p{text-align:center}
+
+html.school-about main#main .why-school-card .why-school-card-category{display:block}
+
+/* 알아보기 공통 교과목 카드 10장: 제목 · 아래 작은 글씨 가운데 정렬, 작은 글씨는 Pretendard(10-14 요청) */
+html.school-about main#main .common-course-caption{text-align:center}
+
+html.school-about main#main .common-course-caption :is(h3,p){text-align:center;margin-left:auto;margin-right:auto}
+
+html.school-about main#main .common-course-caption p{font-family:'School Pretendard','Pretendard',sans-serif!important;font-weight:500!important}
+
+/* 7기 체크 낙서 위치 · 색 바꿈(10-14): 7기 카드 오른쪽 위 모서리(파란 머리)에 걸치게, 색은 'Real interview'와 같은 하늘색(tab-sky #8CC3FF + 옅은 그림자) */
+html.school-about main#main .cohort-doodle path{stroke:#8CC3FF;}
+
+html.school-about main#main .cohort-doodle b{color:#8CC3FF;text-shadow:0 1px 2px rgba(11,16,32,.35)}
+
+/* 알아보기 푸터 = 랜딩 푸터와 같은 틀(10-14): 색 · 위 선도 같게(10-14 오후), 폭 · 여백 · 요소는 같게. 알아보기 자체 .wrap(1360) · .footer-top(아래 선 + 35px) 규칙이 푸터까지 닿던 것을 되돌림 */
+html.school-about .site-footer .wrap{width:auto}
+
+html.school-about .site-footer .footer-top{padding-bottom:0;border-bottom:0}
+
+/* 7기 체크 낙서: 체크를 "Check!" 왼쪽으로(10-14) — 가로 배치, 글자는 체크 아래끝에 맞춤 */
+html.school-about main#main .cohort-doodle{flex-direction:row;align-items:flex-end;gap:2px;top:-30px;right:-24px}
+
+html.school-about main#main .cohort-doodle b{margin:0 0 -4px -14px}
+
+@media (max-width:1240px){html.school-about main#main .cohort-doodle{top:-22px;right:-10px}
+}
+
+/* 7기 체크 낙서: 체크를 글자 쪽으로 더 붙이고 살짝 위로(10-14) */
+html.school-about main#main .cohort-doodle svg{transform:translateY(-14px)}
+
+html.school-about main#main .cohort-doodle b{position:relative;z-index:1}
+
+@media (max-width:1240px){html.school-about main#main .cohort-doodle svg{transform:translateY(-10px)}
+}
+
+/* 7기 체크 낙서: 색연필 느낌(10-14) — 체크 오른쪽 끝 더 길게(viewBox 120), 거친 가장자리 + 결 무늬(SVG 필터 cd-pencil) + 옅은 겹선. 그림자는 svg 전체에. "Check!" 54 → 60px, 6px 위로 */
+html.school-about main#main .cohort-doodle svg{width:132px;height:92px;margin-right:-36px;filter:drop-shadow(0 1px 1.5px rgba(11,16,32,.3))}
+
+html.school-about main#main .cohort-doodle path{filter:none!important}
+
+html.school-about main#main .cohort-doodle .ck{stroke-width:7.5}
+
+html.school-about main#main .cohort-doodle .ck3{stroke-width:3;opacity:.6}
+
+html.school-about main#main .cohort-doodle b{font-size:60px;transform:skewX(-8deg) translateY(-6px)}
+
+@media (max-width:1240px){html.school-about main#main .cohort-doodle svg{width:104px;height:73px}
+html.school-about main#main .cohort-doodle b{font-size:47px;transform:skewX(-8deg) translateY(-5px)}
+}
+
+/* 인사교 알아보기 본문 폭 = 다른 페이지와 같은 1280px(10-14): 알아보기 자체 칸(.about-wrap 1120 · .guest-lecture-wrap 1240)을 공통 .wrap 계산(최대 1280 + 좌우 --gutter)과 같게 */
+html.school-about main#main :is(.about-wrap,.guest-lecture-wrap){width:min(1280px,calc(100% - 2 * var(--gutter,48px)))!important;margin-inline:auto}
+
+/* 알아보기 7기 교육 분야 타일 글자 한 줄로(10-14, HTML 줄바꿈 뺌). 6기는 "AI 플랫폼&인프라"처럼 길어 두 줄 그대로 */
+html.school-about main#main .cohort-card--current .cohort-topic-label{white-space:nowrap}
+
+/* 알아보기 이전 기수 프로젝트 영상: 미리보기 버튼(10-14, 누르면 그 자리에서 재생) — 버튼 기본 모양 지움 */
+html.school-about .activity-project-player button.activity-project-file-video{width:100%;height:100%;padding:0;border:0;cursor:pointer;font:inherit}
+
+/* 알아보기 하루 일과: 2안 적용(10-14) — 왼쪽 영상 자리 크게(1.45fr) + 오른쪽 09:00→18:00 큰 숫자 아래 세로 타임라인(점·점선) */
+.drv .drv-grid{display:grid;gap:24px;align-items:stretch}
+
+.drv .drv-video{position:relative;display:flex;flex-direction:column;justify-content:flex-end;min-height:280px;padding:22px;border-radius:24px;overflow:hidden;color:#fff;
+  background:radial-gradient(120% 90% at 20% 10%,rgba(124,156,255,.45),transparent 60%),linear-gradient(150deg,#14233F 0%,#1d3a8f 55%,#2457F5 100%)}
+
+.drv .drv-video::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 48px),repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 1px,transparent 1px 48px)}
+
+.drv .drv-play{position:absolute;left:50%;top:50%;width:72px;height:72px;margin:-36px 0 0 -36px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+
+.drv .drv-play svg{width:30px;height:30px;fill:#2457F5;margin-left:4px}
+
+.drv .drv-tag{position:absolute;left:18px;top:18px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.16);font:600 12.5px/1 var(--ff-text,'Paperlogy',sans-serif);letter-spacing:.02em;backdrop-filter:blur(4px)}
+
+.drv .drv-cap{position:relative;font:700 17px/1.4 'Paperlogy','Pretendard',sans-serif}
+
+.drv .daily-routine-board{min-width:0}
+
+.drv-2 .drv-grid{grid-template-columns:1.45fr 1fr}
+
+.drv-2 .daily-routine-day-range{grid-template-columns:1fr 60px 1fr;gap:8px;margin:20px 0 26px}
+.drv-2 .daily-routine-day-range strong{font-size:40px}
+
+.drv-2 .daily-routine-agenda{grid-template-columns:1fr;gap:0;position:relative;padding-left:26px}
+
+.drv-2 .daily-routine-agenda::before{content:"";position:absolute;left:8px;top:10px;bottom:10px;border-left:2px dashed #c9d8f3}
+
+.drv-2 .daily-routine-agenda>li{position:relative;border:0;background:none;padding:0 0 22px}
+
+.drv-2 .daily-routine-agenda>li::before{content:"";position:absolute;left:-24px;top:6px;width:14px;height:14px;border-radius:50%;background:#2457F5;box-shadow:0 0 0 4px #fff}
+
+.drv-2 .daily-routine-agenda>.daily-routine-lunch::before{background:#E8B400}
+
+.drv-2 .daily-routine-agenda-top{display:none}
+.drv-2 .daily-routine-time{font-size:18px;margin-bottom:4px}
+
+.drv-2 .daily-routine-agenda h4{font-size:17px}
+.drv-2 .daily-routine-agenda p{margin-top:2px;font-size:14px;line-height:1.65}
+
+@media (max-width:900px){.drv .drv-grid{grid-template-columns:1fr!important}
+.drv .drv-video{min-height:220px;aspect-ratio:16/9}
+}

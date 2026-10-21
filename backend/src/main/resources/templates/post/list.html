@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout('선배들의 이야기 게시물 관리', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <h2 class="page-title">선배들의 이야기 게시물 관리</h2>
+
+  <div class="card">
+    <form class="card-head" th:action="@{/admin/posts}" method="get">
+      <div class="left">
+        <select class="select" name="status" onchange="this.form.submit()">
+          <option value="" th:selected="${search.status == null}">전체 상태</option>
+          <option th:each="st : ${statuses}" th:value="${st}" th:text="${st.label}" th:selected="${search.status == st}"></option>
+        </select>
+        <select class="select" name="categoryId" id="filterCategory">
+          <option value="" th:selected="${search.categoryId == null}">전체 카테고리</option>
+          <option th:each="c : ${categoryTree}" th:value="${c.id}" th:text="${c.name} + (${!c.active} ? ' (숨김)' : '')" th:selected="${search.categoryId == c.id}"></option>
+        </select>
+        <select class="select" name="subCategoryId" id="filterSubCategory" title="세부 카테고리">
+          <option value="">세부 카테고리</option>
+          <th:block th:each="c : ${categoryTree}">
+            <option th:each="s : ${c.children}" th:value="${s.id}" th:text="${s.active} ? ${s.name} : ${s.name + ' (예전 분류)'}" th:attr="data-parent=${c.id}" th:selected="${search.subCategoryId == s.id}"></option>
+          </th:block>
+        </select>
+        <input type="hidden" name="authorId" th:value="${search.authorId}">
+        <input class="input" type="search" name="keyword" th:value="${search.keyword}" placeholder="제목·요약·작성자 검색" style="width:220px">
+        <button class="btn ghost sm" type="submit">검색</button>
+        <a class="btn ghost sm" th:if="${search.filtered}" th:href="@{/admin/posts}">초기화</a>
+        <span class="count">(표시 <span th:text="${#lists.size(result.items)}">0</span>건 / 총 <span th:text="${result.total}">0</span> 건)</span>
+      </div>
+      <div class="left">
+        <!--/* 미게시 글 수: 누르면 미게시 글만(지금 고른 카테고리 · 검색어 · 작성자 그대로), 미게시만 보고 있을 때 누르면 전체 상태로 */-->
+        <a class="status-chip" th:with="onlyHidden=${search.status != null and search.status.name() == 'HIDDEN'}"
+           th:classappend="${onlyHidden} ? 'on' : (${hiddenCount > 0} ? 'has' : '')"
+           th:href="${onlyHidden} ? @{/admin/posts(categoryId=${search.categoryId}, subCategoryId=${search.subCategoryId}, authorId=${search.authorId}, keyword=${search.keyword})}
+                                  : @{/admin/posts(categoryId=${search.categoryId}, subCategoryId=${search.subCategoryId}, authorId=${search.authorId}, keyword=${search.keyword}, status='HIDDEN')}"
+           th:title="${onlyHidden} ? '눌러서 모든 상태 보기' : '눌러서 미게시 글만 보기'">미게시 <b th:text="${hiddenCount}">0</b>건<span class="x" th:if="${onlyHidden}" aria-hidden="true"> ✕</span></a>
+        <a class="btn primary" th:href="${storyKind != null} ? @{/admin/posts/new(kind=${storyKind})} : @{/admin/posts/new}">신규 등록</a>
+      </div>
+    </form>
+
+    <!--/* NEW: 최근 24시간 안에 새로 올린 글(NavBadges.NEW_FOR, 시간이 지나면 저절로 사라짐) */-->
+    <table class="list" th:with="newSince=${@nav.since()}">
+      <thead>
+      <tr>
+        <th style="width:60px">ID</th>
+        <th>게시물</th>
+        <th style="width:140px">카테고리</th>
+        <th style="width:90px">상태</th>
+        <th style="width:100px">게시일</th>
+        <th style="width:110px">작성자</th>
+        <th style="width:140px">수정일</th>
+        <th class="right col-act">액션</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:if="${result.empty}">
+        <td colspan="8">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 16s1.5-2 4-2 4 2 4 2"/><path d="M9 9h.01M15 9h.01"/></svg>
+            <div th:text="${search.filtered} ? '조건에 맞는 게시물이 없습니다.' : '등록된 게시물이 없습니다.'">등록된 게시물이 없습니다.</div>
+          </div>
+        </td>
+      </tr>
+      <tr th:each="p : ${result.items}">
+        <td class="num" th:text="${p.id}">1</td>
+        <td>
+          <!--/* 제목 · 사진을 누르면 사이트에서 보이는 모습이 미리보기 창으로(창 안 '수정하기' · 오른쪽 '수정'으로 수정 화면) */-->
+          <div class="title-cell">
+            <a class="thumb-link" th:href="@{/admin/posts/{kind}/{id}/preview(kind=${p.kind}, id=${p.id})}" target="_blank" rel="noopener" data-preview
+               th:data-title="${p.title}" th:data-edit="${me.role.canManageContent() or p.authorId == me.id} ? @{/admin/posts/{kind}/{id}/edit(kind=${p.kind}, id=${p.id})} : null" tabindex="-1" aria-hidden="true">
+              <img class="thumb" th:if="${p.thumbnailUrl != null}" th:src="${p.thumbnailUrl}" alt="">
+              <span class="thumb empty" th:if="${p.thumbnailUrl == null}">no img</span>
+            </a>
+            <div>
+              <a class="t" th:href="@{/admin/posts/{kind}/{id}/preview(kind=${p.kind}, id=${p.id})}" target="_blank" rel="noopener" data-preview
+                 th:data-title="${p.title}" th:data-edit="${me.role.canManageContent() or p.authorId == me.id} ? @{/admin/posts/{kind}/{id}/edit(kind=${p.kind}, id=${p.id})} : null" th:text="${p.title}" title="눌러서 미리보기">제목</a>
+              <!--/* NEW: 최근 24시간 안에 새로 올렸거나 고친 글(updated_at). 하루가 지나면 저절로 사라져요 */-->
+              <span class="new-mark" th:if="${p.createdAt != null and p.createdAt.isAfter(newSince)}" title="최근 24시간 안에 새로 올린 글">NEW</span>
+              <span class="new-mark" th:if="${(p.createdAt == null or !p.createdAt.isAfter(newSince)) and p.updatedAt != null and p.updatedAt.isAfter(newSince)}" title="최근 24시간 안에 고친 글">NEW</span>
+              <div class="s" th:text="${p.summary}"></div>
+            </div>
+          </div>
+        </td>
+        <td class="cat-cell" th:text="${p.categoryPath ?: '-'}">카테고리</td>
+        <td><span class="badge" th:classappend="${p.status.css}" th:text="${p.status.label}">상태</span></td>
+        <td class="muted nowrap" th:text="${p.publishedAt != null} ? ${#temporals.format(p.publishedAt, 'yyyy-MM-dd')} : '-'">-</td>
+        <td class="nowrap"><a class="author-link" th:href="@{/admin/posts(authorId=${p.authorId})}" th:text="${p.authorName}" th:title="'이 작성자의 글만 보기'">작성자</a></td>
+        <td class="muted nowrap" th:text="${#temporals.format(p.updatedAt, 'yyyy-MM-dd HH:mm')}">-</td>
+        <td class="right col-act">
+          <div class="actions">
+            <a class="btn ghost xs" th:if="${me.role.canManageContent() or p.authorId == me.id}" th:href="@{/admin/posts/{kind}/{id}/edit(kind=${p.kind}, id=${p.id})}">수정</a>
+            <form th:if="${me.role.canManageContent() and p.status.name() != 'PUBLISHED'}"
+                  th:action="@{/admin/posts/{kind}/{id}/status(kind=${p.kind}, id=${p.id})}" method="post">
+              <input type="hidden" name="status" value="PUBLISHED">
+              <input type="hidden" name="back" th:value="${listUrl}">
+              <button class="btn ghost xs accent" type="submit">게시</button>
+            </form>
+            <form th:if="${me.role.canManageContent() and p.status.name() == 'PUBLISHED'}"
+                  th:action="@{/admin/posts/{kind}/{id}/status(kind=${p.kind}, id=${p.id})}" method="post"
+                  th:data-confirm="'‘' + ${p.title} + '’을(를) 미게시로 바꾸시겠습니까? 사이트에서 바로 내려가고, 다시 게시하면 올라가요.'">
+              <input type="hidden" name="status" value="HIDDEN">
+              <input type="hidden" name="back" th:value="${listUrl}">
+              <button class="btn ghost xs" type="submit">미게시</button>
+            </form>
+            <form th:if="${me.role.canManageContent()}" th:action="@{/admin/posts/{kind}/{id}/delete(kind=${p.kind}, id=${p.id})}" method="post" data-confirm="이 게시물을 휴지통으로 이동할까요? 목록과 프론트에서 제외되며 휴지통에서 복원할 수 있습니다.">
+              <button class="btn danger xs" type="submit" title="휴지통으로 이동">휴지통</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+
+    <nav class="pager" th:if="${result.totalPages > 1}">
+      <a th:if="${result.hasPrev}" th:href="@{/admin/posts(page=${result.page - 1}, size=${search.size}, keyword=${search.keyword}, categoryId=${search.categoryId}, subCategoryId=${search.subCategoryId}, authorId=${search.authorId}, status=${search.status})}">‹</a>
+      <span class="dis" th:unless="${result.hasPrev}">‹</span>
+      <th:block th:each="n : ${result.pageNumbers}">
+        <span class="cur" th:if="${n == result.page}" th:text="${n}">1</span>
+        <a th:unless="${n == result.page}" th:text="${n}"
+           th:href="@{/admin/posts(page=${n}, size=${search.size}, keyword=${search.keyword}, categoryId=${search.categoryId}, subCategoryId=${search.subCategoryId}, authorId=${search.authorId}, status=${search.status})}">2</a>
+      </th:block>
+      <a th:if="${result.hasNext}" th:href="@{/admin/posts(page=${result.page + 1}, size=${search.size}, keyword=${search.keyword}, categoryId=${search.categoryId}, subCategoryId=${search.subCategoryId}, authorId=${search.authorId}, status=${search.status})}">›</a>
+      <span class="dis" th:unless="${result.hasNext}">›</span>
+    </nav>
+  </div>
+</main>
+<th:block th:fragment="scripts">
+  <script th:src="@{/js/category-select.js}"></script>
+  <script>CategorySelect.bind(document.getElementById('filterCategory'), document.getElementById('filterSubCategory'), { autoSubmit: document.getElementById('filterCategory').form });</script>
+</th:block>
+</body>
+</html>

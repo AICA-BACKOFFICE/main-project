@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 왼쪽 메뉴 NEW 표시(NavBadges): 표마다 마지막으로 글이 생기거나 고쳐진 시각(휴지통 제외) -->
+<mapper namespace="egovframework.backoffice.common.NavMapper">
+  <select id="lastChanges" resultType="map">
+    SELECT 'review' AS kind, MAX(updated_at) AS at FROM reviews WHERE deleted_at IS NULL
+    UNION ALL
+    SELECT 'interview', MAX(updated_at) FROM interviews WHERE deleted_at IS NULL
+    UNION ALL
+    SELECT 'project', MAX(updated_at) FROM projects WHERE deleted_at IS NULL
+    UNION ALL
+    SELECT 'cohort', MAX(updated_at) FROM cohort_stories WHERE deleted_at IS NULL
+    UNION ALL
+    SELECT 'faq', MAX(updated_at) FROM faqs WHERE deleted_at IS NULL
+    UNION ALL
+    SELECT 'media', MAX(updated_at) FROM media WHERE deleted_at IS NULL
+  </select>
+</mapper>

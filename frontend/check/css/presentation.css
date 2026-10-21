@@ -1,0 +1,186 @@
+/* Check presentation rules.
+   Load after common/css/presentation.css and the page base stylesheet.
+   Existing rule order is preserved; mobile overrides stay in the page mobile CSS. */
+
+/* 섹션 제목 글꼴(10-12 Giants → 10-13 Paperlogy): 인사교 라이프 · 지원 전 체크의 섹션 제목(h2)과 라이프 층 제목 */
+.check-page .s-head h2{font-family:var(--ff-text);font-weight:600;letter-spacing:-.025em}
+
+/* 지원 전 체크 페이지 제목(10-12): 사진 히어로 없이 제목 · 설명만. 글자 크기 · 글꼴은 이야기 · 라이프 히어로 제목과 같게, CHECK는 랜딩 04 라임 계열(흰 바탕에서 읽히게 진하게) */
+.check-page{--lr:clamp(9.2px,.78vw,10px)}
+
+@media (max-width:1024px){.check-page{--lr:clamp(7.8px,.92vw,9.2px)}
+}
+
+@media (max-width:600px){.check-page{--lr:clamp(8.2px,2.7vw,11px)}
+}
+
+/* 알아보기 */
+:where(html:not([data-menu="stories"])) .ov .mbody p,
+.check-page :is(
+  .chk-crit-note,
+  .chk-notice p,
+  .pf-body p,
+  .pf-body dd,
+  .faq-at
+){
+  font-family:var(--ff-sans);
+  letter-spacing:-.01em;
+}
+
+:where(html:not([data-menu="stories"])) .sf-btn:focus-visible .sf-label{max-height:220px;opacity:1;margin-top:10px}
+
+:where(html:not([data-menu="stories"])) .sf-btn:focus-visible::after{height:64px;margin-top:12px}
+
+:where(html:not([data-menu="stories"])) .sf-btn:focus-visible .sf-slash::before{opacity:1;background:var(--primary);width:24px}
+
+:where(html:not([data-menu="stories"])) .rentslide{margin:0 0 14px;padding:12px 14px;border-radius:14px;background:#fff;border:1px solid rgba(16,17,22,.1)}
+
+:where(html:not([data-menu="stories"])) .rentslide label{display:flex;justify-content:space-between;align-items:baseline;font:700 13.5px/1 var(--ff-text);color:var(--ink)}
+
+:where(html:not([data-menu="stories"])) .rentslide label output{font:400 20px/1 var(--ff-title);color:var(--primary)}
+
+:where(html:not([data-menu="stories"])) .rentslide input{width:100%;margin:10px 0 2px;accent-color:var(--primary)}
+
+:where(html:not([data-menu="stories"])) .rentslide small{font:500 12px/1.4 var(--ff-sans);color:var(--graphite)}
+
+:where(html:not([data-menu="stories"])) .lunch-go{display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 22px;border:0;border-radius:999px;background:var(--cat,#FFB685);color:#fff!important;font:700 16px/1 var(--ff-text);cursor:pointer;box-shadow:0 8px 18px -10px rgba(36,87,245,.7);transition:transform .2s}
+
+:where(html:not([data-menu="stories"])) .lunch-go:hover{transform:translateY(-2px) rotate(-1deg)}
+
+:where(html:not([data-menu="stories"])) .lunch-go svg{width:20px;height:20px}
+
+:where(html:not([data-menu="stories"])) .fdg.rolling .fdc{opacity:.45}
+
+:where(html:not([data-menu="stories"])) .fdg .fdc.lit{opacity:1!important;transform:translateY(-4px);box-shadow:0 0 0 3px var(--cat),var(--st-card-sh)!important}
+
+:where(html:not([data-menu="stories"])) .fdg .fdc.pick{opacity:1!important;transform:translateY(-6px) rotate(-1deg);box-shadow:0 0 0 3px var(--cat-d),0 24px 40px -18px rgba(20,35,63,.45)!important;z-index:2}
+
+:where(html:not([data-menu="stories"])) .fdg .fdc.pick .fdc-ph::after{content:"오늘은 여기!";position:absolute;background:var(--cat-d);color:#fff;font:400 26px/1 "Nanum Pen Script",cursive;border-radius:4px;box-shadow:0 8px 16px -6px rgba(0,0,0,.45)}
+
+:where(html:not([data-menu="stories"])) .fdg .fdc .fdc-ph{position:relative}
+
+:where(html:not([data-menu="stories"])) .fdg.picked .fdc:not(.pick){opacity:.55}
+
+/* 선배 손글씨 포스트잇 */
+:where(html:not([data-menu="stories"])) .snote-a{position:relative;height:0;z-index:6}
+
+:where(html:not([data-menu="stories"])) .snote{position:absolute;width:max-content;max-width:260px;padding:12px 16px 14px;background:#FFF1A6;border-radius:2px;
+  box-shadow:0 1px 2px rgba(20,35,63,.12),0 12px 18px -10px rgba(20,35,63,.38);transform:rotate(var(--r,-3deg));pointer-events:none}
+
+:where(html:not([data-menu="stories"])) .snote small{display:block;margin-bottom:4px;font:700 11px/1 var(--ff-text);letter-spacing:.04em;color:#8A6A00}
+
+:where(html:not([data-menu="stories"])) .snote p{margin:0;font:400 23px/1.2 "Nanum Pen Script",cursive;color:#2A2E38;white-space:nowrap}
+
+:where(html:not([data-menu="stories"])) .snote::before{content:"";position:absolute;left:50%;top:-9px;width:54px;height:18px;margin-left:-27px;background:rgba(255,255,255,.6);border:1px solid rgba(0,0,0,.05);transform:rotate(-4deg)}
+
+@media (max-width:860px){:where(html:not([data-menu="stories"])) .snote{position:relative;margin:8px 0 14px;right:auto!important;left:auto!important;top:auto!important}
+:where(html:not([data-menu="stories"])) .snote-a{height:auto}
+}
+
+/* 지원 전 체크 · 지원 혜택 카드 제목: Paperlogy */
+.check-page .b2 h3{font-family:var(--ff-text)!important;font-weight:700;letter-spacing:-.01em}
+
+/* 지원 전 체크 · 모집 프로세스 카드 제목(+ 면접 전형 · 인적성 검사 소제목): Paperlogy */
+.check-page .pf-card h3,
+.check-page .pf-card dt{font-family:var(--ff-text)!important;font-weight:700;letter-spacing:-.01em}
+
+/* 지원 전 체크 타이틀: 시안 4 체크리스트 종이(제목 + 소개 + 오른쪽 손글씨 체크리스트) */
+.check-page .ckx{background:var(--surface,#fff);border-bottom:1px solid var(--line)}
+
+.check-page .ckx .wrap{padding-top:calc(var(--hero-y) + 8px);padding-bottom:calc(var(--hero-y) + 16px)}
+
+.check-page .ckx a{text-decoration:none;color:inherit}
+
+.check-page #faq{padding-bottom:clamp(72px,8vw,112px)!important}
+
+/* 섹션 제목 크기 · 키커를 한 공식으로(선배들의 이야기 기준): 체크 h2 42 → 38px, 체크 키커 .k-label도 .sh-k처럼 Paperlogy 14.5px 700 */
+.check-page .s-head h2{font-size:clamp(28px,2.8vw,38px)!important;line-height:1.22}
+
+.check-page .k-label{font-family:var(--ff-text);font-size:14.5px;letter-spacing:.02em;line-height:1.3}
+
+:where(html:not([data-menu="stories"])) .fdg .fdc.pick .fdc-ph::after{left:12px;top:auto;bottom:10px;padding:7px 12px;font-size:21px;transform:rotate(-9deg);transform-origin:left bottom}
+
+/* =========================================================
+   지원 전 CHECK 배너(10-14, 1안 '같은 판'): 다른 배너와 같은 검정 테두리 · 번짐 없는 그림자 판(모눈 바탕) 안에
+   왼쪽 제목 · 질문 · 설명 + 오른쪽 MY CHECKLIST(테두리 · 그림자 카드, 연두 테이프 · 체크 원). 글자 크기는 배너와 같게
+   ========================================================= */
+.check-page .cb{padding:clamp(32px,4vw,56px) 0 clamp(40px,4.4vw,64px)}
+
+.check-page .cb h1{margin:0;font:700 clamp(32px,3.9vw,54px)/1.12 var(--ff-title);letter-spacing:-.01em;color:var(--ink)}
+
+.check-page .cb h1 b{font-weight:inherit;color:#8CFF3F;-webkit-text-stroke:.045em var(--ink-strong);paint-order:stroke fill}
+
+.check-page .cb .q{margin:18px 0 0;font:700 clamp(19px,1.7vw,24px)/1.35 var(--ff-text);letter-spacing:-.03em;color:var(--ink)}
+
+.check-page .cb .q mark{background:none;color:var(--primary)}
+
+.check-page .cb .d{margin:12px 0 0;font:400 var(--mh-l,17.28px)/1.7 var(--ff-sans);color:var(--graphite)}
+
+.check-page .cb a{color:inherit;text-decoration:none}
+
+.check-page .cb .ic{fill:none;stroke:#566175;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+.check-page .cb .bx{position:relative;flex:none;width:22px;height:22px;border:2px solid var(--ink);border-radius:6px;background:#fff}
+
+.check-page .cb a:hover .bx{background:#8CFF3F}
+
+.check-page .cb a:hover .bx::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:11px;border:solid var(--ink);border-width:0 2.5px 2.5px 0;transform:translate(-50%,-62%) rotate(45deg)}
+
+.check-page .cb1 .cbx{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:clamp(32px,4vw,64px);align-items:center;padding:clamp(28px,3.2vw,44px) clamp(22px,3.4vw,48px);border:2px solid var(--ink-strong);border-radius:28px;box-shadow:5px 5px 0 var(--ink-strong);
+  background-color:#F6F8FC;background-image:linear-gradient(rgba(36,87,245,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(36,87,245,.05) 1px,transparent 1px);background-size:26px 26px}
+
+.check-page .cb1 .cbw{position:relative}
+
+.check-page .cb1 .cbl{position:relative;padding:22px 24px 8px;border:1.5px solid var(--ink-strong);border-radius:16px;background:#fff;box-shadow:4px 4px 0 var(--ink-strong);transform:rotate(2deg)}
+
+.check-page .cb1 .cbl::before{content:"";position:absolute;right:110px;top:-12px;width:96px;height:26px;background:#C6F56A;border:0;clip-path:polygon(3% 0,98% 0,97% 13%,100% 29%,97% 43%,99% 61%,96% 79%,98% 100%,1% 100%,3% 84%,0 68%,3% 51%,1% 34%,4% 17%);transform:rotate(-3deg)}
+
+.check-page .cb1 .cbl>p{margin:0 0 4px;font:400 15px/1 var(--ff-title);letter-spacing:.08em;color:var(--primary)}
+
+.check-page .cb1 .cbl a{display:flex;align-items:center;gap:14px;padding:11px 2px;border-bottom:1px dashed #C9D1DE}
+
+.check-page .cb1 .cbl a:last-child{border-bottom:0}
+
+.check-page .cb1 .cbl .ic{flex:none;width:26px;height:26px}
+
+.check-page .cb1 .cbl .tx{display:flex;flex-direction:column;gap:2px}
+
+.check-page .cb1 .cbl b{font:700 16px/1.3 var(--ff-sans);letter-spacing:-.02em;color:var(--ink)}
+ .check-page .cb1 .cbl small{font:400 13px/1.4 var(--ff-sans);color:#6B7486}
+
+.check-page .cb1 .cbl a:hover b{color:var(--primary)}
+
+.check-page .cb1 .ok{position:absolute;right:-18px;bottom:-14px;display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:#C6F56A;border:1.5px solid var(--ink-strong);box-shadow:3px 3px 0 var(--ink-strong)}
+
+.check-page .cb1 .ok svg{width:28px;height:28px;fill:none;stroke:var(--ink-strong);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+
+@media (max-width:960px){.check-page .cb1 .cbx{grid-template-columns:1fr}
+.check-page .cb1 .cbl{transform:rotate(1deg)}
+}
+
+.check-page .ckx.cb{border-bottom:0;background:none}
+
+.check-page .ckx.cb{padding-bottom:0}
+.check-page .ckx.cb>.wrap{padding-bottom:16px}
+
+/* 형광펜(10-14, KeyStatement와 같은 값): 정보 글에서 꼭 기억할 조건 · 결론 한 구절에만. 문단당 1곳 */
+.check-page mark.hl{background:linear-gradient(transparent 58%,#DCE5FF 58%);color:inherit;padding:0 .1em;font:inherit;border-radius:0}
+
+/* 지원 전 CHECK 배너 위 여백(10-14): 선배들의 이야기 · 라이프 배너와 같게 = sec-y-first + 탭 자리 36px(1100px 이하는 탭이 없어 sec-y-first만) */
+.check-page .ckx.cb{padding-top:0}
+
+.check-page .ckx.cb>.wrap{padding-top:calc(var(--sec-y-first) + 36px)}
+
+@media (max-width:1100px){.check-page .ckx.cb>.wrap{padding-top:var(--sec-y-first)}
+}
+
+/* 지원 전 체크: 소제목 · 질문 · 칩이 Pretendard였던 것 → Paperlogy */
+.check-page :is(h3.v3-h3,.chk-notice h4,.faq-q .faq-qt,span.tx>b,.chk-crit-label,.faq-tab){font-family:var(--ff-text)!important}
+
+/* 지원 전 체크: 배너 → 첫 섹션(모집 대상) 위 여백 줄임(10-14): 112 → 80px(화면 따라 56~80) */
+.check-page section.v3-sec#eligibility{padding-top:clamp(56px,5.6vw,80px)}
+
+html body .check-page :is(span.tx>small,.pf-step,.b2-no){font-family:var(--ff-text)!important}
+
+/* 지원 전 체크 모집 대상: '다른 정부지원사업' 안내 카드 ↔ 스스로 체크 사이 여백 넓힘(10-14, 48 → 72px 안팎) */
+.check-page .chk-notice + .v3-h3{margin-top:clamp(60px,5.5vw,76px)}

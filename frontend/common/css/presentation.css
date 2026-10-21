@@ -1,0 +1,29 @@
+/* Shared presentation: content-page palette, handwriting fonts,
+   inherited form typography and common footer. Page layouts live in
+   about/life/check/stories/css/presentation.css. */
+
+:root:where(:not([data-menu="stories"])){
+  --primary-bright:#7C9CFF;
+}
+
+@font-face{font-family:"Caveat";src:url("../assets/fonts/Caveat-SemiBold.woff2") format("woff2");font-weight:600;font-display:swap}
+
+@font-face{font-family:"Caveat";src:url("../assets/fonts/Caveat-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+
+@font-face{font-family:"Nanum Pen Script";src:url("../assets/fonts/NanumPenScript-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+
+:root:where([data-menu="stories"]){
+  --primary-bright:#7C9CFF;
+}
+
+:where(.stories-page,.stories-hub,.life-page,.check-page,.school-about) :where(button,input,select,textarea){font-family:inherit}
+
+html:is([data-menu="stories"],[data-menu="life"],[data-menu="check"],[data-menu="about"]) .site-footer{background:#2B2D31;border-top-color:rgba(255,255,255,.12);color:rgba(255,255,255,.62)}
+
+html:is([data-menu="stories"],[data-menu="life"],[data-menu="check"],[data-menu="about"]) .site-footer :is(.logo,.footer-links a){color:#fff}
+
+html:is([data-menu="stories"],[data-menu="life"],[data-menu="check"],[data-menu="about"]) .site-footer .footer-links a:hover{color:#8AA9FF}
+
+html:is([data-menu="stories"],[data-menu="life"],[data-menu="check"],[data-menu="about"]) .site-footer .logo-mark{background-image:url("../assets/brand/symbol-white.png")}
+
+html:is([data-menu="stories"],[data-menu="life"],[data-menu="check"],[data-menu="about"]) .site-footer :is(a,button):focus-visible{outline-color:#8AA9FF}

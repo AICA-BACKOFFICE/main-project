@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 미디어 관리(V25 media): 함께 쓰는 사진 · 동영상의 정보. 파일은 저장소(storage_key 위치)에 -->
+<mapper namespace="egovframework.backoffice.media.MediaMapper">
+
+  <sql id="columns">m.id, m.media_type, m.name, m.original_name, m.storage_key, m.content_type, m.file_size, m.uploaded_by,
+    m.status, m.deleted_at, m.created_at, m.updated_at, u.name AS uploader_name</sql>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO media (media_type, name, original_name, storage_key, content_type, file_size, uploaded_by)
+    VALUES (#{mediaType}, #{name}, #{originalName}, #{storageKey}, #{contentType}, #{fileSize}, #{uploadedBy})
+  </insert>
+
+  <sql id="liveWhere">
+    WHERE m.deleted_at IS NULL
+    <if test="type != null">AND m.media_type = #{type}</if>
+    <if test="keyword != null and keyword != ''">
+      AND (LOWER(m.name) LIKE LOWER(CONCAT('%', #{keyword}, '%')) OR LOWER(m.original_name) LIKE LOWER(CONCAT('%', #{keyword}, '%')))
+    </if>
+  </sql>
+
+  <select id="findLive" resultType="MediaItem">
+    SELECT <include refid="columns"/> FROM media m LEFT JOIN admin_users u ON u.id = m.uploaded_by
+    <include refid="liveWhere"/>
+    ORDER BY m.id DESC
+    LIMIT #{size} OFFSET #{offset}
+  </select>
+
+  <select id="countLive" resultType="long">
+    SELECT COUNT(*) FROM media m <include refid="liveWhere"/>
+  </select>
+
+  <select id="findLiveById" resultType="MediaItem">
+    SELECT <include refid="columns"/> FROM media m LEFT JOIN admin_users u ON u.id = m.uploaded_by
+     WHERE m.id = #{id} AND m.deleted_at IS NULL
+  </select>
+
+  <select id="countByKey" resultType="long">
+    SELECT COUNT(*) FROM media WHERE storage_key = #{key}
+  </select>
+
+  <update id="rename">
+    UPDATE media SET name = #{name}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <!-- 사진 칸(photos, 글자)에 이 파일 주소가 들어 있는 글 -->
+  <select id="usage" resultType="long">
+    SELECT (SELECT COUNT(*) FROM reviews WHERE photos LIKE #{pattern})
+         + (SELECT COUNT(*) FROM interviews WHERE photos LIKE #{pattern})
+         + (SELECT COUNT(*) FROM projects WHERE photos LIKE #{pattern})
+  </select>
+
+  <update id="softDelete">
+    UPDATE media SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, status_before_trash = status, status = 'DELETED'
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <select id="findDeleted" resultType="MediaItem">
+    SELECT <include refid="columns"/> FROM media m LEFT JOIN admin_users u ON u.id = m.uploaded_by
+     WHERE m.id = #{id} AND m.deleted_at IS NOT NULL
+  </select>
+
+  <update id="restore">
+    UPDATE media SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP, status = COALESCE(status_before_trash, 'ACTIVE'), status_before_trash = NULL
+     WHERE id = #{id} AND deleted_at IS NOT NULL
+  </update>
+
+  <delete id="hardDelete">
+    DELETE FROM media WHERE id = #{id} AND deleted_at IS NOT NULL
+  </delete>
+
+  <select id="lockDeleted" resultType="MediaItem" useCache="false" flushCache="true">
+    SELECT id, storage_key, deleted_at FROM media WHERE deleted_at IS NOT NULL AND id IN
+    <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    ORDER BY id FOR UPDATE
+  </select>
+
+  <select id="lockAllDeleted" resultType="MediaItem" useCache="false" flushCache="true">
+    SELECT id, storage_key, deleted_at FROM media WHERE deleted_at IS NOT NULL ORDER BY id FOR UPDATE
+  </select>
+</mapper>

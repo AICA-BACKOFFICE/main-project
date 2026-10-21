@@ -1,0 +1,5 @@
+/* Compatibility entry for older Spring story templates.
+   New pages load common + page presentation.css directly. Keep edits in those
+   source files; this entry contains no duplicate design rules. */
+@import url("presentation.css?v=1016split");
+@import url("../../stories/css/presentation.css?v=1016split");

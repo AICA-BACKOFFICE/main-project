@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout('임시저장', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <h2 class="page-title">임시저장
+    <span class="sub" th:text="${mineOnly} ? '내가 쓴 글 중 아직 게시하지 않은 글이에요' : '아직 게시하지 않은 글 · 질문이에요. 최근에 고친 순'">아직 게시하지 않은 글이에요</span>
+  </h2>
+
+  <!--/* 후기 · 인터뷰 · 프로젝트 표의 임시저장 글과 임시저장 자주 묻는 질문(faqs)을 모아(PostDraftController) 최근에 고친 순으로.
+         위의 종류 칩을 누르면 그 종류만(draftKind). 서포터즈는 자기 글만(mineOnly), FAQ 칩 없음 */-->
+  <div class="card">
+    <nav class="trash-kinds" aria-label="임시저장 종류">
+      <a th:href="@{/admin/posts/drafts}" th:classappend="${draftKind == null} ? 'on'" th:attr="aria-current=${draftKind == null} ? 'page' : null">
+        전체 <em th:text="${draftAll}">0</em></a>
+      <a th:each="k : ${draftKinds}" th:href="@{/admin/posts/drafts(kind=${k.key})}" th:classappend="${draftKind == k.key} ? 'on'"
+         th:attr="aria-current=${draftKind == k.key} ? 'page' : null">
+        <th:block th:text="${k.value}">후기</th:block> <em th:text="${draftCounts.get(k.key)}">0</em></a>
+    </nav>
+
+    <form class="card-head" th:action="@{/admin/posts/drafts}" method="get">
+      <div class="left">
+        <input type="hidden" name="kind" th:if="${draftKind != null}" th:value="${draftKind}">
+        <input class="input" type="search" name="keyword" th:value="${search.keyword}" placeholder="제목·요약 검색" style="width:200px">
+        <button class="btn ghost sm" type="submit">검색</button>
+        <a class="btn ghost sm" th:if="${search.keyword != null and !search.keyword.isBlank()}" th:href="@{/admin/posts/drafts(kind=${draftKind})}">초기화</a>
+        <span class="count">(표시 <span th:text="${#lists.size(result.items)}">0</span>건 / 총 <span th:text="${result.total}">0</span> 건)</span>
+      </div>
+    </form>
+
+    <div class="trash-note">
+      임시저장한 글은 사이트에 보이지 않아요. <b>수정</b>에서 내용을 마저 쓰고 상태를 <b>게시중</b>으로 바꿔 저장하면 사이트에 올라가요.
+      자주 묻는 질문은 지원 전 Check FAQ 관리에서 상태를 바꿔요.
+    </div>
+
+    <table class="list">
+      <thead>
+      <tr>
+        <th style="width:70px">ID</th>
+        <th>게시물</th>
+        <th style="width:140px">카테고리</th>
+        <th style="width:110px">작성자</th>
+        <th style="width:140px">마지막 수정</th>
+        <th style="width:220px" class="right">액션</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:if="${result.empty}">
+        <td colspan="6">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24"><path d="M4 4h12l4 4v12H4z"/><path d="M8 13h8M8 17h5"/></svg>
+            <div th:text="${draftKind == null} ? '임시저장한 글이 없습니다.' : '임시저장한 ' + ${draftKinds.get(draftKind)} + '이(가) 없습니다.'">임시저장한 글이 없습니다.</div>
+          </div>
+        </td>
+      </tr>
+      <!--/* 글(후기 · 인터뷰 · 프로젝트 · 기수별 이모저모)은 미리보기 · 글 수정 화면, FAQ 는 FAQ 관리, 인사교 라이프 카드(life-…)는 그 탭에서 그 카드를 연 채로 */-->
+      <tr th:each="p : ${result.items}"
+          th:with="life=${#strings.startsWith(p.kind, 'life-')}, post=${p.kind != 'faq' and !#strings.startsWith(p.kind, 'life-')},
+                   lifeSection=${#strings.startsWith(p.kind, 'life-')} ? ${#strings.substringAfter(p.kind, 'life-')} : null">
+        <td class="num" th:text="${p.id}">1</td>
+        <td>
+          <div class="title-cell">
+            <img class="thumb" th:if="${p.thumbnailUrl != null}" th:src="${p.thumbnailUrl}" alt="">
+            <span class="thumb empty" th:if="${p.thumbnailUrl == null}" th:text="${p.kind == 'faq'} ? 'FAQ' : 'no img'">no img</span>
+            <div>
+              <a class="t" th:if="${post}" th:href="@{/admin/posts/{kind}/{id}/preview(kind=${p.kind}, id=${p.id})}" target="_blank" rel="noopener" data-preview
+                 th:data-title="${p.title}" th:data-edit="${me.role.canManageContent() or p.authorId == me.id} ? @{/admin/posts/{kind}/{id}/edit(kind=${p.kind}, id=${p.id})} : null"
+                 th:text="${p.title}" title="눌러서 미리보기">제목</a>
+              <span class="t" th:if="${!post}" th:text="${p.title}">질문</span>
+              <div class="s" th:text="${p.summary}"></div>
+            </div>
+          </div>
+        </td>
+        <td th:text="${p.categoryPath ?: '-'}">카테고리</td>
+        <td class="nowrap" th:text="${p.authorName ?: '-'}">작성자</td>
+        <td class="muted nowrap" th:text="${#temporals.format(p.updatedAt, 'yyyy-MM-dd HH:mm')}">-</td>
+        <td class="right">
+          <div class="actions">
+            <a class="btn ghost xs" th:if="${post}" th:href="@{/admin/posts/{kind}/{id}/preview(kind=${p.kind}, id=${p.id})}" target="_blank" rel="noopener" data-preview
+               th:data-title="${p.title}" th:data-edit="${me.role.canManageContent() or p.authorId == me.id} ? @{/admin/posts/{kind}/{id}/edit(kind=${p.kind}, id=${p.id})} : null">미리보기</a>
+            <a class="btn xs" th:if="${post and (me.role.canManageContent() or p.authorId == me.id)}"
+               th:href="@{/admin/posts/{kind}/{id}/edit(kind=${p.kind}, id=${p.id})}">수정</a>
+            <a class="btn xs" th:if="${p.kind == 'faq'}" th:href="@{/admin/faq}">FAQ 관리에서 수정</a>
+            <a class="btn xs" th:if="${life}" th:href="@{/admin/pages/life-photos(section=${lifeSection}, edit=${p.id})}">인사교 라이프에서 수정</a>
+            <!--/* 삭제: 휴지통으로(복원은 휴지통에서). 휴지통 · 상태 바꾸기는 관리자 이상(서포터즈 정책 그대로) */-->
+            <form th:if="${me.role.canManageContent()}" method="post"
+                  th:action="${p.kind == 'faq'} ? @{/admin/faq/{id}/delete(id=${p.id})} : (${life} ? @{/admin/pages/life-photos/{s}/{id}/delete(s=${lifeSection}, id=${p.id})} : @{/admin/posts/{kind}/{id}/delete(kind=${p.kind}, id=${p.id})})"
+                  th:data-confirm="'‘' + ${p.title} + '’을(를) 삭제하시겠습니까? 휴지통으로 가고, 휴지통에서 복원할 수 있어요.'">
+              <input type="hidden" name="back" th:value="${draftKind == null} ? '/admin/posts/drafts' : '/admin/posts/drafts?kind=' + ${draftKind}">
+              <button class="btn danger xs" type="submit">삭제</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+
+    <nav class="pager" th:if="${result.totalPages > 1}">
+      <a th:if="${result.hasPrev}" th:href="@{/admin/posts/drafts(kind=${draftKind}, page=${result.page - 1}, size=${search.size}, keyword=${search.keyword})}">‹</a>
+      <span class="dis" th:unless="${result.hasPrev}">‹</span>
+      <th:block th:each="n : ${result.pageNumbers}">
+        <span class="cur" th:if="${n == result.page}" th:text="${n}">1</span>
+        <a th:unless="${n == result.page}" th:text="${n}"
+           th:href="@{/admin/posts/drafts(kind=${draftKind}, page=${n}, size=${search.size}, keyword=${search.keyword})}">2</a>
+      </th:block>
+      <a th:if="${result.hasNext}" th:href="@{/admin/posts/drafts(kind=${draftKind}, page=${result.page + 1}, size=${search.size}, keyword=${search.keyword})}">›</a>
+      <span class="dis" th:unless="${result.hasNext}">›</span>
+    </nav>
+  </div>
+</main>
+<th:block th:fragment="scripts"></th:block>
+</body>
+</html>

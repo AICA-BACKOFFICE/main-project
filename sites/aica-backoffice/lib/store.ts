@@ -1,6 +1,8 @@
 import { env } from 'cloudflare:workers';
 import seedData from './seed.json';
 import { enumValue } from './views';
+import {provisionAccounts} from './account-provision';
+import {passwordIdentity} from './password-auth';
 
 export const OWNER_EMAIL='tpwls386@gmail.com';
 export const OWNER_NAME='박세진';
@@ -17,7 +19,7 @@ export const redirect=(location:string)=>new Response(null,{status:303,headers:{
 const names:Record<string,string>={admin_users:'users',categories:'categories',images:'images',posts:'posts',post_versions:'versions',post_templates:'templates',notices:'notices',notice_dismissals:'dismissals',visit_logs:'visits',post_view_logs:'views'};
 let ready:Promise<void>|undefined;
 async function initialize(){
- const done=await db().prepare("SELECT value FROM cms_settings WHERE key='initialized'").first();if(done)return;
+ const done=await db().prepare("SELECT value FROM cms_settings WHERE key='initialized'").first();if(done){await provisionAccounts(db(),(env as any).CMS_ACCOUNT_PROVISION);return;}
  const statements:D1PreparedStatement[]=[];
  for(const [old,collection]of Object.entries(names))for(const raw of (seedData as any)[old]||[]){const row={...raw};delete row.passwordHash;const key=String(row.id??`${row.noticeId}:${row.adminId}`);statements.push(db().prepare('INSERT OR IGNORE INTO cms_records(collection,key,data,updated_at) VALUES(?,?,?,?)').bind(collection,key,JSON.stringify(row),now()));}
  for(let i=0;i<statements.length;i+=40)await db().batch(statements.slice(i,i+40));
@@ -26,6 +28,7 @@ async function initialize(){
  await db().batch([
  db().prepare('INSERT OR IGNORE INTO cms_settings(key,value) VALUES(?,?)').bind('csrf-secret',crypto.randomUUID()+crypto.randomUUID()),
  db().prepare('INSERT OR IGNORE INTO cms_settings(key,value) VALUES(?,?)').bind('initialized',now())]);
+ await provisionAccounts(db(),(env as any).CMS_ACCOUNT_PROVISION);
 }
 export async function ensure(){if(!ready)ready=initialize().catch(e=>{ready=undefined;throw e;});await ready;}
 export async function all(collection:string):Promise<any[]>{await ensure();const r=await db().prepare('SELECT data FROM cms_records WHERE collection=?').bind(collection).all<{data:string}>();return r.results.map(x=>JSON.parse(x.data));}
@@ -34,14 +37,15 @@ export async function put(collection:string,row:any,key:any=row.id){await ensure
 export async function remove(collection:string,key:any){await ensure();await db().prepare('DELETE FROM cms_records WHERE collection=? AND key=?').bind(collection,String(key)).run();}
 export async function setting(key:string,fallback:any=null){await ensure();const r=await db().prepare('SELECT value FROM cms_settings WHERE key=?').bind(key).first<{value:string}>();return r?r.value:fallback;}
 export async function setSetting(key:string,value:string){await db().prepare('INSERT INTO cms_settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(key,value).run();}
-export async function currentUser(request:Request){await ensure();const authId=request.headers.get('oai-authenticated-user-id');const email=request.headers.get('oai-authenticated-user-email')?.toLowerCase();if(!authId||!email)return null;
+export async function currentUser(request:Request){await ensure();const localSession=await passwordIdentity(request);if(localSession.present){if(!localSession.user)return null;const user=localSession.user;return {...user,role:enumValue(user.role),superAdmin:String(user.role)==='SUPER_ADMIN',_authId:'password:'+localSession.session.id,_authMethod:'password'};}const authId=request.headers.get('oai-authenticated-user-id');const email=request.headers.get('oai-authenticated-user-email')?.toLowerCase();if(!authId||!email)return null;
  const local=authId==='local_seedy'&&['127.0.0.1','localhost'].includes(new URL(request.url).hostname);
  const users=await all('users');let user=local?users.find(u=>u.id===1):users.find(u=>u.authUserId===authId)||users.find(u=>!u.authUserId&&String(u.loginId).toLowerCase()===email);
  if(!user||!user.active)return null;if(!local&&!user.authUserId){user={...user,authUserId:authId,lastLoginAt:now()};await put('users',user);}
- return {...user,role:enumValue(user.role),superAdmin:String(user.role)==='SUPER_ADMIN',mustChangePw:false,_authId:authId};
+ return {...user,role:enumValue(user.role),superAdmin:String(user.role)==='SUPER_ADMIN',mustChangePw:false,_authId:authId,_authMethod:'chatgpt'};
 }
 export function manage(user:any){if(!user||!['ADMIN','SUPER_ADMIN'].includes(String(user.role)))fail(403,'관리자 권한이 필요합니다.');}
 export function superuser(user:any){if(!user||String(user.role)!=='SUPER_ADMIN')fail(403,'최고관리자 권한이 필요합니다.');}
+export function editPost(user:any,post:any){if(!user||String(user.role)==='SUPPORT'&&post?.authorId!==user.id)fail(403,'서포터즈는 본인이 작성한 게시글만 수정할 수 있습니다.');}
 export async function csrf(user:any){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(await setting('csrf-secret')),{name:'HMAC',hash:'SHA-256'},false,['sign']);const signed=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(user._authId));return Array.from(new Uint8Array(signed),x=>x.toString(16).padStart(2,'0')).join('');}
 export async function checkMutation(request:Request,user:any){if(!user)fail(401,'로그인이 필요합니다.');const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)fail(403,'다른 사이트에서 보낸 요청입니다.');let token=request.headers.get('x-csrf-token')||request.headers.get('x-bo-token');if(!token&&/form|urlencoded/.test(request.headers.get('content-type')||'')){const form=await request.clone().formData();token=String(form.get('_csrf')||'');}const expected=await csrf(user);let mismatch=expected.length!==(token||'').length?1:0;for(let i=0;i<expected.length;i++)mismatch|=expected.charCodeAt(i)^((token||'').charCodeAt(i)||0);if(mismatch)fail(403,'보안 확인이 만료됐습니다. 새로고침해 주세요.','token');}
 export const value=(form:FormData,key:string)=>String(form.get(key)??'');

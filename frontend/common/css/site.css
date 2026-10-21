@@ -1,0 +1,279 @@
+/* =========================================================
+   공통 틀: 상단 헤더(GNB · 드롭다운 · 검색) · 하위 메뉴 바 · 모바일 메뉴 · 푸터 · 플로팅 버튼 · 토스트
+   마크업은 common/js/site.js가 그립니다. 페이지 CSS와 섞이지 않게 셀렉터는 틀 요소 아래로 묶었습니다.
+   + 본문 공용 컴포넌트(페이지 HTML에 직접 씀): 버튼 .btn · 페이지 끝 '다음으로' 띠 .next-band · 가로 넘침 흐림 [data-scroll-fade] — 맨 아래 절
+   ========================================================= */
+
+/* 틀 요소 글자 바탕: 페이지의 base.css와 상관없이 모든 페이지에서 같은 모양 */
+.site-header,.drawer,.site-footer,.floating,.toast,.skip-link{font-family:var(--ff-sans);font-size:17px;line-height:1.75;letter-spacing:-.01em;word-break:keep-all;-webkit-font-smoothing:antialiased;font-synthesis-weight:none}
+:root :is(.site-header,.drawer,.site-footer,.floating) :is(a,button,input):focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:2px}
+:root :is(.hdr-bar) :is(a,button):focus-visible{outline-color:var(--header-accent)}
+
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 var(--gutter)}
+.skip-link{position:fixed;top:-80px;left:16px;z-index:100;padding:12px;background:#fff;color:#14233F;text-decoration:none}
+.skip-link:focus{top:10px}
+
+/* =========================================================
+   상단 헤더 / GNB — 모든 페이지 같은 어두운 막대
+   ========================================================= */
+.site-header{position:fixed;inset:0 0 auto 0;z-index:50;padding-top:env(safe-area-inset-top,0px);color:var(--ink);
+  --logo-w:187px;                                      /* 로고(심볼 + 이름 + 광주) 칸 폭: 글꼴이 늦게 와도 GNB가 안 움직이게 고정(Pretendard에서 실제 186.9px) */
+  --gnb-x:calc(var(--logo-w) + 40px + 12px + 22px)}    /* GNB 첫 메뉴(인사교 알아보기) 글자 시작 = 정렬선 + 로고 + 칸 사이(.hdr-inner gap) + .gnb 왼쪽 여백 + 링크 안쪽 여백. 하위 메뉴 바 첫 항목도 여기 */
+.site-header:empty{height:calc(env(safe-area-inset-top,0px) + var(--hdr));background:var(--header-bg)}
+.site-header .hdr-bar{position:relative;z-index:2;height:var(--hdr);color:var(--on-header);transition:border-color .3s,background .3s}
+.site-header.is-scrolled .hdr-bar{border-bottom-color:rgba(255,255,255,.12)}   /* 막대는 늘 어두워서 선도 어두운 면 기준(밝은 회색 선이 홈 사진 위에 튀던 것) */
+.site-header .hdr-inner{height:100%;display:flex;align-items:center;gap:40px}
+
+/* 로고: 인공지능사관학교 심볼(2026-09-29 받은 원본) + 이름 */
+.logo{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;flex-shrink:0}
+.site-header .hdr-bar .logo{min-width:var(--logo-w)}
+.logo-mark{width:31px;height:26px;flex:none;background:url("../assets/brand/symbol-blue.png") center/contain no-repeat}
+.hdr-bar .logo-mark{background-image:url("../assets/brand/symbol-white.png")}
+.logo-text{font-weight:700;font-size:17px;letter-spacing:-.03em}
+
+.site-header .hdr-nav{display:flex;flex:1;height:100%}
+.site-header .gnb{display:flex;height:100%;margin:0 auto 0 12px;padding:0;list-style:none}
+.site-header .gnb>li{position:relative;height:100%}
+.site-header .gnb-link{display:flex;align-items:center;height:100%;padding:0 22px;color:inherit;text-decoration:none;font-size:16px;position:relative}
+.site-header .gnb-link::after{content:"";position:absolute;left:22px;right:22px;transform:scaleX(0);transform-origin:left;transition:transform .35s var(--ease)}   /* 어두운 막대 위에서 보이는 연파랑(진한 파랑은 대비 2 : 1로 흐렸음) */
+.site-header .gnb>li:hover .gnb-link::after,.site-header .gnb>li:focus-within .gnb-link::after,.site-header .gnb-link[aria-current="page"]::after{transform:scaleX(1)}
+/* 다른 메뉴를 가리키는 동안은 지금 메뉴 밑줄을 접어 밑줄이 하나만 보이게(글자색은 그대로) */
+.site-header .gnb:hover>li:not(:hover)>.gnb-link[aria-current="page"]::after,.site-header .gnb:focus-within>li:not(:focus-within)>.gnb-link[aria-current="page"]::after{transform:scaleX(0)}
+
+/* 2depth 드롭다운: 메뉴에 올리면 4개 메뉴의 하위가 한 번에 펼쳐짐(황채리 원본 규칙). 펼친 바탕은 헤더 막대와 같은 색으로 이어짐 */
+.site-header .drop{position:absolute;top:100%;left:0;min-width:100%;list-style:none;margin:0;padding:22px 22px 28px;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .25s,transform .3s var(--ease),visibility 0s .3s}
+.site-header.menu-open .drop{opacity:1;visibility:visible;transform:none;transition:opacity .25s,transform .3s var(--ease)}
+.site-header .drop a{display:block;padding:6px 0;font-size:15px;text-decoration:none;white-space:nowrap;transition:color .2s,transform .25s var(--ease)}
+.site-header .drop a:hover,.site-header .drop a:focus-visible{transform:translateX(3px)}
+.site-header .gnb>li:hover .drop a{color:var(--on-header)}
+.site-header .gnb>li:hover .drop a:hover{color:var(--header-accent)}
+.site-header .drop-bg{position:absolute;left:0;right:0;top:var(--hdr);height:0;overflow:hidden;transition:height .35s var(--ease);z-index:1;box-shadow:0 18px 30px -24px rgba(20,35,63,.35)}
+.site-header.menu-open .drop-bg{height:var(--drop-h,210px)}
+.site-header.menu-open .hdr-bar{border-bottom-color:rgba(255,255,255,.08)}
+
+/* 헤더 오른쪽: 검색 · 공식 홈페이지 · 지원하기 · 모바일 메뉴 버튼 */
+.site-header .hdr-util{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.icon-btn{width:44px;height:44px;display:grid;place-items:center;border:0;background:none;color:inherit;border-radius:50%;cursor:pointer;transition:background .2s}
+.icon-btn:hover{background:var(--paper-2)}
+.icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7}
+.site-header .menu-toggle{display:none}
+/* 10-15: ☰ 옆 "메뉴" 글자. 버튼 이름은 aria-label("전체 메뉴 열기")이라 글자는 aria-hidden */
+.site-header .hdr-util .icon-btn.menu-toggle{width:auto;height:44px;grid-auto-flow:column;align-items:center;gap:6px;padding:0 12px 0 10px;border-radius:22px;font-size:15px;font-weight:700;line-height:1}   /* 홈 860px 이하 .icon-btn 40px 규칙보다 앞서게 */
+@media (max-width:374px){.site-header .hdr-util .icon-btn.menu-toggle{gap:4px;padding:0 8px 0 6px;font-size:14px}}   /* 홈은 헤더에 문의하기도 있어 360px에서 ☰가 화면 밖으로 밀리지 않게 */
+.site-header .official-link{font-size:16px;font-weight:700;text-decoration:none;margin-right:12px} /* 다른 메뉴(gnb-link)와 같은 글씨(10-13) */
+.site-header .official-link:hover{color:var(--on-header);text-decoration:underline}
+.site-header .btn-apply{display:inline-flex;align-items:center;height:40px;padding:0 18px;border-radius:40px;font-size:15px;text-decoration:none;}
+
+/* 검색 패널: 헤더 막대 바로 아래로 펼침. 바탕은 드롭다운처럼 헤더 막대 색으로 이어짐(페이지마다 다름) */
+
+/* =========================================================
+   하위 메뉴 바(2depth): 카테고리 페이지 헤더 아래 세부 카테고리 가로 탭
+   지금 항목은 site.js가 a.is-active · aria-current로 표시하고 밑줄(.subnav-indicator)을 옮김
+   ========================================================= */
+.site-header .subnav{position:relative;z-index:1;height:var(--sub);background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.site-header .subnav-inner{height:100%;display:flex;align-items:center;gap:28px}
+.site-header .subnav-title{font-size:16px;font-weight:500;color:var(--graphite);white-space:nowrap;border-right:1px solid var(--line);line-height:1.2}
+.site-header .subnav-list{position:relative;display:flex;gap:4px;height:100%;list-style:none;margin:0;padding:0;overflow-x:auto;scrollbar-width:none}
+.site-header .subnav-list::-webkit-scrollbar{display:none}
+.site-header .subnav-list a{display:flex;align-items:center;height:100%;padding:0 14px;font-size:15px;color:var(--graphite);text-decoration:none;white-space:nowrap;transition:color .2s}
+.site-header .subnav-list a:hover{color:var(--ink)}
+.site-header .subnav-list a.is-active{color:var(--ink);font-weight:600}
+.site-header .subnav-indicator{position:absolute;left:0;bottom:0;height:2px;background:var(--ink);transition:transform .4s var(--ease),width .4s var(--ease);pointer-events:none}
+@media (min-width:861px){
+  /* 2뎁스 시작점(2026-10-08 사용자 "모든 카테고리의 2depth 지점도 동일하게"): 첫 항목 글자 = GNB 첫 메뉴 '인사교 알아보기' 글자 아래(--gnb-x).
+     왼쪽 제목(이야기 · 체크)은 고정 폭 칸이라 구분선도 모든 페이지 같은 자리, 제목 없는 바(알아보기 · 라이프)는 그만큼 띄움. 링크 안쪽 여백 14px · 칸 사이 28px 뺌 */
+  .site-header .subnav-title{flex:none;width:calc(var(--gnb-x) - 28px - 14px);overflow:hidden;text-overflow:ellipsis}
+  .site-header .subnav-inner>.subnav-list:first-child{margin-left:calc(var(--gnb-x) - 14px)}
+}
+
+/* =========================================================
+   푸터
+   ========================================================= */
+.site-footer{padding:64px 0 calc(48px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--paper);font-size:14.5px;color:var(--graphite)}
+/* 공식 교육플랫폼 푸터처럼: 위 줄 로고 · 링크, 연락처 두 줄(| 로 구분, 1080px 이하는 한 줄씩), 저작권 */
+.site-footer .footer-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:14px 40px;margin-bottom:20px}
+.site-footer address{font-style:normal;line-height:1.9}
+.site-footer address ul{display:flex;flex-wrap:wrap;list-style:none;margin:0;padding:0}
+.site-footer address li+li::before{content:"";display:inline-block;width:1px;height:.75em;background:currentColor;opacity:.35;margin:0 12px;vertical-align:-.04em}
+.site-footer address a{text-decoration:underline;text-underline-offset:3px}
+.site-footer address a:hover{text-decoration-thickness:2px}
+.site-footer .footer-links{display:flex;flex-wrap:wrap;gap:8px 22px;list-style:none;margin:0;padding:0}
+.site-footer .footer-links a{text-decoration:none;color:var(--ink);font-weight:500}
+.site-footer .footer-links a:hover{color:var(--primary)}
+.site-footer .footer-copy{margin:12px 0 1em;font-size:13px}
+
+/* =========================================================
+   플로팅 버튼(FAB): 맨 위로 — 모든 페이지 오른쪽 아래(지원하기는 헤더 · 모바일 메뉴에) · 안내 토스트
+   ========================================================= */
+.floating{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.floating .fab-top{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(8px);transition:opacity .3s,transform .3s var(--ease),visibility 0s .3s}
+.floating .fab-top.is-visible{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition:opacity .3s,transform .3s var(--ease)}   /* 숨은 동안은 Tab으로도 안 잡힘 */
+.floating .fab-top svg{width:18px;height:18px;stroke:var(--ink);fill:none;stroke-width:1.8}
+
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:8px;font-size:14.5px;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s var(--ease);z-index:90;max-width:calc(100vw - 40px)}
+.toast.is-on{opacity:1;transform:translate(-50%,0)}
+
+/* =========================================================
+   모바일 메뉴(1080px 이하)
+   ========================================================= */
+/* 10-15 B4 아코디언형: 오른쪽에서 화면 폭 80%(최대 360px)로 들어오고 뒤는 딤. 흰 면, 01~04 번호 + 이름 한 줄, 네 메뉴 모두 하위를 접고 펼침(site.js DRAWER_ACC) */
+.drawer-dim{position:fixed;inset:0;z-index:59;background:rgba(11,11,12,.45);opacity:0;visibility:hidden;transition:opacity .35s var(--ease),visibility 0s .35s}   /* --ink-strong 45% */
+.drawer-dim.is-open{opacity:1;visibility:visible;transition:opacity .35s var(--ease)}
+.drawer{position:fixed;top:0;right:0;bottom:0;z-index:60;width:80%;max-width:360px;display:flex;flex-direction:column;background:var(--surface);color:var(--ink);padding:env(safe-area-inset-top,0px) 0 0;overflow-y:auto;transform:translateX(100%);transition:transform .4s var(--ease),visibility 0s .4s;visibility:hidden}
+.drawer.is-open{transform:none;visibility:visible;transition:transform .4s var(--ease)}   /* 닫을 때도 밀려 나간 뒤 숨김 */
+.drawer .drawer-top{flex:none;display:flex;justify-content:space-between;align-items:center;height:calc(var(--hdr) + 1px);margin:0 var(--gutter);border-bottom:1px solid var(--line)}   /* 10-15: 구분선을 로고 줄 바로 아래로 → 로고 · 닫기가 선과 위 끝 사이 가운데 */
+.drawer .drawer-top .drawer-close{margin-right:-12px}   /* 닫기 글자 끝을 구분선 · 목록 오른쪽 끝에 맞춤(버튼 오른쪽 안쪽 여백만큼) */
+.drawer .drawer-top .logo{gap:9px;font-size:16px}
+.drawer .drawer-top .logo-mark{width:28px;height:24px}
+.drawer .drawer-top .logo-text{font-size:16px}
+.drawer .drawer-close{display:flex;align-items:center;gap:6px;height:44px;min-width:44px;padding:0 12px 0 10px;border:0;border-radius:22px;background:none;color:var(--ink);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.drawer .drawer-close:hover{background:var(--paper)}
+.drawer .drawer-close svg{width:22px;height:22px;flex:none;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round}
+.drawer .drawer-nav{padding:0 var(--gutter)}
+.drawer .drawer-acc{border-bottom:1px solid var(--line)}
+.drawer .acc-btn{width:100%;display:flex;align-items:center;gap:12px;min-height:60px;padding:0;background:none;border:0;font-size:18px;font-weight:700;letter-spacing:-.03em;line-height:1.3;cursor:pointer;text-align:left;color:inherit;text-decoration:none}
+.drawer .acc-no{width:22px;flex:none;font-family:var(--ff-title);font-size:15px;font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}   /* 번호: 모든 페이지에 있는 Giants(Anton은 일부 페이지만 불러옴) */
+.drawer .acc-tx{flex:1}
+.drawer .acc-btn:hover .acc-tx{text-decoration:underline;text-underline-offset:6px}
+.drawer .acc-btn svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;transition:transform .3s}
+.drawer .acc-btn[aria-expanded="true"] svg{transform:rotate(180deg)}
+.drawer .acc-panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s var(--ease)}
+.drawer .acc-panel>div{overflow:hidden;visibility:hidden;transition:visibility 0s .35s}   /* 접힌 목록의 링크는 Tab으로 안 잡힘 */
+.drawer .acc-btn[aria-expanded="true"] + .acc-panel{grid-template-rows:1fr}
+.drawer .acc-btn[aria-expanded="true"] + .acc-panel>div{visibility:inherit;transition:none}   /* inherit: 메뉴가 닫히면(.drawer 숨김) 펼친 목록 링크도 같이 숨음 */
+.drawer .acc-panel a{display:flex;align-items:center;min-height:44px;padding:0 0 0 34px;color:var(--graphite);text-decoration:none;font-size:15.5px}   /* 34px: 번호 칸 22 + 간격 12, 이름 줄에 맞춤 */
+.drawer .acc-panel a:hover{color:var(--ink)}
+.drawer .acc-panel a:last-child{margin-bottom:12px}
+/* 지금 위치: 지금 카테고리 번호 · 이름은 메인 색, 지금 세부 항목은 하위 메뉴 바처럼 잉크 · 굵게 · 밑줄(site.js가 aria-current) */
+.drawer .acc-btn.is-current,.drawer .acc-btn.is-current .acc-no{color:var(--primary)}
+.drawer .acc-panel a[aria-current]{color:var(--ink);font-weight:600;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:7px}
+.drawer .drawer-foot{margin-top:auto;display:flex;justify-content:flex-end;padding:20px var(--gutter) calc(20px + env(safe-area-inset-bottom,0px))}   /* 10-15: 문의하기만 오른쪽 정렬(오시는 길 링크는 라이프 하위 메뉴에 있어 뺌) */
+.drawer .drawer-cta{display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 18px;border-radius:44px;background:var(--cta);color:var(--ink-strong);font-size:15px;font-weight:700;text-decoration:none;border:2px solid var(--ink-strong);box-shadow:3px 3px 0 var(--ink-strong)}   /* 10-14 흰 알약. 10-15: 드로어 맨 아래 오른쪽, 글자 폭에 맞춘 칩(높이 44 · 좌우 18), 글자 검정 */
+.drawer .drawer-cta:focus-visible{border-radius:44px}
+
+/* =========================================================
+   반응형
+   ========================================================= */
+@media (max-width:1180px){
+  .site-header .official-link{display:none}   /* 메뉴 글자가 두 줄로 꺾이지 않게. 공식 홈페이지는 푸터에도 있음 */
+}
+@media (max-width:1080px){
+  .site-header .hdr-nav,.site-header .drop-bg,.site-header .btn-apply{display:none}   /* 메뉴 칸째 숨김: 빈 칸이 남으면 간격이 두 번 들어가 375px 이하에서 ☰가 화면 밖으로 밀림 */
+  .site-header .menu-toggle{display:grid}
+  .site-header .hdr-inner{justify-content:space-between;gap:12px}
+  .site-footer address ul{display:block}
+  .site-footer address li+li::before{display:none}
+}
+@media (max-width:860px){
+  .site-header,.drawer,.floating{font-size:16px}
+  .site-header .subnav-title{display:none}
+  .site-header .subnav-list{margin:0 calc(var(--gutter) * -1);padding:0 calc(var(--gutter) - 12px)}   /* 첫 탭 글자가 로고 · 히어로 제목과 같은 선(링크 좌우 여백 12px만큼 뺌) */
+  .site-header .subnav-list a{padding:0 12px;font-size:14.5px}
+  .floating{right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+}
+
+/* =========================================================
+   본문 공용 컴포넌트 — 페이지 HTML에 직접 쓰는 조각(2026-10-08, 세 카테고리 페이지가 한 사이트로 보이게)
+   글꼴은 페이지 본문 글꼴을 이어받음(카테고리 페이지는 --ff-text "Paperlogy"), 큰 글자만 --ff-title
+   ========================================================= */
+
+/* ---------- 버튼: 세 가지 + 작은 크기 ----------
+   <a class="btn" href="…">주 버튼</a>                         잉크로 채운 알약(높이 48)
+   <a class="btn is-line" href="…">보조 버튼</a>               흰 바탕 + 선
+   <a class="btn is-cta" href="#apply" data-site-link="apply">지원하기</a>   흰 알약(헤더 지원하기와 같음, 10-14)
+   작은 크기는 is-sm(높이 40). 아이콘은 <svg aria-hidden="true"> 앞이나 뒤에(18px, 선 currentColor). <button class="btn" type="button">도 같음
+   :root를 붙인 까닭: 페이지 CSS의 요소 초기화(.life-page a{color:inherit} · .life-page button{font:inherit})보다 앞서게. 페이지에서 바꿀 땐 .페이지 .btn.이름 */
+:root .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 24px;border:1px solid var(--ink);border-radius:999px;background:var(--ink);color:#fff;font:inherit;font-size:15.5px;font-weight:600;line-height:1;letter-spacing:-.01em;text-decoration:none;white-space:nowrap;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
+:root .btn:hover{background:color-mix(in srgb,var(--ink) 84%,#fff);border-color:color-mix(in srgb,var(--ink) 84%,#fff)}
+:root .btn.is-line{background:var(--surface);border-color:var(--line);color:var(--ink)}
+:root .btn.is-line:hover{border-color:var(--ink)}
+/* 10-14: 헤더 지원하기와 같은 흰 알약 */
+/* 카카오톡 문의: 카카오 브랜드 노랑(값은 --cta와 같지만 브랜드 색이라 따로, 2026-10-08 사용자 결정으로 되살림) */
+:root .btn.is-sm{height:40px;padding:0 18px;font-size:14.5px;gap:6px}
+:root .btn svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8}
+:root .btn.is-sm svg{width:16px;height:16px}
+:root .btn:is(:disabled,[aria-disabled="true"]){opacity:.45;pointer-events:none}
+:root .btn:focus-visible{border-radius:999px}   /* base.css의 초점 테두리 모서리(2px) 대신 알약 그대로 */
+
+/* ---------- 페이지 끝 '다음으로' 띠: 어두운 '다음으로' 카드 하나 + 밝은 '함께 보면 좋은' 카드 둘, 푸터 바로 위 ----------
+   <nav class="next-band" aria-label="다음으로 볼 페이지"><div class="wrap">
+     <a href="…"><small>다음으로</small><b>제목</b><span>한 줄 설명</span></a>
+     <a href="…"><small>함께 보면 좋은</small><b>제목</b><span>한 줄 설명</span></a>
+     <a href="…"><small>함께 보면 좋은</small><b>제목</b><span>한 줄 설명</span></a>
+   </div></nav>
+   어두운 카드의 작은 글 · 화살표 색은 --next-accent(없으면 헤더 연파랑). 페이지 CSS에서 카테고리 색으로: .life-page{--next-accent:#6FC3D1}
+   지원하기처럼 강조: 첫 카드에 class="is-cta"(작은 글 · 화살표가 --primary)
+   세로 여백(2026-10-08): 띠 앞 마지막 내용 ↔ 첫 카드가 섹션 사이와 같은 --sec-y 한 번. 바탕이 바뀌는 경계(띠 위 선)의 양쪽에 반씩 —
+   띠 바로 앞 형제(섹션 · 안내문 등, 페이지 CSS와 상관없이)의 아래 여백 --sec-y / 2 + 띠 위 여백 --sec-y / 2. 띠 아래도 --sec-y / 2(푸터 위 선 너머 푸터 위 여백 64px).
+   전에는 둘 다 --sec-y여서 1440에서 마지막 내용 ↔ 카드가 225px(섹션 사이 112px의 두 배)
+   main 맨 끝에 두면 main 아래 여백은 0. :root는 버튼과 같은 까닭 */
+/* 화살표: 원(::before) + 화살(::after, 색을 칠하는 그림 틀) */
+/* 첫 카드: 어두운 '다음으로' */
+@media (max-width:860px){
+  /* 한 줄씩: 화살표는 오른쪽 가운데 */
+}
+
+/* ---------- 구분점(·) 목록: 줄이 바뀌는 자리의 점은 감춤(2026-10-08) ----------
+   줄 끝에 '탑승 ·'처럼 점만 남지 않게. <span class="seps"><span><span>항목</span><span>항목</span></span></span>
+   바깥이 자르고(overflow), 안쪽 줄을 점 칸만큼 왼쪽으로 당겨 줄 첫 항목 앞의 점이 바깥 밖으로 나가게. 항목은 통째로 다음 줄로
+   (한 항목이 줄보다 길면 그 안에서 줄바꿈 · 둘째 줄은 점 칸만큼 내어쓰기). 쓰는 곳: 인사교 라이프 오시는 길 단계 · '다음으로' 띠 카드 설명
+   margin을 다시 정하는 것은 띠의 span 규칙(margin-top 8px)이 안쪽 span에 번지지 않게. 자르기는 가로만(clip) — 사진 위 글의 그림자가 위아래로 잘리지 않게 */
+/* 점 칸 폭 = 글 ' · '(띄어쓰기 · 점 · 띄어쓰기)의 실제 폭(Paperlogy Text 0.72em) — 점 간격이 손으로 쓴 ' · '와 같게 */
+/* 첫 점은 늘 잘려 안 보임 — 화면 읽기에서도 빼기(링크 이름이 '제목 · 첫 항목'이 되지 않게) */
+
+/* ---------- 가로로 넘치는 탭 줄: 더 있으면 끝을 흐리게 ----------
+   공통 하위 메뉴 바는 자동. 페이지의 가로 스크롤 줄은 그 요소에 data-scroll-fade(예: <div class="wrap" data-scroll-fade>)
+   site.js가 넘칠 때만 .fade-l(왼쪽에 더 있음) · .fade-r(오른쪽에 더 있음)을 붙임 */
+:is(.subnav-list,[data-scroll-fade]).fade-r{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent)}
+:is(.subnav-list,[data-scroll-fade]).fade-l{-webkit-mask-image:linear-gradient(90deg,transparent,#000 40px);mask-image:linear-gradient(90deg,transparent,#000 40px)}
+:is(.subnav-list,[data-scroll-fade]).fade-l.fade-r{-webkit-mask-image:linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent)}
+
+/* ---------- 디자인통일v1(10-12): 상단 메뉴를 랜딩 헤더와 같게 ---------- */
+/* 10-13: 새 랜딩(aica-home-v2 home.css 'v2.1 GNB')과 같은 헤더 — 파랑 막대 · 흰 굵은 메뉴 · 아래 검정 3px 선 · 흰 지원하기(검정 테두리 + 그림자) */
+.site-header .gnb-link{font-weight:700}
+.site-header .gnb-link::after{height:3px;bottom:-3px;background:#fff}
+.site-header .gnb-link:hover,
+.site-header .gnb-link:focus-visible,
+.site-header .gnb-link[aria-current="page"]{color:#fff}
+.site-header .hdr-bar,.site-header.is-scrolled .hdr-bar,.site-header.menu-open .hdr-bar{border-bottom:3px solid var(--ink-strong)}
+.site-header.menu-open .drop-bg{border-bottom:3px solid var(--ink-strong)}
+.site-header .drop a{font-weight:500;color:#fff}
+.site-header .drop a:hover,.site-header .drop a:focus-visible{color:#fff;text-decoration:underline;text-underline-offset:4px}
+.site-header .official-link{color:#fff;opacity:1}
+.hdr-bar .icon-btn:hover{background:rgba(11,11,12,.18)}
+.site-header .btn-apply{background:#fff;color:var(--header-bg);font-weight:700;border:2px solid var(--ink-strong);box-shadow:3px 3px 0 var(--ink-strong);transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
+.site-header .btn-apply:hover{background:#fff;transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink-strong)}
+:root .site-header :is(a,button,input):focus-visible{outline-color:#fff}
+@media (max-width:860px){.site-header .btn-apply{box-shadow:2px 2px 0 var(--ink-strong)}}
+/* 바탕: 밝은 페이지에서도 랜딩과 같은 색이 되도록 불투명하게 */
+.site-header .hdr-bar,
+.site-header .drop-bg{background:var(--header-bg);-webkit-backdrop-filter:none;backdrop-filter:none}
+/* 로고 크기 · 간격: 랜딩과 같게(심볼 34×29, 간격 11px) */
+.site-header .logo{gap:11px}
+.site-header .logo-mark{width:34px;height:29px}
+
+/* 디자인통일v1(10-12): 하위 메뉴 바 왼쪽 페이지 이름(선배들의 이야기 · 인사교 LIFE · 지원 전 Check)을 오른쪽 정렬해 세로 구분선에 붙임 */
+.site-header .subnav-title{text-align:right}
+/* 이름 ↔ 구분선 여백을 구분선 ↔ 첫 메뉴 글자 여백(바 사이 간격 28px + 메뉴 왼쪽 안쪽 여백 14px = 42px)과 같게. 메뉴 위치는 그대로 */
+.site-header .subnav-title{padding-right:41px}   /* 구분선 1px 포함 42px */
+
+/* 헤더 · 모바일 메뉴 버튼 = '문의하기' + 카카오톡 말풍선(10-14, 지원하기 대신). 모양은 흰 알약 그대로, 말풍선만 카카오 검정 */
+.site-header .btn-ask,.drawer .drawer-cta{gap:7px}
+.site-header .btn-ask .ic-kakao{width:18px;height:18px;flex:none;fill:#191919}
+.drawer .drawer-cta .ic-kakao{width:20px;height:20px;flex:none;fill:#191919}
+
+/* 10-15 모바일 메뉴 정리: ☰ 세 줄 같은 길이 · '메뉴' 글자 없음 → 버튼은 44px 정사각형. 열린 메뉴의 X · 닫기는 화면에서 숨김(딤을 누르거나 Esc로 닫힘, 키보드 초점이 오면 보임) */
+.site-header .hdr-util .icon-btn.menu-toggle{width:44px;padding:0;gap:0;justify-content:center}
+.site-header .hdr-util .icon-btn.menu-toggle svg{width:24px;height:24px;stroke-width:2.6;stroke-linecap:butt}
+.drawer .drawer-top .drawer-close:not(:focus-visible){position:absolute;width:1px;height:1px;min-width:0;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* 10-15 모바일 메뉴: 큰 메뉴 이름은 그 페이지 첫 화면 링크, 오른쪽 화살표 버튼만 하위 목록을 펼침(한 번에 하나) */
+.drawer .acc-head{display:flex;align-items:center}
+.drawer .acc-head .acc-btn{flex:1;min-width:0}
+.drawer .acc-tog{flex:none;display:grid;place-items:center;width:44px;height:60px;margin-right:-13px;padding:0;border:0;background:none;color:inherit;cursor:pointer}
+.drawer .acc-tog svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;transition:transform .3s}
+.drawer .acc-tog[aria-expanded="true"] svg{transform:rotate(180deg)}
+.drawer .acc-tog.is-current{color:var(--primary)}
+.drawer .acc-tog:focus-visible{outline:2px solid var(--primary);outline-offset:-4px;border-radius:8px}
+.drawer .drawer-acc.is-open .acc-panel{grid-template-rows:1fr}
+.drawer .drawer-acc.is-open .acc-panel>div{visibility:inherit;transition:none}
+@media (prefers-reduced-motion:reduce){.drawer .acc-tog svg{transition:none}}

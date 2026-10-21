@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 방문 통계(V22): visit_logs · post_view_logs. 날짜는 한국 시간 날짜, 기간은 from ~ to 포함 -->
+<mapper namespace="egovframework.backoffice.stats.StatsMapper">
+
+  <insert id="insertVisit">
+    INSERT INTO visit_logs (visited_on, visitor_key, path, device) VALUES (#{day}, #{visitorKey}, #{path}, #{device})
+  </insert>
+
+  <insert id="insertPostView">
+    INSERT INTO post_view_logs (post_type, post_id, viewed_on, visitor_key) VALUES (#{type}, #{postId}, #{day}, #{visitorKey})
+  </insert>
+
+  <select id="countPublished" resultType="long">
+    SELECT COUNT(*) FROM ${table} WHERE id = #{id} AND deleted_at IS NULL AND status = 'PUBLISHED'
+  </select>
+
+  <select id="countVisitors" resultType="long">
+    SELECT COUNT(DISTINCT visitor_key) FROM visit_logs WHERE visited_on BETWEEN #{from} AND #{to}
+  </select>
+
+  <select id="countPageViews" resultType="long">
+    SELECT COUNT(*) FROM visit_logs WHERE visited_on BETWEEN #{from} AND #{to}
+  </select>
+
+  <select id="countPostViews" resultType="long">
+    SELECT COUNT(*) FROM post_view_logs WHERE viewed_on BETWEEN #{from} AND #{to}
+  </select>
+
+  <select id="totalVisitors" resultType="long">
+    SELECT COALESCE(SUM(d.visitors), 0)
+      FROM (SELECT COUNT(DISTINCT visitor_key) AS visitors FROM visit_logs GROUP BY visited_on) d
+  </select>
+
+  <select id="dailyVisitors" resultType="DailyStat">
+    SELECT visited_on AS stat_day, COUNT(DISTINCT visitor_key) AS visitors, COUNT(*) AS page_views
+      FROM visit_logs
+     WHERE visited_on BETWEEN #{from} AND #{to}
+     GROUP BY visited_on
+     ORDER BY visited_on
+  </select>
+
+  <select id="dailyPostViews" resultType="DailyStat">
+    SELECT viewed_on AS stat_day, COUNT(*) AS post_views
+      FROM post_view_logs
+     WHERE viewed_on BETWEEN #{from} AND #{to}
+     GROUP BY viewed_on
+     ORDER BY viewed_on
+  </select>
+
+  <!-- 프로젝트 글의 제목은 서비스 이름(service_name) -->
+  <select id="topPosts" resultType="TopPost">
+    SELECT v.post_type, v.post_id, p.title, p.status, p.author_id, COUNT(*) AS views
+      FROM post_view_logs v
+      JOIN (SELECT 'review' AS kind, id, title, status, author_id FROM reviews WHERE deleted_at IS NULL
+            UNION ALL
+            SELECT 'interview', id, title, status, author_id FROM interviews WHERE deleted_at IS NULL
+            UNION ALL
+            SELECT 'project', id, service_name, status, author_id FROM projects WHERE deleted_at IS NULL) p
+        ON p.kind = v.post_type AND p.id = v.post_id
+    <where>
+      <if test="from != null">v.viewed_on BETWEEN #{from} AND #{to}</if>
+    </where>
+     GROUP BY v.post_type, v.post_id, p.title, p.status, p.author_id
+     ORDER BY views DESC, v.post_type, v.post_id
+     LIMIT #{limit}
+  </select>
+
+  <delete id="deletePostViews">
+    DELETE FROM post_view_logs WHERE post_type = #{type} AND post_id = #{postId}
+  </delete>
+
+  <update id="movePostViews">
+    UPDATE post_view_logs SET post_type = #{toType}, post_id = #{toId} WHERE post_type = #{fromType} AND post_id = #{fromId}
+  </update>
+</mapper>

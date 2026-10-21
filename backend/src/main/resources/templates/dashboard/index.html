@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout('관리자 홈', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <div class="stamp" th:text="${#temporals.format(generatedAt, 'yyyy-MM-dd HH:mm')} + ' 기준'">2026-10-20 17:29 기준</div>
+
+  <!--/* 방문수 요약(방문 기록 표 visit_logs): 방문수는 그날 서로 다른 방문자 수, 누적은 날마다 센 방문자 수의 합 */-->
+  <div class="card">
+    <div class="visit-row">
+      <div class="nums">
+        <div class="n"><div class="k">오늘 방문수</div><div class="v" th:text="${#numbers.formatInteger(stats.todayVisitors, 1, 'COMMA')}">7</div></div>
+        <div class="n"><div class="k">어제 방문수</div><div class="v" th:text="${#numbers.formatInteger(stats.yesterdayVisitors, 1, 'COMMA')}">17</div></div>
+        <div class="n"><div class="k">누적 방문수</div><div class="v" th:text="${#numbers.formatInteger(stats.totalVisitors, 1, 'COMMA')}">488</div></div>
+      </div>
+      <a class="btn-line" th:href="@{/admin/stats(days=30)}">방문 통계
+        <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <!--/* 최근 30일 방문 추이 (붉은 선 그래프) */-->
+  <div class="card chart-card">
+    <span class="chart-title">일별 방문수 · 최근 30일</span>
+    <svg class="chart" id="visitChart" aria-label="일별 방문수 그래프"></svg>
+  </div>
+
+  <!--/* 최근 7일 통계 */-->
+  <h3 class="section-title">최근 7일 통계</h3>
+  <div class="two-col">
+    <div class="mini-card">
+      <h4>인기글</h4>
+      <!--/* 최근 7일 조회(게시물 조회 기록 표 post_view_logs) 많은 순. 제목을 누르면 미리보기 창 */-->
+      <div class="muted" th:if="${#lists.isEmpty(topPosts)}" style="font-size:12px;padding:8px 0">최근 7일 동안 조회된 글이 없습니다.</div>
+      <ol class="rank" th:unless="${#lists.isEmpty(topPosts)}">
+        <li th:each="p, it : ${topPosts}">
+          <b th:text="${it.count}">1</b>
+          <a th:href="@{/admin/posts/{kind}/{id}/preview(kind=${p.postType}, id=${p.postId})}" target="_blank" rel="noopener" data-preview
+             th:data-title="${p.title}" th:data-edit="${me.role.canManageContent() or p.authorId == me.id} ? @{/admin/posts/{kind}/{id}/edit(kind=${p.postType}, id=${p.postId})} : null"
+             th:text="${p.title}">제목</a>
+          <span class="c" th:text="${#numbers.formatInteger(p.views, 1, 'COMMA')}">0</span>
+        </li>
+      </ol>
+    </div>
+    <div class="mini-card">
+      <h4>게시물 현황</h4>
+      <ul class="ratio" th:with="all=${total > 0 ? total : 1}">
+        <li><span>게시중</span><span class="bar"><i th:style="'width:' + ${published * 100 / all} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(published * 100.0 / all, 1, 1)} + '%'">0%</span></li>
+        <li><span>임시저장</span><span class="bar"><i class="c2" th:style="'width:' + ${draft * 100 / all} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(draft * 100.0 / all, 1, 1)} + '%'">0%</span></li>
+        <li><span>미게시</span><span class="bar"><i class="c3" th:style="'width:' + ${hidden * 100 / all} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(hidden * 100.0 / all, 1, 1)} + '%'">0%</span></li>
+      </ul>
+      <div class="muted" style="font-size:11px;margin-top:10px">
+        전체 <b th:text="${total}">0</b>건
+        <th:block th:each="k : ${kinds}"> · <a th:href="@{/admin/posts(kind=${k.slug})}" th:text="${k.label}">후기</a> <b th:text="${k.count}">0</b></th:block>
+        · 7일 게시물 조회 <b th:text="${#numbers.formatInteger(weekPostViews, 1, 'COMMA')}">0</b>회
+      </div>
+    </div>
+  </div>
+</main>
+<th:block th:fragment="scripts">
+  <script th:inline="javascript">
+    (function () {
+      // 서버 집계 데이터 → SVG 선 그래프
+      var data = /*[[${chart}]]*/ [];
+      var svg = document.getElementById('visitChart');
+      if (!svg || !data.length) return;
+      var W = Math.max(480, svg.clientWidth || 700), H = 240, padL = 20, padR = 24, padT = 44, padB = 46;
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      var n = data.length, max = 0;
+      data.forEach(function (d) { if (d.v > max) max = d.v; });
+      if (max === 0) max = 1;
+      var x = function (i) { return padL + (W - padL - padR) * (n === 1 ? 0.5 : i / (n - 1)); };
+      var y = function (v) { return padT + (H - padT - padB) * (1 - v / max); };
+      var NS = 'http://www.w3.org/2000/svg';
+      function el(t, a) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); return e; }
+      // 가로 보조선
+      [0, .5, 1].forEach(function (r) {
+        var yy = padT + (H - padT - padB) * r;
+        svg.appendChild(el('line', { 'class': 'grid', x1: padL, x2: W - padR, y1: yy, y2: yy }));
+      });
+      // 선
+      var pts = data.map(function (d, i) { return x(i) + ',' + y(d.v); }).join(' ');
+      svg.appendChild(el('polyline', { 'class': 'line', points: pts }));
+      // 점 · 라벨
+      data.forEach(function (d, i) {
+        var cx = x(i), cy = y(d.v), last = i === n - 1;
+        svg.appendChild(el('circle', { 'class': 'dot' + (last ? ' today' : ''), cx: cx, cy: cy, r: 3 }));
+        if (true) {
+          if (last) svg.appendChild(el('rect', { 'class': 'today-bg', x: cx - 14, y: H - padB + 11, width: 28, height: 18, rx: 9 }));
+          var t = el('text', { 'class': 'lbl' + (last ? ' today' : ''), x: cx, y: H - padB + 24 });
+          t.textContent = last ? '오늘' : d.d;
+          svg.appendChild(t);
+          // 월이 바뀌는 첫 날 표시
+          if (i === 0 || data[i - 1].m !== d.m) {
+            var mt = el('text', { 'class': 'lbl', x: cx, y: H - padB + 40 }); mt.textContent = d.m; svg.appendChild(mt);
+          }
+        }
+      });
+      // 오늘 값 툴팁
+      var li = n - 1, tx = x(li), ty = y(data[li].v);
+      var boxX = Math.min(tx - 40, W - padR - 92), boxY = Math.max(6, ty - 60);
+      svg.appendChild(el('rect', { 'class': 'tip-box', x: boxX, y: boxY, width: 92, height: 42, rx: 3 }));
+      var k = el('text', { 'class': 'tip-k', x: boxX + 8, y: boxY + 14 }); k.textContent = '일간 방문수'; svg.appendChild(k);
+      var v = el('text', { 'class': 'tip-v', x: boxX + 8, y: boxY + 31 }); v.textContent = data[li].v; svg.appendChild(v);
+      var diff = n > 1 ? data[li].v - data[li - 1].v : 0;
+      var dt = el('text', { 'class': 'tip-d', x: boxX + 10 + String(data[li].v).length * 9 + 6, y: boxY + 31 });
+      dt.textContent = (diff >= 0 ? '▲ ' : '▼ ') + Math.abs(diff); svg.appendChild(dt);
+      svg.appendChild(el('line', { 'class': 'grid', x1: tx, x2: tx, y1: boxY + 42, y2: ty - 4, style: 'stroke:#ddd' }));
+    })();
+  </script>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,14 @@
+/* Integration-only behavior. The accepted card, list, dialog and filter styles stay in stories.css. */
+html[data-review-source="spring"] .stories-page [hidden]{display:none!important}
+html[data-review-source="spring"] .stories-page [data-review-pager]{display:flex!important}
+html[data-review-source="spring"] .stories-page .pager button{width:44px;min-width:44px;height:44px;border:0;background:#fff;font-family:var(--num);font-size:15px;color:#0F1729}
+html[data-review-source="spring"] .stories-page .pager button[aria-current="page"]{background:var(--l-blue);color:#fff}
+html[data-review-source="spring"] .dw-fco .dwin button{border:0;background:transparent;text-align:left;cursor:pointer;font:inherit;color:inherit;padding:8px 10px;border-radius:8px;font-size:14px;line-height:20px}
+html[data-review-source="spring"] .dw-fco .dwin button[aria-pressed="true"]{font-weight:600;color:var(--g900)}
+
+html[data-review-source="spring"] .stories-page .pager[hidden]{display:none!important}
+
+html[data-review-source="spring"] .dw-fco .dwin button:hover{background:var(--g50);color:var(--g900)}
+
+html[data-review-source="spring"] .review-photos{display:grid;gap:16px;margin:24px 0}
+html[data-review-source="spring"] .review-photos img{display:block;width:100%;height:auto;border-radius:12px}

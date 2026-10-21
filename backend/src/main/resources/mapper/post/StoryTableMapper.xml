@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 후기(reviews) · 인터뷰(interviews) · 프로젝트(projects) · 기수별 이모저모(cohort_stories, V26) 표. 글 번호는 표마다 1번부터(V19, reviews_id_seq 등) -->
+<mapper namespace="egovframework.backoffice.post.StoryTableMapper">
+
+  <!-- 네 표를 합친 목록(공통 칸 + 후기 분야 · 기수 · 사진). 기수별 이모저모는 요약 칸이 없어 본문을 요약 자리에(목록 · 검색) -->
+  <sql id="all">
+    (SELECT 'review' AS kind, id, title, summary, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            category, cohort FROM reviews
+     UNION ALL
+     SELECT 'interview', id, title, summary, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            NULL, cohort FROM interviews
+     UNION ALL
+     SELECT 'project', id, service_name, summary, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            NULL, cohort FROM projects
+     UNION ALL
+     SELECT 'cohort', id, title, body, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            NULL, cohort FROM cohort_stories) s
+    LEFT JOIN admin_users u ON u.id = s.author_id
+  </sql>
+
+  <!-- 휴지통: 네 표의 글에 자주 묻는 질문(faqs, V24) · 미디어(media, V25) · 인사교 라이프 카드(V29)도 같이.
+       질문은 kind 'faq'(제목 = 질문, category = FAQ 분류), 미디어는 kind 'media'(제목 = 이름, photos = 저장소 위치, category = IMAGE · VIDEO, 작성자 = 올린 사람),
+       인사교 라이프는 kind 'life-fac' · 'life-food' · 'life-fun'(제목 = 사진 이름 · 가게/장소 이름, photos = 사진 주소(life/ 기준), category = 식당/카페 · 묶음) -->
+  <sql id="trashAll">
+    (SELECT 'review' AS kind, id, title, summary, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            category, cohort FROM reviews
+     UNION ALL
+     SELECT 'interview', id, title, summary, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            NULL, cohort FROM interviews
+     UNION ALL
+     SELECT 'project', id, service_name, summary, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            NULL, cohort FROM projects
+     UNION ALL
+     SELECT 'cohort', id, title, body, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            NULL, cohort FROM cohort_stories
+     UNION ALL
+     SELECT 'faq', id, question, NULL, NULL, status, status_before_trash, NULL, NULL, created_at, updated_at, deleted_at,
+            category, NULL FROM faqs
+     UNION ALL
+     SELECT 'media', id, name, NULL, storage_key, 'DELETED', NULL, uploaded_by, NULL, created_at, updated_at, deleted_at,
+            media_type, NULL FROM media
+     UNION ALL
+     SELECT 'life-fac', p.id, COALESCE(p.caption, '(이름 없음)'), sp.name, p.photo, p.status, p.status_before_trash, p.author_id, NULL,
+            p.created_at, p.updated_at, p.deleted_at, NULL, NULL
+       FROM life_facility_photos p LEFT JOIN life_facility_spaces sp ON sp.space_id = p.space_id
+     UNION ALL
+     SELECT 'life-food', id, COALESCE(name, '(이름 없음)'), menu, photo, status, status_before_trash, author_id, NULL, created_at, updated_at, deleted_at,
+            kind, NULL FROM life_foods
+     UNION ALL
+     SELECT 'life-fun', id, COALESCE(name, '(이름 없음)'), summary, photo, status, status_before_trash, author_id, NULL, created_at, updated_at, deleted_at,
+            group_key, NULL FROM life_spots) s
+    LEFT JOIN admin_users u ON u.id = s.author_id
+  </sql>
+
+  <sql id="listColumns">s.*, u.name AS author_name</sql>
+
+  <sql id="searchWhere">
+    WHERE s.deleted_at IS NULL
+    <if test="kind != null and kind == 'life'">AND s.kind LIKE 'life-%'</if><if test="kind != null and kind != 'life'">AND s.kind = #{kind}</if>
+    <if test="category != null">AND s.category = #{category}</if>
+    <if test="s.status != null">AND s.status = #{s.status}</if>
+    <if test="s.authorId != null">AND s.author_id = #{s.authorId}</if>
+    <if test="s.keyword != null and s.keyword != ''">
+      AND (LOWER(s.title) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(s.summary, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(u.name, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(u.login_id, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%')))
+    </if>
+  </sql>
+
+  <select id="search" resultType="StoryRow">
+    SELECT <include refid="listColumns"/> FROM <include refid="all"/>
+    <include refid="searchWhere"/>
+    ORDER BY s.created_at DESC, s.kind, s.id DESC
+    LIMIT #{s.size} OFFSET #{s.offset}
+  </select>
+
+  <select id="countSearch" resultType="long">
+    SELECT COUNT(*) FROM <include refid="all"/>
+    <include refid="searchWhere"/>
+  </select>
+
+  <sql id="trashWhere">
+    WHERE s.deleted_at IS NOT NULL
+    <if test="kind != null and kind == 'life'">AND s.kind LIKE 'life-%'</if><if test="kind != null and kind != 'life'">AND s.kind = #{kind}</if>
+    <if test="s.keyword != null and s.keyword != ''">
+      AND (LOWER(s.title) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(s.summary, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%')))
+    </if>
+  </sql>
+
+  <select id="findTrash" resultType="StoryRow">
+    SELECT <include refid="listColumns"/> FROM <include refid="trashAll"/>
+    <include refid="trashWhere"/>
+    ORDER BY s.deleted_at DESC, s.kind, s.id DESC
+    LIMIT #{s.size} OFFSET #{s.offset}
+  </select>
+
+  <select id="countTrash" resultType="long">
+    SELECT COUNT(*) FROM <include refid="trashAll"/>
+    <include refid="trashWhere"/>
+  </select>
+
+  <select id="findAllDeleted" resultType="StoryRow">
+    SELECT s.kind, s.id, s.deleted_at FROM <include refid="trashAll"/> WHERE s.deleted_at IS NOT NULL
+    <if test="kind != null and kind == 'life'">AND s.kind LIKE 'life-%'</if><if test="kind != null and kind != 'life'">AND s.kind = #{kind}</if>
+    ORDER BY s.kind, s.id
+  </select>
+
+  <!-- 임시저장 목록: 네 표의 임시저장 글(휴지통 아님) + withFaq(관리자 이상)면 임시저장 자주 묻는 질문(faqs) · 인사교 라이프 카드(V29).
+       authorId 를 주면 그 사람이 쓴 글만 -->
+  <sql id="draftAll">
+    (SELECT 'review' AS kind, id, title, summary, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            category, cohort FROM reviews WHERE deleted_at IS NULL AND status = 'DRAFT'
+     UNION ALL
+     SELECT 'interview', id, title, summary, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            NULL, cohort FROM interviews WHERE deleted_at IS NULL AND status = 'DRAFT'
+     UNION ALL
+     SELECT 'project', id, service_name, summary, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            NULL, cohort FROM projects WHERE deleted_at IS NULL AND status = 'DRAFT'
+     UNION ALL
+     SELECT 'cohort', id, title, body, photos, status, status_before_trash, author_id, published_at, created_at, updated_at, deleted_at,
+            NULL, cohort FROM cohort_stories WHERE deleted_at IS NULL AND status = 'DRAFT'
+     <if test="withFaq">
+     UNION ALL
+     SELECT 'faq', id, question, NULL, NULL, status, status_before_trash, NULL, NULL, created_at, updated_at, deleted_at,
+            category, NULL FROM faqs WHERE deleted_at IS NULL AND status = 'DRAFT'
+     UNION ALL
+     SELECT 'life-fac', p.id, COALESCE(p.caption, '(이름 없음)'), sp.name, p.photo, p.status, p.status_before_trash, p.author_id, NULL,
+            p.created_at, p.updated_at, p.deleted_at, NULL, NULL
+       FROM life_facility_photos p LEFT JOIN life_facility_spaces sp ON sp.space_id = p.space_id
+      WHERE p.deleted_at IS NULL AND p.status = 'DRAFT'
+     UNION ALL
+     SELECT 'life-food', id, COALESCE(name, '(이름 없음)'), menu, photo, status, status_before_trash, author_id, NULL, created_at, updated_at, deleted_at,
+            kind, NULL FROM life_foods WHERE deleted_at IS NULL AND status = 'DRAFT'
+     UNION ALL
+     SELECT 'life-fun', id, COALESCE(name, '(이름 없음)'), summary, photo, status, status_before_trash, author_id, NULL, created_at, updated_at, deleted_at,
+            group_key, NULL FROM life_spots WHERE deleted_at IS NULL AND status = 'DRAFT'
+     </if>) s
+    LEFT JOIN admin_users u ON u.id = s.author_id
+  </sql>
+
+  <sql id="draftWhere">
+    WHERE 1 = 1
+    <if test="kind != null and kind == 'life'">AND s.kind LIKE 'life-%'</if><if test="kind != null and kind != 'life'">AND s.kind = #{kind}</if>
+    <if test="authorId != null">AND s.author_id = #{authorId}</if>
+    <if test="s.keyword != null and s.keyword != ''">
+      AND (LOWER(s.title) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(s.summary, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%')))
+    </if>
+  </sql>
+
+  <select id="findDrafts" resultType="StoryRow">
+    SELECT <include refid="listColumns"/> FROM <include refid="draftAll"/>
+    <include refid="draftWhere"/>
+    ORDER BY s.updated_at DESC, s.kind, s.id DESC
+    LIMIT #{s.size} OFFSET #{s.offset}
+  </select>
+
+  <select id="countDrafts" resultType="long">
+    SELECT COUNT(*) FROM <include refid="draftAll"/>
+    <include refid="draftWhere"/>
+  </select>
+
+  <!-- 임시저장 종류별 개수(종류 고르기 칩) -->
+  <select id="draftCounts" resultType="map">
+    SELECT s.kind AS kind, COUNT(*) AS cnt FROM <include refid="draftAll"/>
+    <if test="authorId != null">WHERE s.author_id = #{authorId}</if>
+    GROUP BY s.kind
+  </select>
+
+  <!-- 휴지통 종류별 개수(종류 고르기 칩) -->
+  <select id="trashCounts" resultType="map">
+    SELECT s.kind AS kind, COUNT(*) AS cnt FROM <include refid="trashAll"/> WHERE s.deleted_at IS NOT NULL GROUP BY s.kind
+  </select>
+
+  <select id="interviewCohorts" resultType="map">
+    SELECT cohort, COUNT(*) AS cnt FROM interviews WHERE deleted_at IS NULL GROUP BY cohort ORDER BY cohort DESC
+  </select>
+
+  <select id="projectCohorts" resultType="map">
+    SELECT cohort, COUNT(*) AS cnt FROM projects WHERE deleted_at IS NULL GROUP BY cohort ORDER BY cohort DESC
+  </select>
+
+  <select id="countAll" resultType="long">
+    SELECT (SELECT COUNT(*) FROM reviews) + (SELECT COUNT(*) FROM interviews) + (SELECT COUNT(*) FROM projects) + (SELECT COUNT(*) FROM cohort_stories)
+  </select>
+
+  <!-- ── 글 하나 · 게시중인 글(사이트) ── -->
+
+  <!-- 공통 칸(제목은 표마다: 후기 · 인터뷰 title, 프로젝트 service_name) -->
+  <sql id="common">t.id, t.status, t.status_before_trash, t.author_id, u.name AS author_name,
+    t.published_at, t.created_at, t.updated_at, t.deleted_at, t.summary, t.photos</sql>
+  <sql id="reviewColumns">'review' AS kind, t.title, <include refid="common"/>, t.category, t.cohort, t.senior_name, t.body, t.tags, t.show_on_hub</sql>
+  <sql id="interviewColumns">'interview' AS kind, t.title, <include refid="common"/>, t.cohort, t.senior_name, t.track, t.qa, t.video_url, t.video_length</sql>
+  <!-- 프로젝트: 서비스 이름(service_name)이 글 제목, 프로젝트 주제(project_subject)는 양식의 headline 칸 -->
+  <sql id="projectColumns">'project' AS kind, t.service_name AS title, <include refid="common"/>, t.cohort, t.class_name, t.major, t.team_name, t.team_size,
+    t.project_subject AS headline,
+    t.problem, t.features, t.tech, t.tags, t.links</sql>
+  <!-- 기수별 이모저모: 요약 칸 없음(V27) — 본문 · 있었던 날 · 사진 · 유튜브 영상 -->
+  <sql id="cohortColumns">'cohort' AS kind, t.title, t.id, t.status, t.status_before_trash, t.author_id, u.name AS author_name,
+    t.published_at, t.created_at, t.updated_at, t.deleted_at, t.photos, t.cohort, t.body, t.event_date, t.video_url, t.video_length</sql>
+  <sql id="published">WHERE t.deleted_at IS NULL AND t.status = 'PUBLISHED' ORDER BY t.published_at DESC, t.id DESC</sql>
+
+  <select id="findReview" resultType="StoryRow">
+    SELECT <include refid="reviewColumns"/> FROM reviews t LEFT JOIN admin_users u ON u.id = t.author_id WHERE t.id = #{id}
+  </select>
+  <select id="findInterview" resultType="StoryRow">
+    SELECT <include refid="interviewColumns"/> FROM interviews t LEFT JOIN admin_users u ON u.id = t.author_id WHERE t.id = #{id}
+  </select>
+  <select id="findProject" resultType="StoryRow">
+    SELECT <include refid="projectColumns"/> FROM projects t LEFT JOIN admin_users u ON u.id = t.author_id WHERE t.id = #{id}
+  </select>
+
+  <select id="findCohort" resultType="StoryRow">
+    SELECT <include refid="cohortColumns"/> FROM cohort_stories t LEFT JOIN admin_users u ON u.id = t.author_id WHERE t.id = #{id}
+  </select>
+
+  <select id="publishedReviews" resultType="StoryRow">
+    SELECT <include refid="reviewColumns"/> FROM reviews t LEFT JOIN admin_users u ON u.id = t.author_id <include refid="published"/>
+  </select>
+  <select id="publishedInterviews" resultType="StoryRow">
+    SELECT <include refid="interviewColumns"/> FROM interviews t LEFT JOIN admin_users u ON u.id = t.author_id <include refid="published"/>
+  </select>
+  <select id="publishedProjects" resultType="StoryRow">
+    SELECT <include refid="projectColumns"/> FROM projects t LEFT JOIN admin_users u ON u.id = t.author_id <include refid="published"/>
+  </select>
+
+  <!-- 기수별 이모저모는 있었던 날 최신 순(사이트 격자 순서) -->
+  <select id="publishedCohorts" resultType="StoryRow">
+    SELECT <include refid="cohortColumns"/> FROM cohort_stories t LEFT JOIN admin_users u ON u.id = t.author_id
+     WHERE t.deleted_at IS NULL AND t.status = 'PUBLISHED' ORDER BY t.event_date DESC, t.published_at DESC, t.id DESC
+  </select>
+
+  <!-- ── 쓰기(번호는 그 표의 번호 줄이 붙임. 번호가 있으면 그 번호로 — 테스트 · 가져오기용) ── -->
+
+  <sql id="idColumn"><if test="id != null">id, </if></sql>
+  <sql id="idValue"><if test="id != null">#{id}, </if></sql>
+
+  <insert id="insertReview" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO reviews (<include refid="idColumn"/>category, cohort, senior_name, title, summary, body, tags, show_on_hub, photos,
+                         status, author_id, published_at)
+    VALUES (<include refid="idValue"/>#{category}, #{cohort}, #{seniorName}, #{title}, #{summary}, #{body}, #{tags},
+            COALESCE(#{showOnHub}, FALSE), #{photos}, #{status}, #{authorId}, #{publishedAt})
+  </insert>
+
+  <insert id="insertInterview" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO interviews (<include refid="idColumn"/>cohort, senior_name, track, title, summary, qa, video_url, video_length, photos,
+                            status, author_id, published_at)
+    VALUES (<include refid="idValue"/>#{cohort}, #{seniorName}, #{track}, #{title}, #{summary}, #{qa}, #{videoUrl}, #{videoLength},
+            #{photos}, #{status}, #{authorId}, #{publishedAt})
+  </insert>
+
+  <insert id="insertProject" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO projects (<include refid="idColumn"/>cohort, class_name, major, team_name, team_size, service_name, project_subject, summary,
+                          problem, features, tech, tags, links, photos, status, author_id, published_at)
+    VALUES (<include refid="idValue"/>#{cohort}, #{className}, #{major}, #{teamName}, #{teamSize}, #{title}, #{headline}, #{summary},
+            #{problem}, #{features}, #{tech}, #{tags}, #{links}, #{photos}, #{status}, #{authorId}, #{publishedAt})
+  </insert>
+
+  <insert id="insertCohort" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO cohort_stories (<include refid="idColumn"/>cohort, title, body, event_date, photos, video_url, video_length,
+                                status, author_id, published_at)
+    VALUES (<include refid="idValue"/>#{cohort}, #{title}, #{body}, #{eventDate}, #{photos}, #{videoUrl}, #{videoLength},
+            #{status}, #{authorId}, #{publishedAt})
+  </insert>
+
+  <sql id="setCommon">summary = #{summary}, photos = #{photos}, status = #{status}, published_at = #{publishedAt},
+    updated_at = CURRENT_TIMESTAMP</sql>
+
+  <update id="updateReview">
+    UPDATE reviews SET title = #{title}, <include refid="setCommon"/>, category = #{category}, cohort = #{cohort}, senior_name = #{seniorName},
+           body = #{body}, tags = #{tags}, show_on_hub = COALESCE(#{showOnHub}, FALSE)
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="updateInterview">
+    UPDATE interviews SET title = #{title}, <include refid="setCommon"/>, cohort = #{cohort}, senior_name = #{seniorName}, track = #{track},
+           qa = #{qa}, video_url = #{videoUrl}, video_length = #{videoLength}
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="updateProject">
+    UPDATE projects SET service_name = #{title}, <include refid="setCommon"/>, cohort = #{cohort}, class_name = #{className}, major = #{major},
+           team_name = #{teamName}, team_size = #{teamSize}, project_subject = #{headline}, problem = #{problem}, features = #{features},
+           tech = #{tech}, tags = #{tags}, links = #{links}
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="updateCohort">
+    UPDATE cohort_stories SET title = #{title}, photos = #{photos}, status = #{status}, published_at = #{publishedAt},
+           updated_at = CURRENT_TIMESTAMP, cohort = #{cohort}, body = #{body}, event_date = #{eventDate},
+           video_url = #{videoUrl}, video_length = #{videoLength}
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="updateStatus">
+    UPDATE ${table}
+       SET status = #{status},
+           published_at = CASE WHEN #{status} = 'PUBLISHED' AND published_at IS NULL THEN CURRENT_TIMESTAMP ELSE published_at END,
+           updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <!-- 휴지통으로: 옮기기 전 상태를 남기고 삭제됨으로(사이트에서 바로 내려감) -->
+  <update id="softDelete">
+    UPDATE ${table} SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, status_before_trash = status, status = 'DELETED'
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <!-- 복원: 휴지통으로 옮기기 전 상태(게시중이었으면 게시중)로. 적힌 상태가 없으면 미게시 -->
+  <update id="restore">
+    UPDATE ${table} SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP, status = COALESCE(status_before_trash, 'HIDDEN'), status_before_trash = NULL
+     WHERE id = #{id} AND deleted_at IS NOT NULL
+  </update>
+
+  <delete id="hardDelete">
+    DELETE FROM ${table} WHERE id = #{id} AND deleted_at IS NOT NULL
+  </delete>
+
+  <delete id="deleteLive">
+    DELETE FROM ${table} WHERE id = #{id} AND deleted_at IS NULL
+  </delete>
+
+  <select id="lockDeleted" resultType="StoryRow" useCache="false" flushCache="true">
+    SELECT id, deleted_at FROM ${table} WHERE deleted_at IS NOT NULL AND id IN
+    <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    ORDER BY id FOR UPDATE
+  </select>
+
+  <select id="lockAllDeleted" resultType="StoryRow" useCache="false" flushCache="true">
+    SELECT id, deleted_at FROM ${table} WHERE deleted_at IS NOT NULL ORDER BY id FOR UPDATE
+  </select>
+</mapper>

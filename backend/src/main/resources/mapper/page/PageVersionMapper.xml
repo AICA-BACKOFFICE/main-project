@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 카테고리 페이지 버전 기록(page_versions, V28): 사이트에 반영할 때마다 페이지 HTML 전체를 한 줄로. 페이지마다 최근 100개 -->
+<mapper namespace="egovframework.backoffice.page.PageVersionMapper">
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO page_versions (page_id, html, content_hash, html_size, note, saved_by, created_at)
+    VALUES (#{pageId}, #{html}, #{contentHash}, #{htmlSize}, #{note}, #{savedBy}, COALESCE(#{createdAt}, CURRENT_TIMESTAMP))
+  </insert>
+
+  <select id="latestHash" resultType="string">
+    SELECT content_hash FROM page_versions WHERE page_id = #{pageId} ORDER BY created_at DESC, id DESC LIMIT 1
+  </select>
+
+  <select id="findByPage" resultType="PageVersion">
+    SELECT v.id, v.page_id, v.content_hash, v.html_size, v.note, v.saved_by, u.name AS saved_by_name, v.created_at
+      FROM page_versions v LEFT JOIN admin_users u ON u.id = v.saved_by
+     WHERE v.page_id = #{pageId}
+     ORDER BY v.created_at DESC, v.id DESC
+  </select>
+
+  <select id="findHtml" resultType="string">
+    SELECT html FROM page_versions WHERE page_id = #{pageId} AND id = #{id}
+  </select>
+
+  <select id="lastSaved" resultType="java.time.LocalDateTime">
+    SELECT MAX(created_at) FROM page_versions WHERE page_id = #{pageId}
+  </select>
+
+  <select id="idsBeyond" resultType="long">
+    SELECT id FROM page_versions WHERE page_id = #{pageId} ORDER BY created_at DESC, id DESC LIMIT 100000 OFFSET #{keep}
+  </select>
+
+  <delete id="deleteIds">
+    DELETE FROM page_versions WHERE id IN
+    <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+  </delete>
+
+  <select id="countAll" resultType="long">
+    SELECT COUNT(*) FROM page_versions
+  </select>
+</mapper>

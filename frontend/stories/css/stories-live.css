@@ -1,0 +1,7 @@
+/* Optional uploaded photos; original one-image and illustration compositions stay unchanged. */
+html[data-story-source="spring"] .story-extra-photos:empty{display:none}
+html[data-story-source="spring"] .story-extra-photos{display:grid;gap:16px;margin:24px 0}
+html[data-story-source="spring"] .story-extra-photos img,
+.hb-pjc-ph img{display:block;width:100%;height:auto;object-fit:cover}
+html[data-story-source="spring"] .qa .a,
+html[data-story-source="spring"] .pjph-t{white-space:pre-line}

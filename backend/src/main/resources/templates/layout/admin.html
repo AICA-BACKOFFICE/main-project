@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:fragment="layout(pageTitle, content, scripts)">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${pageTitle} + ' | ' + ${siteName}">관리자</title>
+  <meta name="_csrf" th:content="${_csrf != null} ? ${_csrf.token} : ''">
+  <meta name="_csrf_header" th:content="${_csrf != null} ? ${_csrf.headerName} : 'X-CSRF-TOKEN'">
+  <link rel="stylesheet" th:href="@{/css/admin.css(v='20261021a')}">
+  <link rel="stylesheet" th:if="${menu == 'dashboard' or menu == 'stats'}" th:href="@{/css/dashboard.css}">
+  <link rel="stylesheet" th:if="${menu == 'life-photos'}" th:href="@{/css/page/life-photos.css(v='20261020l')}">
+  <link rel="stylesheet" th:if="${menu == 'faq'}" th:href="@{/css/page/faq.css}">
+  <link rel="stylesheet" th:if="${menu == 'media'}" th:href="@{/css/media.css(v='20261020c')}">
+</head>
+<body>
+
+<!-- ===== 상단바 ===== -->
+<header class="gnb">
+  <div class="gnb-inner">
+    <!--/* 인공지능사관학교 심볼 + 이름(사이트 머리말과 같은 심볼 frontend/common/assets/brand/symbol-blue.png) */-->
+    <a class="gnb-logo" th:href="@{/admin}" title="관리자 홈">
+      <img th:src="@{/img/school-symbol.png}" alt="" width="31" height="26">
+      <span class="gnb-logo-text">인공지능사관학교</span>
+    </a>
+    <div class="gnb-right" th:if="${me != null}">
+      <a class="btn-write" th:href="@{/admin/posts/new}">글쓰기</a>
+      <details class="gnb-user">
+        <summary><span class="avatar" th:text="${#strings.substring(me.name, 0, 1)}">홍</span></summary>
+        <div class="gnb-drop">
+          <div class="who"><b th:text="${me.name}">홍길동</b><span class="muted" th:text="${me.role.label}">관리자</span></div>
+          <a th:href="@{/account/profile}">내 정보 수정</a>
+          <a th:if="${me.superAdmin}" th:href="@{/admin/users}">계정 관리</a>
+          <form th:action="@{/logout}" method="post"><button type="submit">로그아웃</button></form>
+        </div>
+      </details>
+    </div>
+  </div>
+</header>
+
+<!-- ===== 본문 ===== -->
+<div class="wrap">
+  <div class="toast" th:if="${toast}" th:text="${toast}"></div>
+  <div class="toast error" th:if="${toastError}" th:text="${toastError}"></div>
+
+  <!-- 좌측 프로필 · 메뉴 -->
+  <!--/* 메뉴 표시(NavBadges): fresh = 최근 24시간 안에 글이 생기거나 고쳐진 메뉴(NEW), draftCount = 임시저장 개수 */-->
+  <aside class="lnb" th:with="fresh=${me != null} ? ${@nav.fresh()} : ${ {:} }, draftCount=${me != null} ? ${@nav.drafts(me)} : 0">
+    <div class="profile">
+      <a class="cover" th:href="@{/admin}">
+        <span class="cover-title" th:text="${siteName}">인사교 관리자 페이지</span>
+        <span class="cover-env" th:text="${envLabel}">local</span>
+      </a>
+      <!--/* 인사교 홈페이지(프론트오피스 사이트): 사이트 주소(BACKOFFICE_FRONT_URL, npm start 는 http://127.0.0.1:4181/)가 있으면 그 사이트로 */-->
+      <a class="profile-body home-link" th:href="${frontHomeUrl}" target="_blank" rel="noopener" title="인사교 홈페이지(사이트) 새 탭으로 열기">
+        <div class="blog-name">인사교 홈페이지 이동
+          <svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>
+        </div>
+        <div class="blog-url" th:text="${#strings.replace(#strings.replace(frontHomeUrl, 'https://', ''), 'http://', '')}">127.0.0.1:4181/</div>
+      </a>
+    </div>
+
+    <nav class="lnb-menu">
+      <a class="lnb-home" th:if="${me != null}" th:classappend="${menu == 'dashboard'} ? 'on'" th:href="@{/admin}">
+        <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>
+        관리자 홈
+      </a>
+
+      <!--/* 카테고리 페이지 관리: 공유용 사이트의 페이지를 실제 화면 그대로 편집(전용 편집 화면 templates/page/editor.html 로 열림) */-->
+      <div class="lnb-group" th:if="${me != null and me.role.canManageContent() and categoryPages != null and !#lists.isEmpty(categoryPages)}">
+        <div class="lnb-title">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 13h8M8 16h5"/></svg>
+          카테고리 페이지 관리
+        </div>
+        <!--/* 하위 페이지(parent — 선배들의 이야기 › 후기 · 인터뷰 · 프로젝트 · 기수별 이모저모)는 따로 두지 않고 위 페이지 하나로(인사교 라이프처럼).
+               하위 화면은 편집 화면 안의 페이지 옆 메뉴로 오가요 */-->
+        <a th:each="p : ${categoryPages.?[parent == null]}"
+           th:classappend="${menu == 'page-' + p.id or #strings.startsWith(menu ?: '', 'page-' + p.id + '-')} ? 'on'"
+           th:href="@{/admin/pages/{id}/edit(id=${p.id})}"><th:block th:text="${p.title}">인사교 알아보기</th:block><span class="lnb-new" th:if="${fresh['page-' + p.id] == true}">NEW</span></a>
+      </div>
+
+      <div class="lnb-group">
+        <div class="lnb-title">
+          <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg>
+          게시물 관리
+        </div>
+        <!--/* 왼쪽 화살표를 누르면 세부 카테고리가 펼쳐짐(admin.js). 지금 보고 있는 메뉴는 펼친 채로 열림 */-->
+        <div class="lnb-tree" data-tree="stories" th:classappend="${menu == 'posts'} ? 'open'">
+          <div class="lnb-tree-row">
+            <button type="button" class="lnb-toggle" aria-controls="lnbStories" th:attr="aria-expanded=${menu == 'posts'}" title="세부 카테고리 펼치기 · 접기">
+              <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+            <a th:classappend="${menu == 'posts' and storyKind == null} ? 'on'" th:href="@{/admin/posts}">선배들의 이야기 게시물 관리<span class="lnb-new" th:if="${fresh['posts'] == true}">NEW</span></a>
+          </div>
+          <div class="lnb-sub" id="lnbStories">
+            <a th:classappend="${menu == 'posts' and storyKind == 'review'} ? 'on'" th:href="@{/admin/posts(kind='review')}">선배 후기<span class="lnb-new" th:if="${fresh['review'] == true}">NEW</span></a>
+            <a th:classappend="${menu == 'posts' and storyKind == 'interview'} ? 'on'" th:href="@{/admin/posts(kind='interview')}">선배 인터뷰<span class="lnb-new" th:if="${fresh['interview'] == true}">NEW</span></a>
+            <a th:classappend="${menu == 'posts' and storyKind == 'project'} ? 'on'" th:href="@{/admin/posts(kind='project')}">프로젝트<span class="lnb-new" th:if="${fresh['project'] == true}">NEW</span></a>
+            <!--/* 기수별 이모저모(cohort_stories 표, 2026-10-20): 기수 · 있었던 날로 사이트 기수 칩 · 달별 동그라미에 나뉘어요 */-->
+            <a th:classappend="${menu == 'posts' and storyKind == 'cohort'} ? 'on'" th:href="@{/admin/posts(kind='cohort')}">기수별 이모저모<span class="lnb-new" th:if="${fresh['cohort'] == true}">NEW</span></a>
+          </div>
+        </div>
+        <div class="lnb-tree" data-tree="life" th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'life-photos'} ? 'open'">
+          <div class="lnb-tree-row">
+            <button type="button" class="lnb-toggle" aria-controls="lnbLife" th:attr="aria-expanded=${menu == 'life-photos'}" title="세부 카테고리 펼치기 · 접기">
+              <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+            <a th:href="@{/admin/pages/life-photos}">인사교 라이프 게시물 관리<span class="lnb-new" th:if="${fresh['life-photos'] == true}">NEW</span></a>
+          </div>
+          <!--/* 인사교 라이프 게시물 관리 화면에서는 life-photos.js 가 페이지를 다시 열지 않고 탭만 바꿈 */-->
+          <div class="lnb-sub" id="lnbLife">
+            <a th:classappend="${menu == 'life-photos' and lifeSection == 'fac'} ? 'on'" data-life-section="fac" th:href="@{/admin/pages/life-photos(section='fac')}">시설 사진</a>
+            <a th:classappend="${menu == 'life-photos' and lifeSection == 'food'} ? 'on'" data-life-section="food" th:href="@{/admin/pages/life-photos(section='food')}">오늘 점심, 여기 어때요?</a>
+            <a th:classappend="${menu == 'life-photos' and lifeSection == 'fun'} ? 'on'" data-life-section="fun" th:href="@{/admin/pages/life-photos(section='fun')}">수업 끝나고, 바람 쐬러 가요</a>
+          </div>
+        </div>
+        <a th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'faq'} ? 'on'" th:href="@{/admin/faq}">지원 전 Check FAQ 관리<span class="lnb-new" th:if="${fresh['faq'] == true}">NEW</span></a>
+        <!--/* 미디어 관리: 함께 쓰는 사진 · 동영상(관리자 · 서포터즈 모두) */-->
+        <a th:if="${me != null}" th:classappend="${menu == 'media'} ? 'on'" th:href="@{/admin/media}">미디어 관리<span class="lnb-new" th:if="${fresh['media'] == true}">NEW</span></a>
+      </div>
+
+      <div class="lnb-group" th:if="${me != null}">
+        <div class="lnb-title">
+          <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
+          통계
+        </div>
+        <a th:classappend="${menu == 'stats'} ? 'on'" th:href="@{/admin/stats}">방문 통계</a>
+      </div>
+
+      <div class="lnb-group">
+        <div class="lnb-title">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          관리
+        </div>
+        <a th:if="${me != null and me.superAdmin}" th:classappend="${menu == 'users'} ? 'on'" th:href="@{/admin/users}">계정 관리</a>
+        <!--/* 내 정보 수정: 내 이름 · 비밀번호 바꾸기(예전 '비밀번호 변경') */-->
+        <a th:classappend="${menu == 'profile'} ? 'on'" th:href="@{/account/profile}">내 정보 수정</a>
+        <!--/* 임시저장: 아직 게시하지 않은 글 · 질문을 종류별로(서포터즈는 자기 글만) */-->
+        <a th:if="${me != null}" th:classappend="${menu == 'drafts'} ? 'on'" th:href="@{/admin/posts/drafts}">임시저장<span class="lnb-count" th:if="${draftCount > 0}" th:text="${draftCount}" th:title="'임시저장 ' + ${draftCount} + '개'">3</span></a>
+        <a th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'trash'} ? 'on'" th:href="@{/admin/posts/trash}">휴지통</a>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- 우측 콘텐츠 -->
+  <main th:replace="${content}">페이지 본문</main>
+</div>
+
+<footer class="foot">Copyright © 2026 AICA</footer>
+
+<script th:src="@{/js/admin.js(v='20261020b')}"></script>
+<script th:src="@{/js/preview-modal.js}"></script>
+<th:block th:replace="${scripts}"></th:block>
+</body>
+</html>

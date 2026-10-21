@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 지원 전 체크 › 자주 묻는 질문(V23 faqs, V24 상태 · 휴지통 칸) -->
+<mapper namespace="egovframework.backoffice.page.FaqMapper">
+
+  <sql id="columns">id, category, question, answer, status, status_before_trash, sort_order, created_at, updated_at, deleted_at</sql>
+
+  <select id="findLive" resultType="FaqItem">
+    SELECT <include refid="columns"/> FROM faqs
+     WHERE deleted_at IS NULL
+     ORDER BY sort_order, id
+  </select>
+
+  <select id="findPublished" resultType="FaqItem">
+    SELECT <include refid="columns"/> FROM faqs
+     WHERE deleted_at IS NULL AND status = 'PUBLISHED'
+     ORDER BY sort_order, id
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO faqs (category, question, answer, status, sort_order)
+    VALUES (#{category}, #{question}, #{answer}, #{status}, #{sortOrder})
+  </insert>
+
+  <update id="update">
+    UPDATE faqs
+       SET category = #{category}, question = #{question}, answer = #{answer}, status = #{status}, sort_order = #{sortOrder},
+           updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="softDelete">
+    UPDATE faqs SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, status_before_trash = status, status = 'DELETED'
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <select id="findDeleted" resultType="FaqItem">
+    SELECT <include refid="columns"/> FROM faqs WHERE id = #{id} AND deleted_at IS NOT NULL
+  </select>
+
+  <!-- 복원 전에 원래 자리를 비운다: 휴지통의 이 질문 번호(지울 때의 자리)부터 뒤의 질문들을 한 칸씩 뒤로 -->
+  <update id="makeRoom">
+    UPDATE faqs SET sort_order = sort_order + 1
+     WHERE deleted_at IS NULL
+       AND sort_order &gt;= (SELECT d.sort_order FROM faqs d WHERE d.id = #{id} AND d.deleted_at IS NOT NULL)
+  </update>
+
+  <!-- 복원: 휴지통으로 옮기기 전 상태로(적힌 상태가 없으면 미게시), 번호는 지울 때의 자리 그대로(makeRoom 이 비워 둔 자리) -->
+  <update id="restore">
+    UPDATE faqs
+       SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP, status = COALESCE(status_before_trash, 'HIDDEN'), status_before_trash = NULL
+     WHERE id = #{id} AND deleted_at IS NOT NULL
+  </update>
+
+  <delete id="hardDelete">
+    DELETE FROM faqs WHERE id = #{id} AND deleted_at IS NOT NULL
+  </delete>
+
+  <select id="lockDeleted" resultType="FaqItem" useCache="false" flushCache="true">
+    SELECT id, deleted_at FROM faqs WHERE deleted_at IS NOT NULL AND id IN
+    <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    ORDER BY id FOR UPDATE
+  </select>
+
+  <select id="lockAllDeleted" resultType="FaqItem" useCache="false" flushCache="true">
+    SELECT id, deleted_at FROM faqs WHERE deleted_at IS NOT NULL ORDER BY id FOR UPDATE
+  </select>
+</mapper>

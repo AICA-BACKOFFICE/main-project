@@ -1,0 +1,161 @@
+/* Shared masthead component: layout and accepted Stories/Life variants.
+   Keep declaration order: desktop base, page variants, then mobile overrides. */
+/* =========================================================
+   선배들의 이야기 머리 줄(10-13 사본, 사용자 결정 '1번'): 한눈에 보기 · 후기 · 인터뷰 · 프로젝트 · 기수별 이모저모 5페이지 맨 위에 같은 큰 제목 줄.
+   카테고리 한 페이지로 느껴지게 — 페이지를 옮겨도 제목 줄 · 왼쪽 메뉴 자리가 그대로고 본문만 바뀜.
+   1200px 이상: 제목 줄은 [메뉴 | 본문] 두 칸 위로 헤더 로고 시작선부터 화면 폭 전체 + 아래 가는 선.
+                왼쪽 메뉴는 그 아래(첫 구역 머리 — 후기와 같은 높이)에서 시작하고, 스크롤하면 헤더 아래 붙어 따라옴(lnb.css sticky).
+   1200px 미만: 제목 줄 → 알약 줄 → 본문(site.js가 메뉴를 제목 줄 바로 뒤에 그림).
+   메뉴 시작 높이(--lnb-top, lnb.css)를 제목 줄 높이 식으로 계산 → 1200 이상에선 제목 · 설명을 한 줄로 고정(nowrap, 1200에서도 폭이 남음).
+   ========================================================= */
+:root{
+  --mh-t:clamp(36px,4.4vw,60px);     /* 제목 글자 크기 */
+  --mh-l:clamp(16px,1.2vw,17.5px);   /* 설명 글자 크기 */
+  --mh-pb:clamp(40px,3.6vw,52px);    /* 설명 → 선(1200 이상) */
+  --mh-gap:clamp(48px,4.4vw,64px)}   /* 선 → 첫 구역 머리(1200 이상) */
+
+.st-mh{padding-top:var(--sec-y-first);padding-bottom:4px}   /* 1200 미만: 바로 아래 알약 줄(위 17px)이 이어짐 */
+.st-mh .st-mh-t{margin:0;font:700 var(--mh-t)/1.12 var(--ff-title);letter-spacing:-.01em;color:var(--ink);text-wrap:balance;word-break:keep-all}
+.st-mh .st-mh-t b{font-weight:inherit;color:#FF3EA5;-webkit-text-stroke:.045em var(--ink-strong);paint-order:stroke fill}
+.st-mh .st-mh-lead{margin:16px 0 0;max-width:42em;text-wrap:pretty;font-family:var(--ff-sans);font-size:var(--mh-l);font-weight:400;line-height:1.7;letter-spacing:normal;color:var(--graphite);word-break:keep-all}
+
+@media (min-width:1200px){
+  /* 본문 칸(main 안쪽 왼쪽 여백 = 메뉴 + 사이) 밖으로 메뉴 칸만큼 당겨 헤더 로고 시작선에서 시작 */
+  html[data-nav="side"] .st-mh{margin-left:calc(-1 * (var(--lnb-w) + var(--lnb-gap)));}
+  html[data-nav="side"] .st-mh :is(.st-mh-t,.st-mh-lead){white-space:nowrap;max-width:none}
+  /* 메뉴 첫 줄(STORIES) = 제목 줄 높이 + 선 + 첫 머리 위 여백 + 4px(제목 줄이 없던 때와 같은 차) */
+  html[data-nav="side"] main#main:has(> .st-mh){--lnb-top:calc(var(--sec-y-first) + var(--mh-t) * 1.12 + 16px + var(--mh-l) * 1.7 + var(--mh-pb) + 1px + var(--mh-gap) + 4px)}
+  html[data-nav="side"] .stories-page:has(> .st-mh) div:where(.st-main){padding-top:var(--mh-gap)}
+  html[data-nav="side"] .stories-hub:has(> .st-mh) .hb > .hb-sec:first-child{padding-top:var(--mh-gap)}   /* 허브: 제목 줄은 main 바로 아래, 구역은 .hb 안 */
+}
+
+/* 제목 항상 보이기(10-13): 큰 제목이 지나가면 헤더 밑에 얇은 띠로 고정 */
+.st-mhf{position:fixed;left:0;right:0;top:var(--hdr,72px);z-index:40;background:rgba(255,255,255,.97);border-bottom:1px solid var(--line);
+  transform:translateY(-100%);opacity:0;visibility:hidden;transition:transform .3s cubic-bezier(.3,.7,.2,1),opacity .2s,visibility 0s .3s}
+.st-mhf.on{transform:none;opacity:1;visibility:visible;transition:transform .3s cubic-bezier(.3,.7,.2,1),opacity .2s}
+.st-mhf .wrap{display:flex;align-items:center;height:60px}
+.st-mhf-t{margin:0;font:700 26px/1 var(--ff-title);letter-spacing:-.01em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-mhf-t b{font-weight:inherit;color:#FF3EA5;-webkit-text-stroke:.045em var(--ink-strong);paint-order:stroke fill}
+@media (max-width:860px){.st-mhf .wrap{height:50px}.st-mhf-t{font-size:21px}}
+/* 띠가 붙어 있는 동안 아래 고정 요소들을 띠 높이만큼 내림 */
+html.mh-stuck{scroll-padding-top:calc(var(--hdr,72px) + 76px)}
+@media (min-width:1200px){html.mh-stuck[data-nav="side"] #siteLnb .lnb-in{top:calc(var(--hdr) + 60px + 32px)}}
+html.mh-stuck .stories-page .cv3-chips{top:calc(var(--hdr,72px) + 60px)}
+html.mh-stuck .stories-page .sidebox{top:200px}
+@media (max-width:860px){html.mh-stuck .stories-page .cv3-chips{top:calc(var(--hdr,72px) + 50px)}}
+@media (prefers-reduced-motion:reduce){.st-mhf,.st-mhf.on{transition:none}}
+
+/* 섹션 제목(예: 선배들은 여기서 이런 걸 만들었어요) Paperlogy(10-13) */
+:is(.stories-page,.stories-hub) :is(.sh,.hb-hd) h2{font-family:var(--ff-text)!important;font-weight:600!important;letter-spacing:-.025em}
+
+/* 제목 배너(10-13, 배너 시안 5 '스티커 바로가기'): 검은 테두리 · 그림자 흰 카드 + 오른쪽 하위 페이지 스티커 */
+html[data-nav="side"] .st-mh{border-bottom:0!important}
+@media (min-width:1200px){html[data-nav="side"] .st-mh{padding-bottom:0}}
+.st-mh .mhb{display:flex;align-items:center;justify-content:space-between;gap:32px;border-radius:28px;background:#fff;border:2px solid var(--ink-strong);}
+.st-mh .mhb-tx{min-width:0}
+.st-mh .mhb-st{flex:none;grid-template-columns:repeat(2,auto);}
+.st-mh .mhb-st a{place-items:center;}
+.st-mh .mhb-st a:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+@media (max-width:860px){.st-mh .mhb{border-radius:20px;}}
+.stories-page > .st-mh{position:relative;z-index:3}
+/* 배너 바로가기 버튼: 기울이지 않음(10-13) */
+/* 배너 높이 줄이고 그림자 얇게(10-13) */
+.st-mh .mhb{padding:clamp(22px,2.4vw,32px) clamp(22px,3.4vw,48px);box-shadow:5px 5px 0 var(--ink-strong)}
+.st-mh .mhb .st-mh-t{font-size:clamp(32px,3.6vw,50px)}
+.st-mh .mhb .st-mh-lead{margin-top:10px}
+@media (max-width:860px){.st-mh .mhb{box-shadow:4px 4px 0 var(--ink-strong)}}
+
+/* 배너 바로가기: 배너 오른쪽 위 테두리에 붙은 색인 탭(10-13, 배너 메뉴 시안 5 '모서리 탭') — 배너 높이는 그대로 */
+.st-mh .mhb{position:relative;margin-top:36px;overflow:visible}
+.st-mh .mhb-st{position:absolute;right:28px;top:-2px;transform:translateY(-100%);display:flex;gap:4px;align-items:flex-end}
+.st-mh .mhb-st a,body .life-page .st-mh .mhb-st a{min-width:0;height:34px;padding:0 16px;display:inline-flex;align-items:center;border:1.5px solid var(--ink-strong);border-bottom:0;border-radius:12px 12px 0 0;background:var(--c);box-shadow:none;transform:none;font:700 13.5px/1 var(--ff-text);color:var(--ink-strong);text-decoration:none;transition:height .2s}
+.st-mh .mhb-st a:hover{height:40px;transform:none;box-shadow:none}
+@media (max-width:1100px){.st-mh .mhb{margin-top:0}}
+@media (max-width:1100px){.st-mh .mhb-st{display:none}}
+
+/* =========================================================
+   선배들의 이야기 배너(10-13, 사용자 이미지 그대로): 모눈 종이 바탕 · 왼쪽 위 마스킹테이프 ·
+   오른쪽 찢은 모눈 메모(Real Stories 손글씨 · 테이프 · 핀) · 뒤 노란 물감 · 파란 손그림 선 · 제목 옆 반짝 표시
+   꾸밈은 .mhb-deco(aria-hidden) 한 겹에만, 배너 밖으로 안 나가게 잘라 냄
+   ========================================================= */
+html[data-menu="stories"] .st-mh .mhb{isolation:isolate;background-color:#F7F5F0;
+  background-image:linear-gradient(rgba(20,35,63,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(20,35,63,.045) 1px,transparent 1px);background-size:26px 26px;
+  padding-top:clamp(28px,3.2vw,44px);padding-bottom:clamp(28px,3.2vw,44px)}
+html[data-menu="stories"] .st-mh .mhb .st-mh-t{font-size:clamp(32px,3.9vw,54px)}
+html[data-menu="stories"] .st-mh .mhb .st-mh-lead{color:#4A5466}
+html[data-menu="stories"] .st-mh .mhb-tx{position:relative;z-index:1}
+html[data-menu="stories"] .st-mh .mhb-deco{position:absolute;inset:0;z-index:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+html[data-menu="stories"] .st-mh .mhb-deco>*,html[data-menu="stories"] .st-mh .mhb-deco .dc-scrap>*{position:absolute}
+/* 왼쪽 위 마스킹테이프 */
+.mhb-deco .dc-tape{left:-26px;top:-6px;width:150px;height:34px;background:rgba(150,195,250,.62);transform:rotate(-14deg);box-shadow:0 1px 2px rgba(20,35,63,.08)}
+.mhb-deco .dc-tape::before{content:"";position:absolute;left:0;top:0;width:28px;height:100%;background:rgba(255,226,140,.8)}
+/* 노란 물감(오른쪽 끝) */
+.mhb-deco .dc-blob{right:-34px;top:38px;width:120px;height:170px;background:#FBE3A6;border-radius:58% 42% 46% 54%/40% 52% 48% 60%;transform:rotate(-8deg)}
+/* 찢은 모눈 메모 */
+.mhb-deco .dc-scrap{right:34px;top:26px;width:300px;height:230px;transform:rotate(-7deg);
+  background-color:#FCFDFF;background-image:linear-gradient(rgba(100,140,220,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(100,140,220,.22) 1px,transparent 1px);background-size:18px 18px;
+  clip-path:polygon(4% 0,100% 0,100% 100%,3% 100%,1% 92%,4% 84%,0 76%,3% 68%,1% 60%,4% 52%,0 44%,3% 36%,1% 28%,4% 20%,0 12%,3% 6%);
+  filter:drop-shadow(0 6px 10px rgba(20,35,63,.14))}
+.mhb-deco .dc-scrap em{position:absolute;left:118px;top:52px;font:400 32px/.95 "Caveat",cursive;font-style:normal;color:#7E9CDF;transform:rotate(-12deg);text-align:left}
+.mhb-deco .dc-tick{left:220px;top:52px;width:16px;height:16px;background:linear-gradient(60deg,transparent 44%,#7E9CDF 44% 56%,transparent 56%) 0 0/8px 16px no-repeat,linear-gradient(60deg,transparent 44%,#7E9CDF 44% 56%,transparent 56%) 8px 4px/8px 12px no-repeat}
+.mhb-deco .dc-tape2{left:186px;top:148px;width:88px;height:30px;background:rgba(110,170,255,.6);transform:rotate(-6deg)}
+.mhb-deco .dc-pin{right:22px;top:12px;width:9px;height:9px;border-radius:50%;background:#C9CFD8;box-shadow:inset -1px -1px 0 rgba(0,0,0,.12)}
+/* 파란 손그림 선 */
+.mhb-deco .dc-swoosh{right:330px;bottom:-4px;width:230px;height:auto}
+/* 제목 옆 반짝 */
+html[data-menu="stories"] .st-mh .st-mh-t b{position:relative}
+html[data-menu="stories"] .st-mh .st-mh-t b::after{content:"";position:absolute;right:-.95em;top:-.32em;width:.72em;height:.72em;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' fill='none' stroke='%235B8DEF' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M20 4v10M20 26v10M4 20h10M26 20h10M9 9l6 6M25 25l6 6M31 9l-6 6M15 25l-6 6'/%3E%3C/svg%3E") center/contain no-repeat;-webkit-text-stroke:0}
+@media (max-width:1100px){html[data-menu="stories"] .st-mh .mhb-deco :is(.dc-scrap,.dc-blob,.dc-swoosh){display:none}}
+
+/* Mobile banners share one title-only height; desktop descriptions remain available. */
+@media (max-width:600px){
+  html[data-menu="stories"] .st-mh .st-mh-lead,
+  html[data-menu="life"] .st-mh .st-mh-lead{display:none}
+  html[data-menu="stories"] .st-mh .mhb,
+  html[data-menu="life"] .st-mh .mhb{min-height:128px;padding:22px 20px;align-items:center}
+}
+
+/* Shared cool grid-paper tone across desktop and mobile banners. */
+html:is([data-menu="stories"],[data-menu="life"]) .st-mh .mhb{
+    background-color:#F6F8FC;
+    background-image:linear-gradient(rgba(36,87,245,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(36,87,245,.05) 1px,transparent 1px);
+    background-size:26px 26px;
+  }
+  html[data-menu="life"] .st-mh .mhb{
+    isolation:isolate;
+    background-image:linear-gradient(rgba(36,87,245,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(36,87,245,.05) 1px,transparent 1px),linear-gradient(rgba(246,248,252,.48),rgba(246,248,252,.48)),url("../../life/assets/banner-life-bg.webp");
+    background-size:26px 26px,26px 26px,100% 100%,auto 100%;
+    background-position:0 0,0 0,center,right center;
+    background-repeat:repeat,repeat,no-repeat,no-repeat;
+  }
+  html[data-menu="life"] .st-mh .mhb-tx{position:relative;z-index:1}
+@media (max-width:600px){
+  html[data-menu="stories"] .mhb-deco .dc-tape{left:-24px;top:-9px;width:118px;height:28px}
+  html[data-menu="stories"] .st-mh .mhb-deco .dc-blob{display:block;right:-34px;top:18px;width:72px;height:110px}
+  html[data-menu="stories"] .st-mh .mhb-deco .dc-scrap{display:block;right:-23px;top:17px;width:76px;height:108px;background-size:12px 12px;transform:rotate(10deg)}
+  html[data-menu="stories"] .mhb-deco .dc-scrap em{display:none}
+  html[data-menu="stories"] .mhb-deco .dc-pin{right:28px;top:8px;width:6px;height:6px}
+  html[data-menu="stories"] .mhb-deco .dc-tick{left:28px;top:35px}
+  html[data-menu="stories"] .mhb-deco .dc-tape2{left:14px;top:77px;width:50px;height:15px}
+  html[data-menu="stories"] .st-mh .mhb-deco .dc-swoosh{display:block;right:45px;bottom:-5px;width:92px;opacity:.7}
+  html[data-menu="life"] .st-mh .mhb::before,
+  html[data-menu="life"] .st-mh .mhb::after{content:"";position:absolute;z-index:0;pointer-events:none}
+  html[data-menu="life"] .st-mh .mhb::before{inset:0;border-radius:inherit;background:radial-gradient(ellipse at 2% 0%,rgba(153,189,230,.26) 0 20%,transparent 20.5%),radial-gradient(circle at 78% 20%,rgba(171,197,250,.3) 0 13px,transparent 14px),radial-gradient(circle at 86% 27%,rgba(91,141,239,.35) 0 3px,transparent 4px)}
+  html[data-menu="life"] .st-mh .mhb::after{left:12px;top:12px;width:105px;height:20px;border-bottom:1px solid rgba(113,167,195,.42);border-radius:0 0 80% 45%;transform:rotate(-15deg)}
+}
+
+/* LIFE uses a clipped map memo, echoing the Stories paper collage. */
+html[data-menu="life"] .st-mh .lf-banner-deco{display:block;position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;pointer-events:none}
+  .lf-banner-deco::before{content:"";position:absolute;right:-18px;top:14px;width:82px;height:112px;border-radius:48% 52% 40% 60%;background:#CDEEF1;transform:rotate(12deg)}
+  .lf-banner-note{position:absolute;right:-8px;top:19px;width:92px;height:108px;transform:rotate(-9deg);border:1px solid #D2DEEE;background-color:#FCFDFF;background-image:linear-gradient(rgba(100,140,220,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(100,140,220,.16) 1px,transparent 1px);background-size:12px 12px;box-shadow:0 3px 8px rgba(20,35,63,.08)}
+  .lf-banner-note svg{display:block;width:92px;height:100px}
+  .lf-banner-tape{position:absolute;left:19px;top:-7px;width:51px;height:16px;background:rgba(139,193,246,.65);transform:rotate(5deg)}
+
+@media (min-width:601px){
+  html[data-menu="life"] .st-mh .mhb-tx{padding-right:clamp(120px,18vw,250px)}
+  .lf-banner-note{right:30px;top:20px;width:clamp(110px,16vw,210px);height:auto;aspect-ratio:92/108;background-size:18px 18px}
+  .lf-banner-note svg{width:100%;height:auto}
+  .lf-banner-tape{left:22%;top:-10px;width:56%;height:23px}
+  .lf-banner-deco::before{right:-22px;top:22px;width:clamp(100px,16vw,210px);height:180px}
+}

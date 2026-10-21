@@ -1,13 +1,13 @@
 # 지우지 않고 모아 둔 예전 파일(약 8GB · GitHub 크기 제한) — 작업한 컴퓨터에만 둠
-/예전 파일/
+/docs/archive/
 # 빌드하면 저절로 생기는 것
-/백오피스/target/
-/백오피스/.cache/
-/백오피스/.tools/
+/backend/target/
+/backend/.cache/
+/backend/.tools/
 node_modules/
-# 백오피스 전용 PostgreSQL 데이터 폴더 · 로그(컴퓨터마다 따로 — 백오피스.cmd가 처음 켤 때 만들어요)
-/백오피스/data/postgres/
-/백오피스/data/postgres*.log
+# 백오피스 전용 PostgreSQL 데이터 폴더 · 로그(컴퓨터마다 따로 — npm start(백오피스)가 처음 켤 때 만들어요)
+/backend/data/postgres/
+/backend/data/postgres*.log
 # H2 데이터베이스가 켜져 있을 때만 생기는 파일
 *.lock.db
 *.trace.db
@@ -22,4 +22,6 @@ desktop.ini
 .DS_Store
 
 # DB 백업 파일(pg_dump) — 저장소에는 넣지 않아요
-/백오피스/data/db-backups/
+/backend/data/db-backups/
+# 로그인 상태 유지 쿠키 서명 열쇠(컴퓨터마다 따로, 비밀)
+/backend/data/remember-me.key

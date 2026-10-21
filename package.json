@@ -1,0 +1,12 @@
+{
+  "name": "aica-backoffice-project",
+  "private": true,
+  "description": "인공지능사관학교 사이트(frontend)와 관리자 페이지(backend)",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node scripts/start.mjs",
+    "backoffice": "node scripts/start.mjs backoffice",
+    "front": "node scripts/start.mjs front",
+    "claude-deploy": "node scripts/claude-deploy/build.cjs"
+  }
+}

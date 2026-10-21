@@ -1,0 +1,33 @@
+/* 미디어 관리 화면(templates/media/index.html) — layout/admin.html 이 menu 가 media 일 때만 로드 */
+.md-head { align-items: center; }
+.md-types { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.md-types a { padding: 6px 14px; font-size: 13px; color: #333; background: #fff; text-decoration: none; }
+.md-types a + a { border-left: 1px solid var(--line); }
+.md-types a.on { background: #111; color: #fff; font-weight: 600; }
+.md-search { display: inline-flex; align-items: center; gap: 6px; }
+.md-upload { display: flex; align-items: center; gap: 10px; }
+.md-progress { font-size: 12px; color: var(--muted); }
+.md-help { margin: 0; padding: 10px 20px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line-soft); }
+
+.md-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; padding: 18px 20px 22px; }
+.md-card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+.md-thumb { position: relative; display: block; aspect-ratio: 4 / 3; background: #f1f3f6; }
+.md-thumb img, .md-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.md-type { position: absolute; left: 8px; top: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(255, 255, 255, .92); color: #333; font-size: 11px; font-weight: 600; }
+.md-type.video { background: rgba(17, 17, 17, .78); color: #fff; }
+.md-new { position: absolute; right: 8px; top: 8px; margin: 0; }
+.md-body { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 12px; min-width: 0; }
+.md-name { font-weight: 700; font-size: 14px; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-meta { font-size: 11px; color: var(--muted); }
+.md-usage { font-size: 11px; color: #1B7686; font-weight: 600; }
+.md-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.md-acts form { margin: 0; }
+.md-rename { display: flex; flex-direction: column; gap: 6px; }
+/* 이름 바꾸기 칸 · 이름 · 버튼은 media.js 가 hidden 으로 번갈아 보여 줌(display 규칙보다 hidden 이 이기게) */
+.md-card [hidden] { display: none !important; }
+.md-rename .input { width: 100%; height: 32px; }
+.md-rename-acts { display: flex; gap: 6px; }
+@media (max-width: 600px) {
+  .md-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 14px; }
+  .md-upload { width: 100%; justify-content: flex-end; }
+}

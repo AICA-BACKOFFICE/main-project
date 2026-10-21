@@ -1,0 +1,27 @@
+/* One shared pattern for review dialogs, interviews and projects. */
+.stories-page .sd-nav{margin-top:32px;padding:22px 0 8px;border-top:1px solid #D3D9E1;color:#14233F;clear:both}
+.stories-page .sd-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px}
+.stories-page .sd-direction{display:block;min-width:0;min-height:60px;padding:6px 4px;text-decoration:none;color:#14233F;border:0;background:none;border-radius:0}
+.stories-page .sd-next{text-align:right}
+.stories-page .sd-label{display:block;font-size:12px;line-height:1.5;color:#566175;margin-bottom:6px;font-weight:500}
+.stories-page .sd-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:15px;line-height:1.55;font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
+.stories-page a.sd-direction:hover .sd-title{color:#2457F5;text-decoration:underline;text-underline-offset:4px}
+.stories-page .sd-direction[aria-disabled=true] .sd-label,.stories-page .sd-direction[aria-disabled=true] .sd-title{color:#697487;font-weight:400}
+.stories-page .sd-list{display:table;margin:10px auto 0;padding:10px 14px;min-height:44px;font-size:13px;line-height:24px;color:#566175;text-decoration:underline;text-underline-offset:4px}
+.stories-page .sd-nav a:focus-visible{outline:3px solid #2457F5;outline-offset:3px}
+.stories-page .ov .sd-nav{margin:8px 0 0;padding:22px 28px 14px;background:#fff}
+@media(max-width:760px){
+ .stories-page .sd-nav{margin-top:24px;padding-top:18px}
+ .stories-page .sd-pair{gap:18px}
+ .stories-page .sd-title{font-size:13px;line-height:1.6}
+ .stories-page .sd-label{font-size:11px}
+ .stories-page .ov .sd-nav{padding:18px 20px 12px}
+}
+
+.stories-page .pjnav[hidden]{display:none}
+
+/* Keep the sticky sidebar inside the article grid; navigation is its sibling. */
+.stories-page :is(.ivd,.pjd) > .sd-nav{width:100%;box-sizing:border-box}
+
+/* The navigation supplies its own bottom spacing; remove the paper scroll area inset. */
+.stories-page .ov .sheet:has(.sd-nav) .mscroll{padding-bottom:0}

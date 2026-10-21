@@ -1,0 +1,353 @@
+/* =========================================================
+   인사교 알아보기 모바일(10-15, 캔버스 '알아보기 수정본' 시안 반영)
+   600px 이하에서만 적용. 웹(601px 이상)은 그대로(.am-* 요소는 숨김).
+   마크업: src/pages/about/index.html(.am-*) · 동작: js/about-m.js
+   ========================================================= */
+.career-channel-art{display:contents}
+.am-tabs,.am-dock,.am-ch,.am-seg,.am-more,.am-acc-h,.am-intro-photo,.am-cta,.am-arrow{display:none}
+
+@media (max-width:600px){
+  .school-about{--about-paper:#fff;--am-ink:#14233F;--am-muted:#566175;--am-line:#D3D9E1;--am-soft:#F5F7F6;--am-blue:#2457F5;--am-black:#0B0B0C;--am-section-gap:36px;--am-chapter-gap:40px;--am-heading-gap:16px;--am-row-gap:16px;--am-card-gap:12px}
+  :root.school-about{background:var(--about-paper)}
+
+  /* ── 히어로: 큰 제목 기준 가운데 정렬, '인사교를 알아보세요'는 오른쪽 ── */
+  html.school-about main#main .hero-masthead{left:20px;right:20px;text-align:center}
+  html.school-about main#main .hero-masthead > span{text-align:center}
+  html.school-about main#main .hero-masthead h1{letter-spacing:0;font-size:min(11vw,42px)}
+  html.school-about main#main .scene-scroll{left:auto;right:7%}
+
+  /* ── 공통 세그먼트(탭 · 6기/7기 · 후속 프로그램) ── */
+  .am-seg{display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:4px;padding:4px;border-radius:14px;background:var(--am-soft)}
+  .am-seg button{min-height:44px;margin:0;padding:0 4px;border:2px solid transparent;border-radius:10px;background:transparent;color:var(--am-muted);font:600 14px/1.2 var(--ff-sans,"Pretendard",sans-serif);letter-spacing:-.02em;white-space:nowrap;cursor:pointer}
+  .am-seg button[aria-pressed="true"],.am-seg button[aria-current="true"]{border-color:var(--am-black);background:#fff;color:var(--am-ink);font-weight:800;box-shadow:2px 2px 0 var(--am-black)}
+  .am-seg button:focus-visible{outline:2px solid var(--am-blue);outline-offset:2px}
+
+  /* ── 바로가기 탭: 처음엔 히어로 바로 아래, 지나가면 화면 아래 고정 ── */
+  html.school-about main#main .am-tabs{display:block;position:relative;z-index:5;padding:12px 20px;background:#fff;border-bottom:1px solid var(--am-line)}
+  .am-dock{display:block;position:fixed;left:0;right:0;bottom:0;z-index:45;padding:10px 20px calc(14px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.97);border-top:1px solid var(--am-line);box-shadow:0 -6px 18px rgba(20,35,63,.08);transform:translateY(110%);visibility:hidden;transition:transform .3s cubic-bezier(.3,.7,.2,1),visibility 0s .3s}
+  html.am-docked .am-dock{transform:none;visibility:visible;transition:transform .3s cubic-bezier(.3,.7,.2,1)}
+  html.am-docked .floating{transform:translateY(-78px);transition:transform .3s}
+  html.school-about #siteFooter::after{content:"";display:block;height:78px}   /* 아래 고정 탭에 푸터 끝이 가리지 않게(높이가 바뀌지 않도록 늘 둠) */
+
+  /* ── 장 구분 줄 01~04 ── */
+  html.school-about main#main .am-ch{display:flex;align-items:center;gap:14px;margin:var(--am-chapter-gap) 0 0;padding:16px 20px;border-top:3px solid var(--am-black);border-bottom:1px solid var(--am-line);background:var(--am-soft)}
+  html.school-about main#main .am-ch.is-first{margin-top:24px}
+  html.school-about main#main .am-ch-no{font:700 44px/1 "Giants",var(--ff-sans,sans-serif);color:var(--am-blue);-webkit-text-stroke:.03em var(--am-black);paint-order:stroke fill}
+  html.school-about main#main .am-ch-tx{display:flex;flex-direction:column;gap:5px;min-width:0}
+  html.school-about main#main .am-ch-en{font:400 11px/1 "Giants",var(--ff-sans,sans-serif);letter-spacing:.08em;color:var(--am-muted)}
+  html.school-about main#main .am-ch-ko{font:700 18px/1.3 "Paperlogy",var(--ff-sans,sans-serif);letter-spacing:-.02em;color:var(--am-ink)}
+
+  /* ── 제목 · 소제목 서체(이야기 페이지와 같은 Paperlogy 600), 왼쪽 정렬 ── */
+  html.school-about main#main :is(.intro-purpose,.common-courses-heading,.guest-lecture-heading,.career-guide-heading,.why-school-heading,.activity-projects-heading,.activity-other-heading,.career-programs-heading,.education-hours-heading,.graduate-stats-heading,.partner-heading){text-align:left}
+  html.school-about main#main :is(#intro-heading,#learning-heading,#activities-heading,#career-heading){margin:0;font-family:"Paperlogy",var(--ff-sans,sans-serif);font-weight:600;font-size:28px;line-height:1.22;letter-spacing:-.025em;color:var(--am-ink)}
+  html.school-about main#main :is(.partner-heading h3,#why-school-heading,#activity-projects-heading,.activity-other-heading h3,#career-programs-heading,#education-hours-heading,#graduate-stats-heading){margin:0;font-family:"Paperlogy",var(--ff-sans,sans-serif);font-weight:600;font-size:22px;line-height:1.35;letter-spacing:-.025em;color:var(--am-ink)}
+  html.school-about main#main :is(.partner-heading .micro-label,.education-hours-heading .micro-label,.graduate-eyebrow,.activity-projects-heading > span,.activity-other-heading > span,.career-programs-heading > span){display:block;margin:0 0 6px;padding:0;font:700 13px/1.4 var(--ff-sans,sans-serif);color:var(--am-blue)}
+  html.school-about main#main :is(.partner-heading .micro-label,.education-hours-heading .micro-label)::before{display:none}
+
+  /* ── 01 인사교 소개 ── */
+  html.school-about main#main #intro{padding:24px 0 0;width:calc(100% - 40px)}
+  html.school-about main#main .intro-feature{display:block}
+  html.school-about main#main .intro-purpose{display:flex;flex-direction:column;gap:14px}
+  html.school-about main#main .intro-purpose > p{margin:0;max-width:none;font-size:15px;line-height:1.75;color:#3B4A63;text-wrap:pretty}
+  html.school-about main#main .intro-purpose > p br{display:none}
+  html.school-about main#main .intro-purpose > p strong{color:var(--am-ink)}
+  html.school-about main#main #intro .intro-purpose > p + p{margin-top:0}
+  html.school-about main#main .intro-purpose .intro-definition{font-size:13px;line-height:1.5;color:var(--am-muted)}
+  html.school-about main#main .am-intro-photo{display:block;margin:0;order:2}
+  html.school-about main#main .intro-purpose > p:not(.intro-definition){order:3}
+  html.school-about main#main .am-intro-photo img{display:block;width:100%;height:190px;object-fit:cover;border-radius:18px}
+
+  /* 관련 뉴스: 옆으로 넘기는 카드 */
+  html.school-about main#main .intro-news-stack{margin:24px -20px 0;padding:0;width:auto;height:auto;min-height:0;transform:none}
+  html.school-about main#main .intro-news-motion{transform:none!important;animation:none!important;height:auto;min-height:0;position:static}
+  html.school-about main#main .intro-news-papers{display:flex;gap:10px;height:auto;min-height:0;padding:0 20px 6px;position:static;transform:none}
+  html.school-about main#main .intro-news-card{position:static!important;inset:auto!important;flex:none;width:230px;height:auto!important;min-height:0;margin:0!important;padding:16px;border:0;border-radius:18px;background:var(--am-soft);box-shadow:none;transform:none!important;opacity:1!important;animation:none!important;rotate:none!important}
+  html.school-about main#main .intro-news-card :is(.intro-news-browserbar,.intro-news-print-lines,.intro-news-photo){display:none}
+  html.school-about main#main .intro-news-body{padding:0;display:flex;flex-direction:column;gap:8px}
+  html.school-about main#main .intro-news-meta{display:flex;gap:4px;margin:0;font-size:12px;line-height:1.4;color:var(--am-muted)}
+  html.school-about main#main .intro-news-meta > span::after{content:" ·"}
+  html.school-about main#main .intro-news-story,html.school-about main#main .intro-news-story-copy{display:block;padding:0;margin:0}
+  html.school-about main#main .intro-news-card h4{margin:0;font:800 15px/1.45 var(--ff-sans,sans-serif);letter-spacing:-.02em;color:var(--am-ink)}
+  html.school-about main#main .intro-news-card h4 em{font-style:normal;color:var(--am-blue)}
+
+  /* 교육 방식 3줄 */
+  html.school-about main#main .intro-platform{margin-top:24px}
+  html.school-about main#main .intro-platform-features{display:flex;flex-direction:column;gap:var(--am-card-gap);margin:0}
+  html.school-about main#main .intro-platform-features article{display:grid;grid-template-columns:72px minmax(0,1fr);grid-template-rows:auto auto;column-gap:14px;row-gap:3px;align-items:center;padding:12px;border:1px solid var(--am-line);border-radius:18px;background:#fff;text-align:left}
+  html.school-about main#main .intro-platform-features .platform-icon{grid-row:1/3;width:72px;height:72px;margin:0;object-fit:cover;border-radius:12px}
+  html.school-about main#main .intro-platform-features h4{align-self:end;margin:0;font-size:16px;font-weight:800;line-height:1.35}
+  html.school-about main#main .intro-platform-features p{align-self:start;margin:0;font-size:13px;line-height:1.55;color:var(--am-muted)}
+
+  /* 6기 / 7기: 하나만, 시안 카드 모양(굵은 테두리 · 그림자) */
+  html.school-about main#main .cohort-upgrade{margin-top:var(--am-section-gap)}
+  html.school-about main#main .am-seg--cohort{margin-top:var(--am-heading-gap)}
+  html.school-about main#main .am-seg--cohort button[data-k="7"][aria-pressed="true"]{background:var(--am-blue);color:#fff}
+  html.school-about main#main .cohort-comparison.am-on{display:block;margin-top:var(--am-heading-gap)}
+  html.school-about main#main .cohort-comparison.am-on > .cohort-card{display:none;margin:0;padding:18px;border:3px solid var(--am-black);border-radius:22px;background:#fff;box-shadow:5px 5px 0 var(--am-black)}
+  html.school-about main#main .cohort-comparison.am-on[data-k="6"] > .cohort-card--previous,
+  html.school-about main#main .cohort-comparison.am-on[data-k="7"] > .cohort-card--current{display:block}
+  html.school-about main#main .cohort-comparison.am-on :is(.cohort-doodle,.cohort-card-header,.cohort-topic-art,.cohort-rise){display:none}
+  html.school-about main#main .cohort-comparison.am-on .cohort-facts{display:flex;flex-direction:column;margin:0;padding:0}
+  html.school-about main#main .cohort-comparison.am-on .cohort-fact{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0;padding:10px 0;border-top:1px dashed #A9B3C2}
+  html.school-about main#main .cohort-comparison.am-on .cohort-fact:first-child{display:block;padding:0 0 12px;border-top:0}
+  html.school-about main#main .cohort-comparison.am-on .cohort-fact dt{font-size:14px;font-weight:400;color:var(--am-muted)}
+  html.school-about main#main .cohort-comparison.am-on .cohort-fact:first-child dt{font-size:13px}
+  html.school-about main#main .cohort-comparison.am-on .cohort-fact dd{margin:0}
+  html.school-about main#main .cohort-comparison.am-on .cohort-direction{display:block;margin:2px 0 12px;font-size:18px;font-weight:800;color:var(--am-ink)}
+  html.school-about main#main .cohort-comparison.am-on .cohort-topics{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;overflow:visible;list-style:none}
+  html.school-about main#main .cohort-comparison.am-on .cohort-topics li{display:flex;align-items:center;min-height:30px;width:auto;margin:0;padding:0 11px;border:0;border-radius:40px;background:#DCE5F7;box-shadow:none}
+  html.school-about main#main .cohort-comparison.am-on .cohort-topic-label{font-size:13px;font-weight:700;line-height:1.2;color:#102D80;white-space:nowrap}
+  html.school-about main#main .cohort-comparison.am-on .cohort-topic-label br{display:none}
+  html.school-about main#main .cohort-comparison.am-on .cohort-value{display:flex;align-items:baseline;gap:2px;white-space:nowrap}
+  html.school-about main#main .cohort-comparison.am-on .cohort-value strong{font:900 18px/1.2 "Paperlogy",var(--ff-sans,sans-serif);color:var(--am-blue)}
+  html.school-about main#main .cohort-comparison.am-on .cohort-value :is(strong span,small){font-size:inherit;font-weight:inherit;color:inherit}
+  html.school-about main#main .cohort-comparison.am-on .cohort-value small{display:none}
+
+  /* 관련 기관: 학교 상자 + 2×2 로고 */
+  html.school-about main#main .partner-block{margin-top:var(--am-section-gap);padding-top:0;border-top:0}
+  html.school-about main#main .partner-network{display:flex;flex-direction:column;gap:8px;margin-top:var(--am-heading-gap);padding:0}
+  html.school-about main#main .partner-network :is(.partner-wires,.partner-wires-mobile,.partner-wires-desktop){display:none}
+  html.school-about main#main .partner-node{margin:0;padding:14px 10px;border:1px solid var(--am-line);border-radius:16px;background:#fff;box-shadow:none;text-align:center}
+  html.school-about main#main .partner-node-school{width:auto;padding:16px;border:0;background:var(--am-soft)}
+  html.school-about main#main .partner-node-school > span{display:none}
+  html.school-about main#main .partner-network-children{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;padding:0}
+  html.school-about main#main .partner-logo{height:28px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center}
+  html.school-about main#main .partner-node-school .partner-logo{height:34px;margin-bottom:6px}
+  html.school-about main#main .partner-logo img{max-height:100%;max-width:100%;width:auto;object-fit:contain}
+  html.school-about main#main .partner-est-wordmark{width:auto;height:100%}
+  html.school-about main#main .partner-node h4{display:none}
+  html.school-about main#main .partner-node p{margin:0;font-size:12px;line-height:1.45;color:var(--am-muted)}
+
+  /* 지원 대상: 2칸 */
+  html.school-about main#main .eligibility-panel{margin-top:var(--am-section-gap);padding:0;border:0;background:none}
+  html.school-about main#main .eligibility-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:8px;margin-top:var(--am-heading-gap)}
+  html.school-about main#main .eligibility-condition{display:flex;flex-direction:column;gap:6px;margin:0;padding:16px 14px;border:0;border-radius:16px;background:var(--am-soft);text-align:left}
+  html.school-about main#main .eligibility-condition::before,html.school-about main#main .eligibility-condition::after{display:none}
+  html.school-about main#main .eligibility-icon{display:none}
+  html.school-about main#main .eligibility-condition h4{margin:0;font-size:15px;font-weight:800;line-height:1.4;color:var(--am-ink)}
+  html.school-about main#main .eligibility-condition p{margin:0;font-size:12px;line-height:1.5;color:var(--am-muted)}
+
+  /* 누적 수료생: 한 상자에 기수별 막대 */
+  html.school-about main#main .graduate-stats{margin-top:var(--am-section-gap);padding:0}
+  html.school-about main#main .graduate-stats-heading{display:grid;grid-template-columns:1fr auto;align-items:end;gap:4px 10px;margin:0 0 var(--am-heading-gap)}
+  html.school-about main#main .graduate-total{display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin:0}
+  html.school-about main#main .graduate-total > span{font-size:12px;color:var(--am-muted)}
+  html.school-about main#main .graduate-total strong{font:900 28px/1 "Paperlogy",var(--ff-sans,sans-serif);color:var(--am-blue)}
+  html.school-about main#main .graduate-total strong small{font-size:inherit;font-weight:inherit}
+  html.school-about main#main .graduate-grid{display:flex;flex-direction:column;gap:var(--am-card-gap);margin:0;padding:16px;border:1px solid var(--am-line);border-radius:18px;background:#fff}
+  html.school-about main#main .graduate-card{display:grid;grid-template-columns:auto auto 1fr;grid-template-areas:"c n b" "r r r";align-items:baseline;column-gap:6px;row-gap:5px;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+  html.school-about main#main .graduate-cohort{grid-area:c;margin:0;padding:0;border:0;background:none;font-size:13px;font-weight:800;color:var(--am-ink)}
+  html.school-about main#main .graduate-count{grid-area:n;display:flex;align-items:baseline;gap:0;margin:0;font-size:13px;color:var(--am-ink)}
+  html.school-about main#main .graduate-count::before{content:"· ";white-space:pre}
+  html.school-about main#main .graduate-count strong{font:800 13px/1.4 var(--ff-sans,sans-serif)}
+  html.school-about main#main .graduate-count span{font-size:13px;font-weight:800}
+  html.school-about main#main .graduate-breakdown{grid-area:b;display:flex;justify-content:flex-end;gap:8px;margin:0}
+  html.school-about main#main .graduate-breakdown > div{display:flex;align-items:baseline;gap:3px;margin:0;padding:0}
+  html.school-about main#main .graduate-breakdown dt{font-size:12px;color:var(--am-muted)}
+  html.school-about main#main .graduate-breakdown dt::before{display:none}
+  html.school-about main#main .graduate-breakdown dd{margin:0}
+  html.school-about main#main .graduate-breakdown dd strong{font:400 12px/1.4 var(--ff-sans,sans-serif);color:var(--am-muted)}
+  html.school-about main#main .graduate-breakdown dd :is(strong span,small){display:none}
+  html.school-about main#main .graduate-ratio{grid-area:r;height:8px;margin:0;border-radius:4px}
+  html.school-about main#main .graduate-stats-note{margin:8px 0 0;text-align:left;font-size:12px;color:var(--am-muted)}
+
+  /* 왜 인사교: 아코디언(첫 번째 펼침) */
+  html.school-about main#main .why-school-section{margin:36px 0 0;padding:0;background:none}
+  html.school-about main#main .why-school-heading p{margin:4px 0 0;font-size:14px;line-height:1.6;color:var(--am-muted)}
+  html.school-about main#main .why-school-cards.am-on{display:flex;flex-direction:column;gap:12px;margin-top:var(--am-heading-gap);max-width:none}
+  html.school-about main#main .why-school-card.am-acc{min-height:0!important;margin:0;padding:0 0 var(--am-acc-bottom,0)!important;border:1px solid var(--am-line);border-radius:16px;background:#fff;box-shadow:none;animation:none;opacity:1;transform:none}
+  html.school-about main#main .why-school-card.am-acc.is-open{--am-acc-bottom:18px;border:2px solid var(--am-blue);background:#F3F6FE}
+  html.school-about main#main .why-school-card.am-acc > .am-acc-h{display:block;margin:0}
+  html.school-about main#main .why-school-card.am-acc > :is(.why-school-card-kicker,h4:not(.am-acc-h),html.school-about main#main .why-school-visual){display:none!important}
+  html.school-about main#main .why-school-card.am-acc:not(.is-open) > :not(.am-acc-h){display:none!important}
+  html.school-about main#main .why-school-card.am-acc .am-acc-btn{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 16px;border:0;background:transparent;color:var(--am-ink);font:inherit;text-align:left;cursor:pointer}
+  html.school-about main#main .am-acc-btn .am-acc-no{flex:none;width:22px;font:400 15px/1 "Giants",var(--ff-sans,sans-serif);color:var(--am-blue)}
+  html.school-about main#main .am-acc-btn .am-acc-tx{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+  html.school-about main#main .am-acc-btn .am-acc-k{font:400 12px/1.4 var(--ff-sans,sans-serif);color:var(--am-muted)}
+  html.school-about main#main .am-acc-btn .am-acc-t{font:800 16px/1.35 var(--ff-sans,sans-serif);letter-spacing:-.02em}
+  html.school-about main#main .am-acc-btn svg{flex:none;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
+  html.school-about main#main .why-school-card.am-acc.is-open .am-acc-btn svg{transform:rotate(180deg)}
+  html.school-about main#main .why-school-card.am-acc.is-open > p{margin:0 16px 0 50px;font-size:14px;line-height:1.65;color:#3B4A63}
+  html.school-about main#main .why-school-card.am-acc.is-open > .why-school-card-lead{margin-bottom:4px;font-weight:700;color:var(--am-ink)}
+
+  /* ── 02 무엇을 배우나요? ── */
+  html.school-about main#main #learning{padding-top:24px;padding-bottom:0}
+  html.school-about main#main .common-courses-heading{display:flex;flex-direction:column;gap:8px;margin:0 0 var(--am-heading-gap)}
+  html.school-about main#main .common-courses-heading > p{margin:0;font-size:14px;line-height:1.6;color:var(--am-muted)}
+  html.school-about main#main .common-courses-meta{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-start;margin:0;font-size:13px;color:var(--am-muted)}
+  html.school-about main#main .common-courses-meta > *{font-size:13px;font-weight:400;color:var(--am-muted)}
+  html.school-about main#main .common-courses-meta > span::after{content:" ·"}
+  html.school-about main#main .common-courses-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  html.school-about main#main .common-courses-grid.am-on:not(.is-more) > li:nth-child(n+7){display:none}
+  html.school-about main#main .common-course-card{display:flex;flex-direction:row;align-items:center;gap:10px;min-height:0;aspect-ratio:auto;margin:0;padding:12px;border:0;border-radius:16px;background:var(--am-soft);box-shadow:none;opacity:1;transform:none;animation:none}
+  html.school-about main#main .common-course-icon{flex:none;width:44px;height:44px;margin:0;object-fit:contain;position:static;transform:none}
+  html.school-about main#main .common-course-caption{display:flex;flex-direction:column;gap:1px;min-width:0;margin:0;padding:0;text-align:left}
+  html.school-about main#main .common-course-caption h3{margin:0;font-size:14px;font-weight:800;line-height:1.3;color:var(--am-ink);word-break:keep-all}
+  html.school-about main#main .common-course-caption p{margin:0;font-size:12px;line-height:1.4;color:var(--am-muted)}
+  html.school-about main#main .am-more{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin-top:var(--am-heading-gap);border:2px solid var(--am-ink);border-radius:40px;background:#fff;color:var(--am-ink);font:700 15px/1 var(--ff-sans,sans-serif);cursor:pointer}
+
+  /* 교육 시간: STEP 1~3 줄 */
+  html.school-about main#main .education-hours{margin-top:var(--am-section-gap);padding:0}
+  html.school-about main#main .education-hours-heading{display:grid;grid-template-columns:1fr auto;align-items:end;gap:10px;margin:0 0 var(--am-heading-gap)}
+  html.school-about main#main .education-hours-heading h3 span{color:inherit}
+  html.school-about main#main .education-hours-year{display:none}
+  html.school-about main#main .education-hours-summary{margin:0}
+  html.school-about main#main .education-hours-stat{display:block;margin:0;padding:0;border:0;background:none}
+  html.school-about main#main .education-hours-stat > span{display:none}
+  html.school-about main#main .education-hours-stat strong{display:flex;align-items:baseline;font:900 24px/1 "Paperlogy",var(--ff-sans,sans-serif);color:var(--am-blue);white-space:nowrap}
+  html.school-about main#main .education-hours-stat strong small{font-size:inherit;font-weight:inherit;color:inherit}
+  /* 수료생 숫자처럼 실제 숫자 끝에서 같은 단위 간격을 둔다. */
+  html.school-about main#main .education-hours-stat .education-hours-number{min-width:0}
+  html.school-about main#main .education-time-stages{display:flex;flex-direction:column;gap:var(--am-row-gap);margin:0;padding:0;list-style:none}
+  html.school-about main#main .education-time-stages > li{display:grid;grid-template-columns:104px minmax(0,1fr);grid-template-areas:"p s" "p t" "p b";column-gap:12px;row-gap:3px;align-items:center;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;min-height:0}
+  html.school-about main#main .education-time-stages > li::before,html.school-about main#main .education-time-stages > li::after{display:none}
+  html.school-about main#main .education-time-stages > li:not(:has(.education-phase-photo)){grid-template-areas:"s s" "t t" "b b"}
+  html.school-about main#main .education-phase-top{grid-area:s;margin:0;padding:0;background:none}
+  html.school-about main#main .education-phase-step{display:inline;padding:0;border-radius:0;background:none;font:400 12px/1.2 "Giants",var(--ff-sans,sans-serif);color:var(--am-blue)}
+  html.school-about main#main .education-phase-band{grid-area:t;margin:0;padding:0;background:none}
+  html.school-about main#main .education-phase-band h4{margin:0;font-size:16px;font-weight:800;color:var(--am-ink)}
+  html.school-about main#main .education-phase-body{grid-area:b;margin:0;padding:0}
+  html.school-about main#main .education-phase-body p{margin:0;font-size:13px;line-height:1.5;color:var(--am-muted)}
+  html.school-about main#main .education-phase-photo{grid-area:p;width:104px;height:70px;margin:0;padding:0;border:0;border-radius:12px;overflow:hidden;background:none}
+  html.school-about main#main .education-phase-photo::before,html.school-about main#main .education-phase-photo::after{display:none}
+  html.school-about main#main .education-phase-photo img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+
+  /* 하루 일과도 다른 소섹션과 같은 간격: 기존 margin과 padding의 중복 방지. */
+  html.school-about main#main .daily-routine{margin-top:var(--am-section-gap);padding-top:0;border-top:0}
+  html.school-about main#main .daily-routine-heading{margin:0 0 var(--am-heading-gap)}
+  html.school-about main#main .drv-grid{gap:16px}
+
+  /* ── 03 어떤 활동을 하나요? ── */
+  html.school-about main#main #activities{padding-top:24px;padding-bottom:0;background:none}
+  html.school-about main#main .guest-lecture-wrap{width:100%;padding:0}
+  html.school-about main#main .guest-lecture-heading{padding:0 20px;margin:0 0 var(--am-heading-gap)}
+  html.school-about main#main .guest-lecture-heading p{margin:8px 0 0;font-size:14px;line-height:1.6;color:var(--am-muted)}
+  html.school-about main#main .activity-projects{margin:0;padding:0;background:none}
+  html.school-about main#main .activity-project-confetti{display:none}
+  html.school-about main#main .activity-projects-heading{padding:0 20px;margin:0 0 var(--am-heading-gap)}
+  html.school-about main#main .activity-projects-heading em{font-style:normal;color:inherit}
+  html.school-about main#main .activity-project-grid{display:flex;gap:12px;margin:0;padding:0 20px;overflow-x:auto;scroll-snap-type:x proximity}
+  html.school-about main#main .activity-project-card{flex:none;width:250px;margin:0;padding:0;border:0;background:none;box-shadow:none;scroll-snap-align:start}
+  html.school-about main#main .activity-project-card::before,html.school-about main#main .activity-project-card::after,
+  html.school-about main#main .activity-project-sheet::before,html.school-about main#main .activity-project-sheet::after{display:none}
+  html.school-about main#main .activity-project-sheet{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+  html.school-about main#main .activity-project-player{position:relative;width:100%;height:150px;margin:0;padding:0;border:0;border-radius:16px;overflow:hidden;background:var(--am-ink)}
+  html.school-about main#main .activity-project-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  html.school-about main#main .activity-project-body{margin:0;padding:0;background:none}
+  html.school-about main#main .activity-project-body h4{margin:0;font-size:15px;font-weight:800;line-height:1.4;color:var(--am-ink)}
+  html.school-about main#main .activity-project-description{margin:4px 0 0;font-size:12px;color:var(--am-muted)}
+
+  /* 기타 활동: 사진 줄 */
+  html.school-about main#main .activity-other-heading{padding:0 20px;margin:var(--am-section-gap) 0 var(--am-heading-gap)}
+  html.school-about main#main .activity-gallery{margin:0;padding:0}
+  html.school-about main#main .activity-gallery :is(.activity-gallery-filters,.activity-gallery-info,.activity-gallery-pagination,.activity-gallery-arrows,.activity-gallery-transition-frame){display:none!important}
+  html.school-about main#main .activity-gallery-viewport{height:auto!important;margin:0;padding:0;overflow:visible;mask:none;-webkit-mask:none}
+  html.school-about main#main .activity-gallery-stage{display:flex!important;gap:10px;height:auto!important;margin:0;padding:0 20px;overflow-x:auto;transform:none!important;position:static}
+  html.school-about main#main .activity-gallery-slide{position:static!important;flex:none;width:200px!important;height:auto!important;margin:0!important;display:flex!important;flex-direction:column;gap:6px;visibility:visible!important;opacity:1!important;transform:none!important;filter:none!important;z-index:auto!important;pointer-events:auto}
+  html.school-about main#main .activity-gallery-photo{width:200px;height:128px;margin:0;border-radius:14px;overflow:hidden;box-shadow:none}
+  html.school-about main#main .activity-gallery-photo img{width:100%;height:100%;object-fit:cover}
+  html.school-about main#main .activity-gallery-slide figcaption{position:static;display:block;margin:0;padding:0;background:none;font-size:13px;font-weight:700;line-height:1.4;color:var(--am-ink);opacity:1;transform:none;text-align:left}
+
+  /* 옆으로 넘기는 줄 공통: 스크롤바 숨김 + 화살표(웹 활동 갤러리 화살표 모양) */
+  html.school-about main#main .am-rail-box{position:relative}
+  html.school-about main#main .am-rail{scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  html.school-about main#main .am-rail::-webkit-scrollbar{display:none}
+  html.school-about main#main .am-arrow{display:grid;place-items:center;position:absolute;z-index:4;top:var(--am-arrow-y,50%);width:36px;height:36px;padding:0;border:1px solid #E9EDF4;border-radius:50%;background:#fff;color:#546176;box-shadow:0 5px 20px #0c183b20;transform:translateY(-50%);cursor:pointer}
+  html.school-about main#main .am-arrow[hidden]{display:none}
+  html.school-about main#main .am-arrow--prev{left:10px}
+  html.school-about main#main .am-arrow--next{right:10px}
+  html.school-about main#main .am-arrow svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+  html.school-about main#main .am-arrow:focus-visible{outline:2px solid var(--am-blue);outline-offset:2px}
+
+  /* ── 04 취업·창업 지원 ── */
+  html.school-about main#main #career{padding-top:24px;padding-bottom:0;background:none}
+  html.school-about main#main .career-guide-heading{margin:0 0 var(--am-heading-gap)}
+  html.school-about main#main .career-guide-heading p{margin:8px 0 0;font-size:14px;line-height:1.6;color:var(--am-muted)}
+  html.school-about main#main .career-guide-cards{display:flex;flex-direction:column;gap:var(--am-row-gap);margin:0;padding:0;list-style:none}
+  html.school-about main#main .career-stage-card{display:grid;grid-template-columns:96px minmax(0,1fr);column-gap:12px;align-items:center;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;min-height:0}
+  html.school-about main#main .career-stage-copy{grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:3px;padding:0;margin:0}
+  html.school-about main#main .career-stage-label{display:inline;align-self:flex-start;margin:0;padding:0;border:0;border-radius:0;background:none;font-size:12px;font-weight:700;color:#102D80}
+  html.school-about main#main .career-stage-copy h3{margin:0;font-size:15px;font-weight:800;line-height:1.4;color:var(--am-ink)}
+  html.school-about main#main .career-stage-copy h3 br{display:none}
+  html.school-about main#main .career-stage-copy p{margin:0;font-size:12px;line-height:1.5;color:var(--am-muted)}
+  html.school-about main#main .career-stage-media{grid-column:1;grid-row:1;width:96px;height:68px;margin:0;padding:0;border-radius:12px;overflow:hidden;background:none;aspect-ratio:auto}
+  html.school-about main#main .career-stage-media img{width:100%;height:100%;object-fit:cover}
+  /* 웹 채널 카드의 로고·이름·안내를 그대로 축소해 사용한다. */
+  html.school-about main#main .career-stage-media--channel{position:relative;background:linear-gradient(140deg,#ffe96a,#fee500)}
+  html.school-about main#main .career-stage-media--channel .career-channel-art{position:absolute;left:50%;top:50%;display:flex;flex-direction:column;justify-content:center;width:360px;height:232px;padding:12px;transform:translate(-50%,-50%) scale(.266666667);transform-origin:center}
+  html.school-about main#main .career-channel-art .career-channel-name > strong{font-size:20px}
+
+  /* 수료생 후속 프로그램: 하나씩 보기 + 간격 줄임(카드 색은 웹 그대로) */
+  html.school-about main#main .career-programs{margin:var(--am-section-gap) 0 0}
+  html.school-about main#main .career-programs-heading{margin:0 0 var(--am-heading-gap)}
+  html.school-about main#main .am-seg--program{margin:0 0 var(--am-heading-gap)}
+  html.school-about main#main .career-program-grid.am-on > .career-program-card{display:none}
+  html.school-about main#main .career-program-grid.am-on[data-k="0"] > .career-program-card--intern,
+  html.school-about main#main .career-program-grid.am-on[data-k="1"] > .career-program-card--startup{display:flex}
+  html.school-about main#main .career-program-grid.am-on .career-program-card{padding:8px 8px 18px}
+  html.school-about main#main .career-program-grid.am-on .career-program-hero{padding:20px 18px 18px}
+  html.school-about main#main .career-program-grid.am-on .career-program-card h4{font-size:22px;line-height:1.4}
+  html.school-about main#main .career-program-grid.am-on .career-program-funding{margin-top:10px}
+  html.school-about main#main .career-program-grid.am-on .career-program-funding strong{font-size:38px}
+  html.school-about main#main .career-program-grid.am-on .career-program-card .career-program-summary{margin-top:10px;line-height:1.7}
+  html.school-about main#main .career-program-grid.am-on .career-program-card .career-program-meta{margin-top:14px;padding:10px 16px}
+  html.school-about main#main .career-program-grid.am-on .career-program-detail{margin-top:24px}
+  html.school-about main#main .career-program-grid.am-on .career-program-detail h5{margin-bottom:14px}
+
+  /* 마지막 버튼: 지원 전 체크로 */
+  html.school-about main#main .am-cta{display:flex;align-items:center;justify-content:center;min-height:54px;margin:16px 0 48px;border:2px solid var(--am-black);border-radius:40px;background:var(--am-blue);box-shadow:3px 3px 0 var(--am-black);color:#fff;font:700 16px/1.2 var(--ff-sans,sans-serif);text-decoration:none}
+  html.school-about main#main .am-cta:focus-visible{outline:2px solid var(--am-blue);outline-offset:3px}
+
+  /* presentation.css의 카드 제목 규칙(!important)을 모바일 시안 크기로 */
+  html.school-about main#main :is(.intro-news-body h4,.intro-platform-features article h4,.common-course-caption h3,.education-phase-band h4,.activity-project-body h4,.career-stage-copy h3){font-family:var(--ff-sans,sans-serif)!important;font-weight:800!important;letter-spacing:-.02em!important}
+  html.school-about main#main :is(.intro-news-body h4,.activity-project-body h4,.career-stage-copy h3){font-size:15px!important;line-height:1.45!important}
+  html.school-about main#main :is(.intro-platform-features article h4,.education-phase-band h4){font-size:16px!important;line-height:1.35!important}
+  html.school-about main#main .common-course-caption h3{font-size:14px!important;line-height:1.3!important}
+  html.school-about main#main .guest-lecture-wrap{width:100%!important;margin:0}
+  html.school-about main#main .eligibility-condition h4{font-family:var(--ff-sans,sans-serif)!important;font-size:15px!important;line-height:1.4!important;font-weight:800!important;letter-spacing:-.02em!important}
+  html.school-about main#main .common-course-caption :is(h3,p){text-align:left;margin-left:0;margin-right:0}
+  html.school-about main#main .common-course-caption p{font-family:var(--ff-sans,sans-serif)!important;font-weight:400!important;font-size:12px;margin-top:1px}
+  html.school-about main#main .partner-node-est .partner-est-wordmark{width:62px!important}
+  html.school-about main#main .activity-project-grid{max-width:none;margin:0;scroll-padding-inline:20px}
+
+  /* ── 기존 웹 규칙 덮어쓰기(보정) ── */
+  html.school-about main#main .common-course-caption{align-items:flex-start}
+  html.school-about main#main .eligibility-heading{margin:0}
+  html.school-about main#main .eligibility-summary{padding:0;border:0;background:none}
+  html.school-about main#main .partner-network-children .partner-node{height:auto;min-height:0}
+  html.school-about main#main .partner-node-school{height:auto;min-height:0}
+  html.school-about main#main #intro .intro-purpose > :is(h2,p){margin-inline:0;text-align:left}
+  html.school-about main#main :is(.intro-news-stack,.intro-news-motion,.intro-news-papers)::before,html.school-about main#main :is(.intro-news-stack,.intro-news-motion,.intro-news-papers)::after{display:none}
+  html.school-about main#main .intro-news-papers{overflow-x:auto;overscroll-behavior-x:contain;width:auto;max-width:none}
+  html.school-about main#main .intro-news-meta{justify-content:flex-start;gap:4px;padding:0;border:0;font-size:12px}
+  html.school-about main#main .intro-news-meta > span{font-weight:400;border-radius:0;background:none;padding:0;color:inherit}
+  html.school-about main#main .cohort-comparison.am-on .cohort-fact{flex-direction:row;min-height:0}
+  html.school-about main#main .cohort-comparison.am-on .cohort-fact:first-child{flex-direction:column}
+  html.school-about main#main .cohort-comparison.am-on .cohort-fact dt{margin:0}
+  html.school-about main#main .cohort-comparison.am-on .cohort-topics{grid-template-columns:none}
+  html.school-about main#main .partner-node::after{display:none}
+  html.school-about main#main .partner-logo img{width:auto;height:auto;max-height:28px}
+  html.school-about main#main .partner-node-school .partner-logo img{max-height:34px}
+  html.school-about main#main .partner-node-est .partner-logo{overflow:hidden}
+  html.school-about main#main .partner-est-wordmark{width:96px;height:28px}
+  html.school-about main#main .graduate-card .graduate-cohort{padding:0;border-radius:0;background:none;color:var(--am-ink);font-size:13px;font-weight:800}
+  html.school-about main#main #why-school .why-school-card.am-acc.is-open > p{margin:0 16px 0 50px;font-family:var(--ff-sans,sans-serif);font-size:14px;line-height:1.65;font-weight:400;letter-spacing:-.01em;color:#3B4A63}
+  html.school-about main#main #why-school .why-school-card.am-acc.is-open > p.why-school-card-lead{margin:0 16px 4px 50px;font-weight:700;color:var(--am-ink)}
+  html.school-about main#main .common-courses .common-course-caption h3{white-space:normal;font-family:var(--ff-sans,sans-serif);font-size:14px;font-weight:800}
+  html.school-about main#main .education-hours .education-phase-band h4{font-family:var(--ff-sans,sans-serif);font-size:16px;font-weight:800;white-space:normal}
+  html.school-about main#main :is(.intro-platform-features article,.partner-node,.eligibility-condition,.career-stage-card) :is(h3,h4){font-family:var(--ff-sans,sans-serif);font-weight:800}
+  html.school-about main#main .guest-lecture-wrap{width:100%}
+  html.school-about main#main .activity-project-card{filter:none}
+  html.school-about main#main .activity-project-link{display:none}
+  html.school-about main#main .activity-project-player{margin-top:0;min-height:0;aspect-ratio:auto;border:0;border-radius:16px}
+  html.school-about main#main .activity-project-body{flex:none;padding:8px 0 0;border:0;border-radius:0;background:none;box-shadow:none}
+  html.school-about main#main .activity-project-body h4{margin:0;font-family:var(--ff-sans,sans-serif);font-size:15px;font-weight:800;line-height:1.4;letter-spacing:-.02em;color:var(--am-ink)}
+  html.school-about main#main .activity-gallery[data-gallery-ready] .activity-gallery-viewport{max-width:none;padding:0;overflow:visible}
+  html.school-about main#main .activity-gallery[data-gallery-ready] .activity-gallery-stage{width:100%;aspect-ratio:auto;margin:0;touch-action:auto}
+  html.school-about main#main .activity-gallery[data-gallery-ready] .activity-gallery-slide figcaption{display:block}
+  html.school-about main#main .activity-gallery[data-gallery-ready] .activity-gallery-photo{width:200px;height:128px;border:0;box-shadow:none}
+  html.school-about main#main .activity-gallery-photo--graduation::after{display:none}
+  html.school-about main#main .career-stage-copy h3 br{display:inline}
+
+}
+@media (max-width:600px) and (prefers-reduced-motion:reduce){.am-dock,html.am-docked .am-dock,html.am-docked .floating,.am-acc-btn svg{transition:none}}
